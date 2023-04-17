@@ -11,7 +11,7 @@ func GetPackage() *denv.Package {
 	mainlib := denv.SetupDefaultCppLibProject("cbenchmark", "github.com\\jurgen-kluft\\cbenchmark")
 
 	// 'cbenchmark' test project
-	maintest := denv.SetupDefaultCppBenchMarkProject("cbenchmark_test", "github.com\\jurgen-kluft\\cbenchmark")
+	maintest := denv.SetupDefaultCppTestProject("cbenchmark_test", "github.com\\jurgen-kluft\\cbenchmark")
 	maintest.Dependencies = append(maintest.Dependencies, mainlib)
 
 	mainpkg := denv.NewPackage("cbenchmark")

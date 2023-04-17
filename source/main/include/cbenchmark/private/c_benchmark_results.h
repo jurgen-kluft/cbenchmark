@@ -1,6 +1,8 @@
 #ifndef __CBENCHMARK_RESULTS_H__
 #define __CBENCHMARK_RESULTS_H__
 
+#include "cbenchmark/private/c_types.h"
+
 namespace BenchMark
 {
     class BenchMarkReporter;
@@ -25,6 +27,13 @@ namespace BenchMark
         int                mFailureCount;
         int                mExceptionBenchMarkCount;
         int                mExceptionFailureCount;
+    };
+
+    class BenchMarkState
+    {
+    public:
+        s32 m_range[4];
+
     };
 } // namespace BenchMark
 
