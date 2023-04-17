@@ -3,9 +3,11 @@
 #include "cbenchmark/private/c_config.h"
 #include "cbenchmark/private/c_benchmark.h"
 #include "cbenchmark/private/c_benchmark_results.h"
+#include "cbenchmark/private/c_exception.h"
 #include "cbenchmark/private/c_time_helpers.h"
 #include "cbenchmark/private/c_stringbuilder.h"
 #include "cbenchmark/private/c_stdout.h"
+#include "cbenchmark/private/c_utils.h"
 
 #include <exception>
 
@@ -63,7 +65,7 @@ namespace BenchMark
         {
             results.onBenchMarkFailure(test->mFilename, test->mLineNumber, test->mName, "Unhandled exception: Crash!");
         }
-        const int testTimeInMs = (int)((float)g_GetElapsedTimeInMs(testTime) / 1000.0f);
+        const int testTimeInMs = (int)((float)GetElapsedTimeInMs(testTime) / 1000.0f);
         if (maxBenchMarkTimeInMs > 0 && testTimeInMs > maxBenchMarkTimeInMs && !test->mTimeConstraintExempt)
         {
             StringBuilder stringBuilder(context.mAllocator);
@@ -209,7 +211,7 @@ namespace BenchMark
             results.onBenchMarkFailure(fixture->mFilename, fixture->mLineNumber, fixture->mName, stringBuilder.getText());
         }
 
-        const int testTimeInMs = (int)((float)g_GetElapsedTimeInMs(testTime) / 1000.0f);
+        const int testTimeInMs = (int)((float)GetElapsedTimeInMs(testTime) / 1000.0f);
         if (maxBenchMarkTimeInMs > 0 && testTimeInMs > maxBenchMarkTimeInMs && !fixture->mTimeConstraintExempt)
         {
             StringBuilder stringBuilder(context.mAllocator);

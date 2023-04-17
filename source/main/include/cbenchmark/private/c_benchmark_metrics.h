@@ -20,6 +20,9 @@ namespace BenchMark
     void StartCollecting(BenchMarkMetrics& metrics);
     void StopCollecting(BenchMarkMetrics& metrics);
 
+    void PauseCollecting(BenchMarkMetrics& metrics);
+    void ResumeCollecting(BenchMarkMetrics& metrics);
+
     void Reset(BenchMarkMetrics& metrics);
     void Merge(BenchMarkMetrics& metrics, BenchMarkMetrics const& other);
 
