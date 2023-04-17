@@ -41,7 +41,7 @@ namespace BenchMark
 
     void BenchMarkBenchMarkRun(BenchMark* test, BenchMarkContext& context, BenchMarkResults& results, int const maxBenchMarkTimeInMs)
     {
-        time_t testTime = g_TimeStart();
+        time_t testTime = TimeStamp();
 
         results.onBenchMarkStart(test->mName);
 
@@ -102,7 +102,7 @@ namespace BenchMark
             }
         }
 
-        time_t testTime = g_TimeStart();
+        time_t testTime = TimeStamp();
 
         results.onBenchMarkFixtureStart(fixture->mName, numBenchMarks);
 
@@ -128,7 +128,8 @@ namespace BenchMark
                     // Remember allocation count Y
                     int iAllocCntY = fixtureAllocator.GetNumAllocations();
 
-                    curBenchMark->mBenchMarkRun(curBenchMark->mName, results, maxBenchMarkTimeInMs);
+                    // Run the test
+                    BenchMarkBenchMarkRun(curBenchMark, context, results, maxBenchMarkTimeInMs);
 
                     // Compare allocation count with Y
                     // If different => memory leak error

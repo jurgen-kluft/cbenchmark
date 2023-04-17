@@ -73,10 +73,9 @@ namespace BenchMark
 
     int BenchMarkAllRun(BenchMarkContext& context, BenchMarkReporter& reporter, BenchMarkSuite* inSuiteList, int maxBenchMarkTimeInMs)
     {
-        BenchMarkState testState;
-        BenchMarkResults result(&reporter, &testState);
+        BenchMarkResults result(&reporter);
 
-        time_t overallTime = g_TimeStart();
+        time_t overallTime = TimeStamp();
 
         BenchMarkSuite* suiteList = inSuiteList;
         while (suiteList != 0)
@@ -93,7 +92,7 @@ namespace BenchMark
 
             context.mObserver->BeginSuite(curBenchMarkSuite->mFilename, curBenchMarkSuite->mName);
             {
-                time_t suiteStartTime = g_TimeStart();
+                time_t suiteStartTime = TimeStamp();
                 result.onBenchMarkSuiteStart(curBenchMarkSuite->mName, numBenchMarks);
 
                 curBenchMarkFixture = curBenchMarkSuite->mFixtureListHead;
@@ -103,14 +102,14 @@ namespace BenchMark
                     curBenchMarkFixture = curBenchMarkFixture->mFixtureNext;
                 }
 
-                result.onBenchMarkSuiteEnd(curBenchMarkSuite->mName, (float)g_GetElapsedTimeInMs(suiteStartTime) / 1000.0f);
+                result.onBenchMarkSuiteEnd(curBenchMarkSuite->mName, (float)GetElapsedTimeInMs(suiteStartTime) / 1000.0f);
             }
             context.mObserver->EndSuite();
 
             suiteList = suiteList->mSuiteNext;
         }
 
-        float const secondsElapsed = (float)g_GetElapsedTimeInMs(overallTime) / 1000.0f;
+        float const secondsElapsed = (float)GetElapsedTimeInMs(overallTime) / 1000.0f;
         reporter.reportSummary(secondsElapsed, result.mFailureCount, result.mBenchMarkCount);
 
         return result.mFailureCount;

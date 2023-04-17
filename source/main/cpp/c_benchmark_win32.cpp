@@ -7,6 +7,7 @@
 #include "cbenchmark/private/c_exception.h"
 #include "cbenchmark/private/c_stringbuilder.h"
 #include "cbenchmark/private/c_stdout.h"
+#include "cbenchmark/private/c_utils.h"
 
 #include <exception>
 
@@ -42,7 +43,7 @@ namespace BenchMark
 
     void BenchMarkBenchMarkRun(BenchMark* test, BenchMarkContext& context, BenchMarkResults& results, int const maxBenchMarkTimeInMs)
     {
-        time_t testTime = g_TimeStart();
+        time_t testTime = TimeStamp();
 
         results.onBenchMarkStart(test->mName);
 
@@ -64,7 +65,7 @@ namespace BenchMark
         {
             results.onBenchMarkFailure(test->mFilename, test->mLineNumber, test->mName, "Unhandled exception: Crash!");
         }
-        const int testTimeInMs = (int)((float)g_GetElapsedTimeInMs(testTime) / 1000.0f);
+        const int testTimeInMs = (int)((float)GetElapsedTimeInMs(testTime) / 1000.0f);
         if (maxBenchMarkTimeInMs > 0 && testTimeInMs > maxBenchMarkTimeInMs && !test->mTimeConstraintExempt)
         {
             StringBuilder stringBuilder(context.mAllocator);
@@ -103,7 +104,7 @@ namespace BenchMark
             }
         }
 
-        time_t testTime = g_TimeStart();
+        time_t testTime = TimeStamp();
 
         results.onBenchMarkFixtureStart(fixture->mName, numBenchMarks);
 
@@ -210,7 +211,7 @@ namespace BenchMark
             results.onBenchMarkFailure(fixture->mFilename, fixture->mLineNumber, fixture->mName, stringBuilder.getText());
         }
 
-        const int testTimeInMs = (int)((float)g_GetElapsedTimeInMs(testTime) / 1000.0f);
+        const int testTimeInMs = (int)((float)GetElapsedTimeInMs(testTime) / 1000.0f);
         if (maxBenchMarkTimeInMs > 0 && testTimeInMs > maxBenchMarkTimeInMs && !fixture->mTimeConstraintExempt)
         {
             StringBuilder stringBuilder(context.mAllocator);
