@@ -30,51 +30,71 @@ namespace BenchMark
     };
 
     // Counter flags
-    enum CounterFlags
+    struct CounterFlags
     {
-        kIsRate                   = 1 << 16,                         // Mark the counter as a rate. It will be presented divided by the duration of the benchmark.
-        kAvgThreads               = 1 << 17,                         // Mark the counter as a thread-average quantity. It will be presented divided by the number of threads.
-        kAvgThreadsRate           = kIsRate | kAvgThreads,           // Mark the counter as a thread-average rate. See above.
-        kIsIterationInvariant     = 1 << 18,                         // Mark the counter as a constant value, valid/same for *every* iteration (will be *multiplied* by the iteration count)
-        kIsIterationInvariantRate = kIsRate | kIsIterationInvariant, // Mark the counter as a constant rate, when reporting, it will be *multiplied* by the iteration count and then divided by the duration of the benchmark.
-        kAvgIterations            = 1 << 19,                         // Mark the counter as a iteration-average quantity, it will be presented divided by the number of iterations.
-        kAvgIterationsRate        = kIsRate | kAvgIterations,        // Mark the counter as a iteration-average rate. See above.
-        kInvert                   = 1 << 31,                         // In the end, invert the result. This is always done last!
-        kIs1000                   = 1000,                            // 1'000 items per 1k
-        kIs1024                   = 1024,                            // 1'024 items per 1k
-        kDefaults                 = kIs1000,
+        CounterFlags(u32 flags = Defaults)
+            : flags(flags)
+        {
+        }
+
+        enum
+        {
+            IsRate                   = 1 << 16,                       // Mark the counter as a rate. It will be presented divided by the duration of the benchmark.
+            AvgThreads               = 1 << 17,                       // Mark the counter as a thread-average quantity. It will be presented divided by the number of threads.
+            AvgThreadsRate           = IsRate | AvgThreads,           // Mark the counter as a thread-average rate. See above.
+            IsIterationInvariant     = 1 << 18,                       // Mark the counter as a constant value, valid/same for *every* iteration (will be *multiplied* by the iteration count)
+            IsIterationInvariantRate = IsRate | IsIterationInvariant, // Mark the counter as a constant rate, when reporting, it will be *multiplied* by the iteration count and then divided by the duration of the benchmark.
+            AvgIterations            = 1 << 19,                       // Mark the counter as a iteration-average quantity, it will be presented divided by the number of iterations.
+            AvgIterationsRate        = IsRate | AvgIterations,        // Mark the counter as a iteration-average rate. See above.
+            Invert                   = 1 << 31,                       // In the end, invert the result. This is always done last!
+            Is1000                   = 1000,                          // 1'000 items per 1k
+            Is1024                   = 1024,                          // 1'024 items per 1k
+            Defaults                 = Is1000,
+        };
+
+        u32 flags;
     };
 
     // TimeUnit is passed to a benchmark in order to specify the order of magnitude for the measured time.
-    enum TimeUnit
+    struct TimeUnit
     {
-        kNanosecond,
-        kMicrosecond,
-        kMillisecond,
-        kSecond
+        TimeUnit(u32 flags = Millisecond)
+            : flags(flags)
+        {
+        }
+
+        enum
+        {
+            Nanosecond,
+            Microsecond,
+            Millisecond,
+            Second
+        };
+
+        inline const char* ToString() const
+        {
+            switch (flags)
+            {
+                case TimeUnit::Millisecond: return "ms";
+                case TimeUnit::Microsecond: return "us";
+                case TimeUnit::Nanosecond: return "ns";
+            }
+            return "s";
+        }
+
+        inline double GetTimeUnitMultiplier() const
+        {
+            switch (flags)
+            {
+                case TimeUnit::Millisecond: return 1e3;
+                case TimeUnit::Microsecond: return 1e6;
+                case TimeUnit::Nanosecond: return 1e9;
+            }
+            return 1.0;
+        }
+
+        u32 flags;
     };
-
-    inline const char* GetTimeUnitString(TimeUnit unit)
-    {
-        switch (unit)
-        {
-            case kMillisecond: return "ms";
-            case kMicrosecond: return "us";
-            case kNanosecond: return "ns";
-        }
-        return "s";
-    }
-
-    inline double GetTimeUnitMultiplier(TimeUnit unit)
-    {
-        switch (unit)
-        {
-            case kMillisecond: return 1e3;
-            case kMicrosecond: return 1e6;
-            case kNanosecond: return 1e9;
-        }
-        return 1.0;
-    }
 
     // Range Computations
     // Custom Counters
@@ -82,6 +102,10 @@ namespace BenchMark
     //       We cannot 'generate' data with PREPROCESSOR defines so we generate
     //       the Runtime from Config just before running the benchmark.
 
+    struct Arg
+    {
+        s64 x;
+    };
     struct ArgPair
     {
         s64 x, y;
@@ -94,27 +118,31 @@ namespace BenchMark
     {
         s64 start, end, step;
     };
+    struct Counter
+    {
+        const char*  name;
+        CounterFlags flags;
+        double       value;
+    };
+    struct MinTime
+    {
+        double value;
+    };
+    struct MinWarmupTime
+    {
+        double value;
+    };
+    struct Iterations
+    {
+        s64 value;
+    };
+    struct Repetitions
+    {
+        s64 value;
+    };
 
-    // What we could emit during the PREPROCESSOR step
-    static double min_time        = 0;
-    static double min_warmup_time = 1.0;
-    static s64    iterations      = 0;
-    static s64    repetitions     = 0;
-
-    static s64         args[]           = {0, 0, 0, 0};
-    static ArgPair     arg_pairs[]      = {};
-    static s64         range_multiplier = 2;
-    static Range       ranges[]         = {{0, 0}};
-    static DenseRange  dense_ranges[]   = {{0, 0, 0}};
-    static const char* counter_names[]  = {"items_per_second", "bytes_per_second"};
-    static s32         counter_flags[]  = {kDefaults, kDefaults};
-    static double      counter_values[] = {0, 0};
-
-    static s32 args_size         = sizeof(args) / sizeof(args[0]);
-    static s32 arg_pairs_size    = sizeof(arg_pairs) / sizeof(arg_pairs[0]);
-    static s32 ranges_size       = sizeof(ranges) / sizeof(ranges[0]);
-    static s32 dense_ranges_size = sizeof(dense_ranges) / sizeof(dense_ranges[0]);
-    static s32 counter_size      = sizeof(counter_names) / sizeof(counter_names[0]);
+    static Counter items_per_second = {"items_per_second", CounterFlags::IsRate, 0};
+    static Counter bytes_per_second = {"bytes_per_second", CounterFlags::IsRate, 0};
 
     // Counters:
     // By default there are 2 counters already defined, 'items_per_second' and 'bytes_per_second'.
@@ -124,6 +152,46 @@ namespace BenchMark
     struct BenchMarkConfig
     {
     };
+
+    class BMSetVar
+    {
+    public:
+        BMSetVar(Arg arg) { }
+        BMSetVar(ArgPair arg) { }
+        BMSetVar(Range arg) { }
+        BMSetVar(DenseRange arg) { }
+        BMSetVar(MinTime min_time) { }
+        BMSetVar(MinWarmupTime min_warmup_time) { }
+        BMSetVar(Iterations iterations) { }
+        BMSetVar(Repetitions repetitions) { }
+        BMSetVar(Counter counter) { }
+    };
+
+    namespace arg
+    {
+        static s32 counter = 0;
+        namespace arg
+        {
+            namespace arg
+            {
+                static s32 counter = 0;
+                namespace arg
+                {
+                    static s32 a;
+                    static void set(BenchMarkConfig& c) { c.add_arg(a); }
+                    static set_var _set = set;
+
+                    namespace min_time
+                    {
+                        static double a;
+                        static void set(BenchMarkConfig& c) { _set(c); c.set_min_time(a); }
+                        static set_var _set = set;
+                    } // namespace min_time
+                } 
+                // namespace arg
+            }     // namespace arg
+        }         // namespace arg
+    }             // namespace arg
 
     struct BenchMarkRuntime
     {
