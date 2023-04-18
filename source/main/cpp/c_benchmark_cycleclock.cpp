@@ -94,6 +94,23 @@ namespace BenchMark
 {
     namespace CycleClock
     {
+        void Init()
+        {
+            // Use standard methods for high precision timers to find the CPU frequency in cycles per second.
+            // This is used to convert the cycle count to seconds.
+
+            // Pseudo code:
+            //   hpt_start = GetHighPrecisionTimer()
+            //       sleep(1)
+            //   hpt_end = GetHighPrecisionTimer()
+            //   cc_start = Now()
+            //       sleep(1)
+            //   cc_end = Now()
+            //   hpt_end = GetHighPrecisionTimer()
+            //   
+            //   cpu_frequency = (cc_end - cc_start) / (hpt_end - hpt_start)
+        }
+
         // This should return the number of cycles since power-on.  Thread-safe.
         inline BENCHMARK_ALWAYS_INLINE s64 Now()
         {
