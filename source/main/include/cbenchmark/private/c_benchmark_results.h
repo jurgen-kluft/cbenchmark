@@ -78,10 +78,57 @@ namespace BenchMark
 
     // Range Computations
     // Custom Counters
-    //
-    class BenchMarkConfig
+    // NOTE: Currently thinking of splitting this into Config and Runtime
+    //       We cannot 'generate' data with PREPROCESSOR defines so we generate
+    //       the Runtime from Config just before running the benchmark.
+
+    struct ArgPair
     {
-    public:
+        s64 x, y;
+    };
+    struct Range
+    {
+        s64 start, end;
+    };
+    struct DenseRange
+    {
+        s64 start, end, step;
+    };
+
+    // What we could emit during the PREPROCESSOR step
+    static double min_time        = 0;
+    static double min_warmup_time = 1.0;
+    static s64    iterations      = 0;
+    static s64    repetitions     = 0;
+
+    static s64         args[]           = {0, 0, 0, 0};
+    static ArgPair     arg_pairs[]      = {};
+    static s64         range_multiplier = 2;
+    static Range       ranges[]         = {{0, 0}};
+    static DenseRange  dense_ranges[]   = {{0, 0, 0}};
+    static const char* counter_names[]  = {"items_per_second", "bytes_per_second"};
+    static s32         counter_flags[]  = {kDefaults, kDefaults};
+    static double      counter_values[] = {0, 0};
+
+    static s32 args_size         = sizeof(args) / sizeof(args[0]);
+    static s32 arg_pairs_size    = sizeof(arg_pairs) / sizeof(arg_pairs[0]);
+    static s32 ranges_size       = sizeof(ranges) / sizeof(ranges[0]);
+    static s32 dense_ranges_size = sizeof(dense_ranges) / sizeof(dense_ranges[0]);
+    static s32 counter_size      = sizeof(counter_names) / sizeof(counter_names[0]);
+
+    // Counters:
+    // By default there are 2 counters already defined, 'items_per_second' and 'bytes_per_second'.
+    // For the user to define their own counters, they can use the following macro:
+    // BM_COUNTERS(name, flags, name, flags, ...)
+
+    struct BenchMarkConfig
+    {
+    };
+
+    struct BenchMarkRuntime
+    {
+        bool         m_error;
+        const char*  m_error_message;
         TimeUnit     m_time_unit;
         s32          m_ranges_count;
         s32          m_iterations_count;
@@ -91,16 +138,10 @@ namespace BenchMark
         const char** m_counter_names;
         double*      m_counter_values;
         s32*         m_counter_flags;
-
-        double* m_min_time;
-        double* m_min_warmup_time;
-        s64*    m_iterations;
-        s64*    m_repetitions;
     };
 
-    class BenchMarkState
+    struct BenchMarkState
     {
-    public:
         // maybe have a high-performance 'forward' allocator for the benchmark itself
 
         s64 m_range[2];
