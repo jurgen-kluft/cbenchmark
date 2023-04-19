@@ -3,6 +3,28 @@
 
 namespace BenchMark
 {
+    BM_TEST(test)
+    {
+        BM_ARG(x, 0);
+        BM_ARG(y, 1);
+
+        BM_COUNTER(test, CounterFlags::IsRate);
+        BM_COUNTER(test2, CounterFlags::IsRate);
+        BM_COUNTER(test3, CounterFlags::IsRate);
+
+        BM_MINTIME(0);
+        BM_MINWARMUPTIME(0);
+        BM_ITERATIONS(0);
+        BM_REPETITIONS(0);
+
+        BM_RUN(test)
+        {
+            
+
+        }
+    }
+
+
     BenchMarkResults::BenchMarkResults(BenchMarkReporter* testReporter)
         : mBenchMarkReporter(testReporter)
         , mBenchMarkSuiteCount(0)

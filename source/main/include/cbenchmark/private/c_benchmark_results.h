@@ -120,9 +120,9 @@ namespace BenchMark
     };
     struct Counter
     {
-        const char*  name;
-        CounterFlags flags;
-        double       value;
+        const char* const  name;
+        CounterFlags const flags;
+        double             value;
     };
     struct MinTime
     {
@@ -149,49 +149,49 @@ namespace BenchMark
     // For the user to define their own counters, they can use the following macro:
     // BM_COUNTERS(name, flags, name, flags, ...)
 
+    typedef void (*SetVar)(BenchMarkConfig& c);
+
+    struct BenchMarkRuntime;
+    struct BenchMarkState;
+
+    typedef void (*BM_Run)(BenchMarkRuntime& runtime, BenchMarkState& state);
+
     struct BenchMarkConfig
     {
-    };
+        BM_Run m_run;
 
-    class BMSetVar
-    {
-    public:
-        BMSetVar(Arg arg) { }
-        BMSetVar(ArgPair arg) { }
-        BMSetVar(Range arg) { }
-        BMSetVar(DenseRange arg) { }
-        BMSetVar(MinTime min_time) { }
-        BMSetVar(MinWarmupTime min_warmup_time) { }
-        BMSetVar(Iterations iterations) { }
-        BMSetVar(Repetitions repetitions) { }
-        BMSetVar(Counter counter) { }
-    };
-
-    namespace arg
-    {
-        static s32 counter = 0;
-        namespace arg
+        BenchMarkConfig(BM_Run run, MinTime const* min_time, MinWarmupTime const* min_warmup_time, Iterations const* iterations, Repetitions const* repetitions)
+            : m_run(run)
         {
-            namespace arg
-            {
-                static s32 counter = 0;
-                namespace arg
-                {
-                    static s32 a;
-                    static void set(BenchMarkConfig& c) { c.add_arg(a); }
-                    static set_var _set = set;
+        }
 
-                    namespace min_time
-                    {
-                        static double a;
-                        static void set(BenchMarkConfig& c) { _set(c); c.set_min_time(a); }
-                        static set_var _set = set;
-                    } // namespace min_time
-                } 
-                // namespace arg
-            }     // namespace arg
-        }         // namespace arg
-    }             // namespace arg
+        void Set(Arg arg) {}
+        void Set(ArgPair arg) {}
+        void Set(Range arg) {}
+        void Set(DenseRange arg) {}
+        void Set(MinTime min_time) {}
+        void Set(MinWarmupTime min_warmup_time) {}
+        void Set(Iterations iterations) {}
+        void Set(Repetitions repetitions) {}
+        void Set(Counter counter) {}
+    };
+
+    BenchMarkConfig config;
+
+#define BM_ARG(name, var) static const Arg name = {var}
+#define BM_COUNTER(name, flags) static Counter name = {#name, flags, 0}
+
+#define BM_MINTIME(time) static const MinTime min_time = {time}
+#define BM_MINWARMUPTIME(time) static const MinWarmupTime min_warmup_time = {time}
+#define BM_ITERATIONS(count) static const Iterations iterations = {count}
+#define BM_REPETITIONS(count) static const Repetitions repetitions = {count}
+
+#define BM_TEST(name)                                                  \
+    namespace nsBM##name                                               \
+    {                                                                  \
+        void BM_Run(BenchMarkRuntime& runtime, BenchMarkState& state); \
+    }                                                                  \
+    namespace nsBM##name
 
     struct BenchMarkRuntime
     {
@@ -211,9 +211,13 @@ namespace BenchMark
     struct BenchMarkState
     {
         // maybe have a high-performance 'forward' allocator for the benchmark itself
-
         s64 m_range[2];
     };
+
+#define BM_RUN(name)                                                                        \
+    BenchMarkConfig config(BM_Run, &min_time, &min_warmup_time, &iterations, &repetitions); \
+    void            BM_Run(BenchMarkRuntime& runtime, BenchMarkState& state)
+
 } // namespace BenchMark
 
 #endif // __CBENCHMARK_RESULTS_H__
