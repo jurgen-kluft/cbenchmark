@@ -3,28 +3,39 @@
 
 namespace BenchMark
 {
-    BM_TEST(test)
+    BM_SUITE(test_suite)
     {
-        BM_ARG(x, 0);
-        BM_ARG(y, 1);
-
-        BM_COUNTER(test, CounterFlags::IsRate);
-        BM_COUNTER(test2, CounterFlags::IsRate);
-        BM_COUNTER(test3, CounterFlags::IsRate);
-
-        BM_MINTIME(0);
-        BM_MINWARMUPTIME(0);
-        BM_ITERATIONS(0);
-        BM_REPETITIONS(0);
-
-        BM_RUN(test)
+        BM_FIXTURE(test_fixture)
         {
-            
+            BM_TEST(test)
+            {
+                //BM_ARGS({0, 2, 8}, {128, 512});
+                //BM_ARGS({8, 64, 512, 4 << 10, 8 << 10, 9, 9, 9},{128, 512},{128, 512});
+                BM_ARGSPRODUCT({0, 2, 8}, {128, 512});
 
+                BM_COUNTER(items_per_second, CounterFlags::IsRate);
+                BM_COUNTER(bytes_per_second, CounterFlags::IsRate);
+                BM_COUNTER(test, CounterFlags::IsRate);
+                BM_COUNTER(test2, CounterFlags::IsRate);
+                BM_COUNTER(test3, CounterFlags::IsRate);
+
+                BM_MINTIME(0);
+                BM_MINWARMUPTIME(0);
+                BM_ITERATIONS(0);
+                BM_REPETITIONS(0);
+
+                BM_RUN
+                {
+                    // here we have our benchmark code, for example
+                    // to benchmark memcpy we can do something like this:
+                }
+            }
         }
     }
+} // namespace BenchMark
 
-
+namespace BenchMark
+{
     BenchMarkResults::BenchMarkResults(BenchMarkReporter* testReporter)
         : mBenchMarkReporter(testReporter)
         , mBenchMarkSuiteCount(0)
