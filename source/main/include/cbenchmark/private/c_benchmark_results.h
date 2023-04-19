@@ -5,6 +5,10 @@
 
 namespace BenchMark
 {
+    typedef s64 IterationCount;
+
+#define BENCHMARK_BUILTIN_EXPECT(x, y) x
+
     class BenchMarkReporter;
 
     class BenchMarkResults
@@ -65,10 +69,10 @@ namespace BenchMark
 
         enum
         {
-            Nanosecond,
-            Microsecond,
-            Millisecond,
-            Second
+            Nanosecond  = 9,
+            Microsecond = 6,
+            Millisecond = 3,
+            Second      = 0,
         };
 
         inline const char* ToString() const
@@ -96,6 +100,42 @@ namespace BenchMark
         u32 flags;
     };
 
+    class Complexity
+    {
+    public:
+        enum
+        {
+            O_1,
+            O_N,
+            O_Log_N,
+            O_N_Squared,
+            O_N_Cubed,
+            O_Exponential,
+            O_Unknown
+        };
+
+        Complexity(u32 flags = O_Unknown)
+            : flags(flags)
+        {
+        }
+
+        inline const char* ToString() const
+        {
+            switch (flags)
+            {
+                case Complexity::O_1: return "O(1)";
+                case Complexity::O_N: return "O(N)";
+                case Complexity::O_Log_N: return "O(logN)";
+                case Complexity::O_N_Squared: return "O(N^2)";
+                case Complexity::O_N_Cubed: return "O(N^3)";
+                case Complexity::O_Exponential: return "O(2^N)";
+            }
+            return "O(?)";
+        }
+
+        u32 flags;
+    };
+
     // Range Computations
     // Custom Counters
     // NOTE: Currently thinking of splitting this into Config and Runtime
@@ -105,34 +145,28 @@ namespace BenchMark
     struct Arg
     {
         Arg()
-            : arg0(-1)
-            , arg1(-1)
-            , arg2(-1)
-            , arg3(-1)
         {
+            args[0] = -1;
+            args[1] = -1;
+            args[2] = -1;
+            args[3] = -1;
         }
         Arg(s64 arg0, s64 arg1 = -1, s64 arg2 = -1, s64 arg3 = -1)
-            : arg0(arg0)
-            , arg1(arg1)
-            , arg2(arg2)
-            , arg3(arg3)
         {
+            args[0] = arg0;
+            args[1] = arg1;
+            args[2] = arg2;
+            args[3] = arg3;
         }
 
-        union
-        {
-            s64 arg0, arg1, arg2, arg3;
-            s64 args[4];
-        };
-
-        s32 size() const { return 4; }
+        s64 args[4];
+        s32 size() const { return sizeof(args) / sizeof(args[0]); }
     };
 
     struct ArgVector
     {
-        s64              args[16];
-        s64              size() const;
-        static ArgVector Empty;
+        s64 args[16];
+        s64 size() const { return sizeof(args) / sizeof(args[0]); }
     };
 
     struct Counter
@@ -174,9 +208,10 @@ namespace BenchMark
     {
         BM_Run               m_run;
         s64                  m_num_args;
-        Arg                  m_args[32];
+        Arg                  m_args[64];
         s64                  m_num_counters;
         Counter              m_counters[8];
+        TimeUnit const*      m_time_unit;
         MinTime const*       m_min_time;
         MinWarmupTime const* m_min_warmup_time;
         Iterations const*    m_iterations;
@@ -184,10 +219,11 @@ namespace BenchMark
 
         BenchMarkConfig() {}
 
-        BenchMarkConfig(BM_Run run, MinTime const* min_time, MinWarmupTime const* min_warmup_time, Iterations const* iterations, Repetitions const* repetitions)
+        BenchMarkConfig(BM_Run run, TimeUnit const* time_unit, MinTime const* min_time, MinWarmupTime const* min_warmup_time, Iterations const* iterations, Repetitions const* repetitions)
             : m_run(run)
             , m_num_args(0)
             , m_num_counters(0)
+            , m_time_unit(time_unit)
             , m_min_time(min_time)
             , m_min_warmup_time(min_warmup_time)
             , m_iterations(iterations)
@@ -195,49 +231,59 @@ namespace BenchMark
         {
         }
 
-        void WriteArgs(Arg& a)
+        void WriteArg(ArgVector a)
         {
             for (s64 i = 0; i < a.size(); ++i)
-                m_args[m_num_args].args[0] = a.args[i];
-            m_num_args++;
-        }
-        void WriteArgs(ArgVector& a)
-        {
-            for (s64 i = 0; i < a.size(); ++i)
-                m_args[m_num_args].args[0] = a.args[i];
+            {
+                if (a.args[i] == -1)
+                    break;
+                m_args[m_num_args].args[i] = a.args[i];
+            }
             m_num_args++;
         }
     };
 
-#define BM_ARGS                                                                             \
-    class BMArgs                                                                            \
-    {                                                                                       \
-    public:                                                                                 \
-        BMArgs(ArgVector a, ArgVector b = ArgVector::Empty, ArgVector c = ArgVector::Empty) \
-        {                                                                                   \
-            config.WriteArgs(a);                                                            \
-            config.WriteArgs(b);                                                            \
-            config.WriteArgs(c);                                                            \
-        }                                                                                   \
-    };                                                                                      \
-    static BMArgs args_list
+#define BM_ARG                   \
+    class BMArg                  \
+    {                            \
+    public:                      \
+        BMArgs(ArgVector a)      \
+        {                        \
+            config.WriteArgs(a); \
+        }                        \
+    };                           \
+    static BMArg args_list
 
+#define BM_ARGRANGE                          \
+    class BMArgRange                         \
+    {                                        \
+    public:                                  \
+        BMArgRange(ArgVector a, ArgVector b) \
+        {                                    \
+        }                                    \
+    };                                       \
+    BMArgRange arg_range
 
-#define BM_ARGSPRODUCT                               \
-    class BMProductArgs                              \
-    {                                                \
-    public:                                          \
-        BMProductArgs(ArgVector a, ArgVector b)      \
-        {                                            \
-            for (s64 i = 0; i < a.size(); ++i)       \
-                for (s64 j = 0; j < b.size(); ++j)   \
-                {                                    \
-                    Arg arg(a.args[i], b.args[j]); \
-                    config.WriteArgs(arg);           \
-                }                                    \
-        }                                            \
-    };                                               \
-    BMProductArgs args_product
+#define BM_ARGPRODUCT                                        \
+    class BMArgProduct                                       \
+    {                                                        \
+    public:                                                  \
+        BMArgProduct(ArgVector a, ArgVector b)               \
+        {                                                    \
+            for (s64 i = 0; i < a.size(); ++i)               \
+            {                                                \
+                if (a.args[i] == -1)                         \
+                    break;                                   \
+                for (s64 j = 0; j < b.size(); ++j)           \
+                {                                            \
+                    if (b.args[i] == -1)                     \
+                        break;                               \
+                    config.WriteArg({a.args[i], b.args[j]}); \
+                }                                            \
+            }                                                \
+        }                                                    \
+    };                                                       \
+    BMArgProduct args_product
 
     class BMRegisterCounter
     {
@@ -247,6 +293,7 @@ namespace BenchMark
 
 #define BM_COUNTER(name, flags) BMRegisterCounter registerCounter_##name(config, #name, flags, 0)
 
+#define BM_TIMEUNIT(tu) static const TimeUnit time_unit(tu)
 #define BM_MINTIME(time) static const MinTime min_time = {time}
 #define BM_MINWARMUPTIME(time) static const MinWarmupTime min_warmup_time = {time}
 #define BM_ITERATIONS(count) static const Iterations iterations = {count}
@@ -269,12 +316,33 @@ namespace BenchMark
     struct BenchMarkState
     {
         // maybe have a high-performance 'forward' allocator for the benchmark itself
-        s64     m_range[2];
+        s64     m_range[4];
         Counter m_counters[8];
+        s64     m_iterations;
+        s64     m_max_iterations;
+        s64     m_complexity_n;
+
+        void Error(const char* reason);
+
+        bool Skipped() const;
+
+        void FinishKeepRunning();
+
+        void PauseTiming();
+        void ResumeTiming();
+
+        s64 Range(s32 i) const { return m_range[i]; }
+        s64 Iterations() const { return m_iterations; }
 
         void SetItemsProcessed(s64 items) { m_counters[0].value = (double)items; }
         void SetBytesProcessed(s64 bytes) { m_counters[1].value = (double)bytes; }
+
+        void SetComplexityN(s64 n) { m_complexity_n = n; }
     };
+
+#define BM_ITERATE
+    for (state.m_iterations = 0; state.m_iterations < state.m_max_iterations; ++state.m_iterations)
+
 
 #define BM_RUN                                           \
     class BMInitConfig                                   \
@@ -283,6 +351,7 @@ namespace BenchMark
         BMInitConfig(BenchMarkConfig& config)            \
         {                                                \
             config.m_run             = BM_Run;           \
+            config.m_time_unit       = &time_unit;       \
             config.m_min_time        = &min_time;        \
             config.m_min_warmup_time = &min_warmup_time; \
             config.m_iterations      = &iterations;      \
@@ -292,14 +361,15 @@ namespace BenchMark
     BMInitConfig init_config(config);                    \
     void         BM_Run(BenchMarkRuntime& runtime, BenchMarkState& state)
 
-#define BM_SUITE(name)                                       \
-    namespace nsBM##name                                     \
-    {                                                        \
-        static const MinTime       min_time        = {5.0};  \
-        static const MinWarmupTime min_warmup_time = {1.0};  \
-        static const Iterations    iterations      = {1000}; \
-        static const Repetitions   repetitions     = {5};    \
-    }                                                        \
+#define BM_SUITE(name)                                                        \
+    namespace nsBM##name                                                      \
+    {                                                                         \
+        static const TimeUnit      time_unit       = {TimeUnit::Millisecond}; \
+        static const MinTime       min_time        = {5.0};                   \
+        static const MinWarmupTime min_warmup_time = {1.0};                   \
+        static const Iterations    iterations      = {1000};                  \
+        static const Repetitions   repetitions     = {5};                     \
+    }                                                                         \
     namespace nsBM##name
 
 #define BM_FIXTURE(name)                                     \
