@@ -4,6 +4,7 @@
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
+#include "cbenchmark/private/c_benchmark_name.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
 
 namespace BenchMark
@@ -20,7 +21,7 @@ namespace BenchMark
     public:
         BenchMarkInstance(BenchMarkDeclared* benchmark, int family_index, int per_family_instance_index, Arg* args, int num_args);
 
-        const char*           name() const { return name_; }
+        const BenchmarkName&  name() const { return name_; }
         int                   family_index() const { return family_index_; }
         int                   per_family_instance_index() const { return per_family_instance_index_; }
         AggregationReportMode aggregation_report_mode() const { return aggregation_report_mode_; }
@@ -43,7 +44,7 @@ namespace BenchMark
         BenchMarkState Run(IterationCount iters, int threadid, ThreadTimer* timer, ThreadManager* manager, PerfCountersMeasurement* perf_counters_measurement) const;
 
     private:
-        const char*           name_;
+        BenchmarkName         name_;
         BenchMarkDeclared*    benchmark_;
         const int             family_index_;
         const int             per_family_instance_index_;

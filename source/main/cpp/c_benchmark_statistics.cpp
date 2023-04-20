@@ -163,7 +163,7 @@ namespace BenchMark
                 }
                 else
                 {
-                    BM_CHECK_EQ(it->second.c.flags, cnt.second.flags);
+                    BM_CHECK_EQ(counter_stats.stats[it].c.flags, cnt.flags);
                 }
             }
         }
@@ -173,10 +173,11 @@ namespace BenchMark
         {
             auto const& run = reports[i];
 
-            BM_CHECK_EQ(reports[0].benchmark_name(), run.benchmark_name());
+            BM_CHECK_EQ(gCompareStrings(reports[0].benchmark_name(), run.benchmark_name()), 0);
             BM_CHECK_EQ(run_iterations, run.iterations);
             if (run.skipped.IsSkipped())
                 continue;
+            
             real_accumulated_time_stat.PushBack(run.real_accumulated_time);
             cpu_accumulated_time_stat.PushBack(run.cpu_accumulated_time);
 
@@ -248,7 +249,6 @@ namespace BenchMark
             data.time_unit = reports[0].time_unit;
 
             // user counters
-            //for (auto const& kv : counter_stats)
             for (int j = 0; j < counter_stats.stats.Size(); j++)
             {
                 CounterStat const& kv = counter_stats.stats[j];

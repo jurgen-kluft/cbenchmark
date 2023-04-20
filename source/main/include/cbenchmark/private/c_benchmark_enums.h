@@ -30,6 +30,9 @@ namespace BenchMark
             Defaults                 = Is1000,
         };
 
+        inline bool operator==(const CounterFlags& f) const { return f.flags == flags; }
+        inline bool operator!=(const CounterFlags& f) const { return f.flags != flags; }
+
         u32 flags;
     };
 
@@ -77,20 +80,22 @@ namespace BenchMark
     class BigO
     {
     public:
-        enum
+        enum EEnum
         {
             O_1,
             O_N,
             O_Log_N,
             O_N_Squared,
             O_N_Cubed,
+            O_N_Log_N,
             O_Exponential,
+            O_Lambda,
             O_Auto,
             O_None
         };
 
-        BigO(u32 flags = O_None)
-            : flags(flags)
+        BigO(u32 bo = O_None)
+            : bigo(bo)
         {
         }
 
@@ -103,14 +108,17 @@ namespace BenchMark
                 case BigO::O_Log_N: return "O(logN)";
                 case BigO::O_N_Squared: return "O(N^2)";
                 case BigO::O_N_Cubed: return "O(N^3)";
+                case BigO::O_N_Log_N: return "O(NlogN)";
                 case BigO::O_Exponential: return "O(2^N)";
             }
             return "O(?)";
         }
 
+        inline bool Is(EEnum e) const { return bigo == e; }
+
         typedef double(Func)(IterationCount);
 
-        u32 flags;
+        u32 bigo;
     };
 
     struct StatisticUnit
