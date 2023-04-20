@@ -8,7 +8,7 @@
 #include <thread>
 #include <atomic>
 
-#include "c_benchmark_thread_mutex.cxx"
+#include "c_benchmark_thread_mutex.cc"
 
 namespace BenchMark
 {

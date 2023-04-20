@@ -1,5 +1,5 @@
-#ifndef __CBENCHMARK_CONFIG_H__
-#define __CBENCHMARK_CONFIG_H__
+#ifndef __CBENCHMARK_ALLOCATOR_H__
+#define __CBENCHMARK_ALLOCATOR_H__
 
 namespace BenchMark
 {
@@ -149,4 +149,4 @@ namespace BenchMark
 
 } // namespace BenchMark
 
-#endif ///< __CBENCHMARK_CONFIG_H__
+#endif // __CBENCHMARK_ALLOCATOR_H__

@@ -7,6 +7,7 @@
 #include "cbenchmark/private/c_stdout.h"
 #include "cbenchmark/private/c_utils.h"
 
+#include "cbenchmark/private/c_benchmark_alloc.h"
 #include "cbenchmark/private/c_benchmark_runner.h"
 #include "cbenchmark/private/c_benchmark_run.h"
 #include "cbenchmark/private/c_benchmark_instance.h"
@@ -15,7 +16,7 @@
 
 #include <cmath>
 
-#include "c_benchmark_thread_manager.cxx"
+#include "c_benchmark_thread_manager.cc"
 
 namespace BenchMark
 {
@@ -134,6 +135,9 @@ namespace BenchMark
         bool                                    has_explicit_iteration_count;
         int                                     num_repetitions_done = 0;
 
+        void* operator new(u64 num_bytes, void* mem) { return mem; }
+        void  operator delete(void* mem, void*) {}
+
         std::vector<std::thread> pool;
         // std::vector<MemoryManager::Result> memory_results;
 
@@ -194,15 +198,15 @@ namespace BenchMark
 
     void BenchMarkRunner::Init(const BenchMarkInstance* b_, PerfCountersMeasurement* pcm_, BenchMarkReporter::PerFamilyRunReports* reports_for_family_)
     {
-        instance                      = (b_);
-        reports_for_family            = (reports_for_family_);
-        parsed_benchtime_flag         = (BenchTimeType(FLAGS_benchmark_min_time));
-        min_time                      = (ComputeMinTime(b_, parsed_benchtime_flag));
-        min_warmup_time               = ((!IsZero(instance->min_time()) && instance->min_warmup_time() > 0.0) ? instance->min_warmup_time() : FLAGS_benchmark_min_warmup_time);
-        warmup_done                   = (!(min_warmup_time > 0.0));
-        repeats                       = (instance->repetitions() != 0 ? instance->repetitions() : FLAGS_benchmark_repetitions);
-        has_explicit_iteration_count  = (instance->iterations() != 0 || parsed_benchtime_flag.type == BenchTimeType::ITERS);
-        pool.reserve (instance->threads() - 1);
+        instance                     = (b_);
+        reports_for_family           = (reports_for_family_);
+        parsed_benchtime_flag        = (BenchTimeType(FLAGS_benchmark_min_time));
+        min_time                     = (ComputeMinTime(b_, parsed_benchtime_flag));
+        min_warmup_time              = ((!IsZero(instance->min_time()) && instance->min_warmup_time() > 0.0) ? instance->min_warmup_time() : FLAGS_benchmark_min_warmup_time);
+        warmup_done                  = (!(min_warmup_time > 0.0));
+        repeats                      = (instance->repetitions() != 0 ? instance->repetitions() : FLAGS_benchmark_repetitions);
+        has_explicit_iteration_count = (instance->iterations() != 0 || parsed_benchtime_flag.type == BenchTimeType::ITERS);
+        pool.reserve(instance->threads() - 1);
         iters                         = (has_explicit_iteration_count ? ComputeIters(*instance, parsed_benchtime_flag) : 1);
         perf_counters_measurement_ptr = (pcm_);
 
@@ -253,6 +257,7 @@ namespace BenchMark
         // Adjust real/manual time stats since they were reported per thread.
         i.results.real_time_used /= instance->threads();
         i.results.manual_time_used /= instance->threads();
+        
         // If we were measuring whole-process CPU usage, adjust the CPU time too.
         if (instance->measure_process_cpu_time())
             i.results.cpu_time_used /= instance->threads();

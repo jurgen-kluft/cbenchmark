@@ -106,7 +106,7 @@ namespace BenchMark
             {
                 Counter& lc = l.counters[i];
 
-                auto it = Find(r, lc.id);
+                const s32 it = Find(r, lc.id);
                 if (it >= 0)
                 {
                     lc.value += r.counters[it].value;
@@ -116,8 +116,7 @@ namespace BenchMark
             for (s32 i = 0; i < r.num; ++i)
             {
                 Counter const& rc = r.counters[i];
-
-                auto it = Find(l, rc.id);
+                const s32 it = Find(l, rc.id);
                 if (it < 0)
                 {
                     l.counters[l.num++] = rc;

@@ -12,7 +12,7 @@ tags
 !.gitignore
 !.clang-format
 !*.cpp
-!*.cxx
+!*.cc
 !*.hpp
 !*.c
 !*.h
