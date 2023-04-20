@@ -1,10 +1,12 @@
 #include "cbenchmark/private/c_config.h"
 #include "cbenchmark/private/c_stringbuilder.h"
 #include "cbenchmark/private/c_utils.h"
+#include "cbenchmark/private/c_types.h"
+#include "cbenchmark/private/c_benchmark_alloc.h"
 
 namespace BenchMark
 {
-	StringBuilder::StringBuilder(BenchMarkAllocator* allocator, const int capacity)
+	StringBuilder::StringBuilder(Allocator* allocator, const int capacity)
 		: mAllocator(allocator)
 		, mCapacity(0)
 		, mCursor(0)
@@ -64,7 +66,7 @@ namespace BenchMark
 	StringBuilder& StringBuilder::operator << (const void* p)
 	{
 		char* dest = getWriteBuffer(32);
-		gStringPrint(dest, sizeof(dest), "%0X", (size_t)p);
+		gStringPrint(dest, sizeof(dest), "%0X", (u64)p);
 		return *this;    
 	}
 	StringBuilder& StringBuilder::operator << (char const n)

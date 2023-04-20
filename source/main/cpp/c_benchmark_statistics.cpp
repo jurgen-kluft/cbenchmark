@@ -1,8 +1,8 @@
 #include "cbenchmark/private/c_benchmark_alloc.h"
-#include "cbenchmark/private/c_benchmark_metrics.h"
 #include "cbenchmark/private/c_time_helpers.h"
 #include "cbenchmark/private/c_benchmark_run.h"
 #include "cbenchmark/private/c_benchmark_check.h"
+#include "cbenchmark/private/c_utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -36,7 +36,7 @@ namespace BenchMark
         Array<double> copy;
         copy.Copy(v);
 
-        auto center = copy.Begin() + (v.Size() / 2);
+        double* center = copy.Begin() + (v.Size() / 2);
         std::nth_element(copy.Begin(), center, copy.End());
 
         // did we have an odd number of samples?
@@ -45,8 +45,9 @@ namespace BenchMark
         // before
         if (v.Size() % 2 == 1)
             return *center;
-        auto center2 = copy.Begin() + v.Size() / 2 - 1;
+        double* center2 = copy.Begin() + v.Size() / 2 - 1;
         std::nth_element(copy.Begin(), center2, copy.End());
+
         return (*center + *center2) / 2.0;
     }
 
@@ -102,6 +103,8 @@ namespace BenchMark
         if (reports.Size() - error_count < 2)
         {
             // We don't report aggregated data if there was a single run.
+            results.Copy(reports);
+            return;
         }
 
         // Accumulators.
@@ -118,20 +121,45 @@ namespace BenchMark
         // create stats for user counters
         struct CounterStat
         {
+            CounterStat() = default;
             Counter       c;
             Array<double> s;
         };
 
-        std::map<std::string, CounterStat> counter_stats;
-        for (Run const& r : reports)
+        struct CounterStats
         {
-            for (auto const& cnt : r.counters)
+            Array<CounterStat> stats;
+
+            s32 Find(Counter const& c) const
             {
-                auto it = counter_stats.find(cnt.first);
+                for (int i = 0; i < stats.Size(); i++)
+                {
+                    if (stats[i].c.id == c.id)
+                        return i;
+                }
+                return stats.Size();
+            }
+
+            s32 End() const { return stats.Size(); }
+        };
+
+        CounterStats counter_stats;
+
+        for (int i = 0; i < reports.Size(); i++)
+        {
+            auto const& r = reports[i];
+
+            //for (auto const& cnt : r.counters)
+            for (int j = 0; j < r.counters.counters.Size(); j++)
+            {
+                auto const& cnt = r.counters.counters[j];
+
+                auto it = counter_stats.Find(cnt);
                 if (it == counter_stats.End())
                 {
-                    it = counter_stats.emplace(cnt.first, CounterStat{cnt.second, Array<double>{}}).first;
-                    it->second.s.reserve(reports.Size());
+                    CounterStat& c = counter_stats.stats.Alloc();
+                    c.c = cnt;
+                    c.s.Init(alloc, 0, reports.Size());
                 }
                 else
                 {
@@ -141,8 +169,10 @@ namespace BenchMark
         }
 
         // Populate the accumulators.
-        for (BenchMarkRun const& run : reports)
+        for (int i = 0; i < reports.Size(); i++)
         {
+            auto const& run = reports[i];
+
             BM_CHECK_EQ(reports[0].benchmark_name(), run.benchmark_name());
             BM_CHECK_EQ(run_iterations, run.iterations);
             if (run.skipped.IsSkipped())
@@ -151,19 +181,21 @@ namespace BenchMark
             cpu_accumulated_time_stat.PushBack(run.cpu_accumulated_time);
 
             // user counters
-            for (auto const& cnt : run.counters_)
+            for (int j = 0; j < run.counters.counters.Size(); j++)
             {
-                auto it = counter_stats.find(cnt.first);
+                Counter const& cnt = run.counters.counters[j];
+                auto it = counter_stats.Find(cnt);
                 BM_CHECK_NE(it, counter_stats.End());
-                it->second.s.emplace_back(cnt.second);
+                CounterStat& stat = counter_stats.stats[it];
+                stat.s.PushBack(cnt.value);
             }
         }
 
         // Only add label if it is same for all runs
-        std::string report_label = reports[0].report_label;
+        const char* report_label = reports[0].report_label;
         for (int i = 1; i < reports.Size(); i++)
         {
-            if (reports[i].report_label != report_label)
+            if (gCompareStrings(reports[i].report_label, report_label) != 0)
             {
                 report_label = "";
                 break;
@@ -172,12 +204,15 @@ namespace BenchMark
 
         const double iteration_rescale_factor = double(reports.Size()) / double(run_iterations);
 
+        // Reserve space for the results.
+        results.Init(alloc, 0, reports[0].statistics.count_);
+
         for (int i = 0; i < reports[0].statistics.count_; i++)
         {
             const auto& Stat = reports[0].statistics[i];
 
             // Get the data from the accumulator to BenchMarkRun's.
-            Run data;
+            Run& data = results.Alloc();
             data.run_name                  = reports[0].run_name;
             data.family_index              = reports[0].family_index;
             data.per_family_instance_index = reports[0].per_family_instance_index;
@@ -213,15 +248,16 @@ namespace BenchMark
             data.time_unit = reports[0].time_unit;
 
             // user counters
-            for (auto const& kv : counter_stats)
+            //for (auto const& kv : counter_stats)
+            for (int j = 0; j < counter_stats.stats.Size(); j++)
             {
+                CounterStat const& kv = counter_stats.stats[j];
                 // Do *NOT* rescale the custom counters. They are already properly scaled.
-                const auto uc_stat      = Stat.compute_(kv.second.s);
-                auto       c            = Counter(uc_stat, counter_stats[kv.first].c.flags, counter_stats[kv.first].c.oneK);
-                data.counters[kv.first] = c;
+                const auto uc_stat      = Stat.compute_(kv.s);
+                Counter& c = data.counters.counters.Alloc();
+                c.value = uc_stat;
+                c.flags = kv.c.flags;
             }
-
-            results.PushBack(data);
         }
     }
 

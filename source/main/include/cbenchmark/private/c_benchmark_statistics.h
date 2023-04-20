@@ -8,7 +8,7 @@ namespace BenchMark
 {
     struct Statistic
     {
-        typedef double(Func)(double* data, size_t size);
+        typedef double(Func)(const Array<double>& values);
 
         Statistic() : name_(nullptr), compute_(nullptr), unit_({StatisticUnit::Time}) {}
 
@@ -63,12 +63,12 @@ namespace BenchMark
     };
 
     // Returns the number of reports that were aggregated into the result.
-    s32 ComputeStats(const BenchMarkRun* reports, s32 num_reports, BenchMarkRun* result, s32 max_results);
+    void ComputeStats(Allocator* alloc, const Array<BenchMarkRun>& reports, Array<BenchMarkRun>& result);
 
-    double StatisticsMean(const double* data, size_t size);
-    double StatisticsMedian(const double* data, size_t size);
-    double StatisticsStdDev(const double* data, size_t size);
-    double StatisticsCV(const double* data, size_t size);
+    double StatisticsMean(const Array<double>& data);
+    double StatisticsMedian(const Array<double>& data);
+    double StatisticsStdDev(const Array<double>& data);
+    double StatisticsCV(const Array<double>& data);
 
 } // namespace BenchMark
 

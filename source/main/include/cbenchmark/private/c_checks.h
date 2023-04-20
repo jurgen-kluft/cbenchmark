@@ -12,10 +12,10 @@ namespace BenchMark
 		return value == expected;
 	}
 
-	class BenchMarkAllocator;
+	class Allocator;
 
 	template< typename Expected, typename Actual >
-	void checkEqual(BenchMarkResults& results, Expected const& expected, Actual const& actual, char const* const testName, char const* const filename, int const line, BenchMarkAllocator* allocator)
+	void checkEqual(BenchMarkResults& results, Expected const& expected, Actual const& actual, char const* const testName, char const* const filename, int const line, Allocator* allocator)
 	{
 		if (!(expected == actual))
 		{
@@ -29,7 +29,7 @@ namespace BenchMark
 	}
 
 	template< typename Expected, typename Actual >
-	void checkNotEqual(BenchMarkResults& results, Expected const& expected, Actual const& actual, char const* const testName, char const* const filename, int const line, BenchMarkAllocator* allocator)
+	void checkNotEqual(BenchMarkResults& results, Expected const& expected, Actual const& actual, char const* const testName, char const* const filename, int const line, Allocator* allocator)
 	{
 		if (expected == actual)
 		{
@@ -42,10 +42,10 @@ namespace BenchMark
 		}
 	}
 
-	void checkEqual(BenchMarkResults& results, char const* expected, char const* actual, char const* testName, char const* filename, int line, BenchMarkAllocator* allocator);
-	void checkEqual(BenchMarkResults& results, char* expected, char* actual, char const* testName, char const* filename, int line, BenchMarkAllocator* allocator);
-	void checkEqual(BenchMarkResults& results, char* expected, char const* actual, char const* testName, char const* filename, int line, BenchMarkAllocator* allocator);
-	void checkEqual(BenchMarkResults& results, char const* expected, char* actual, char const* testName, char const* filename, int line, BenchMarkAllocator* allocator);
+	void checkEqual(BenchMarkResults& results, char const* expected, char const* actual, char const* testName, char const* filename, int line, Allocator* allocator);
+	void checkEqual(BenchMarkResults& results, char* expected, char* actual, char const* testName, char const* filename, int line, Allocator* allocator);
+	void checkEqual(BenchMarkResults& results, char* expected, char const* actual, char const* testName, char const* filename, int line, Allocator* allocator);
+	void checkEqual(BenchMarkResults& results, char const* expected, char* actual, char const* testName, char const* filename, int line, Allocator* allocator);
 
 	template< typename Expected, typename Actual, typename Tolerance >
 	bool areClose(Expected const& expected, Actual const& actual, Tolerance const tolerance)
@@ -54,7 +54,7 @@ namespace BenchMark
 	}
 
 	template< typename Expected, typename Actual, typename Tolerance >
-	void checkClose(BenchMarkResults& results, Expected const& expected, Actual const& actual, Tolerance const& tolerance, char const* const testName, char const* const filename, int const line, BenchMarkAllocator* allocator)
+	void checkClose(BenchMarkResults& results, Expected const& expected, Actual const& actual, Tolerance const& tolerance, char const* const testName, char const* const filename, int const line, Allocator* allocator)
 	{
 		if (!areClose(expected, actual, tolerance))
 		{ 
@@ -65,7 +65,7 @@ namespace BenchMark
 	}
 
 	template< typename Expected, typename Actual >
-	void checkArrayEqual(BenchMarkResults& results, Expected const& expected, Actual const& actual, int const count, char const* const testName, char const* const filename, int const line, BenchMarkAllocator* allocator)
+	void checkArrayEqual(BenchMarkResults& results, Expected const& expected, Actual const& actual, int const count, char const* const testName, char const* const filename, int const line, Allocator* allocator)
 	{
 		bool equal = true;
 		for (int i = 0; i < count; ++i)
@@ -92,7 +92,7 @@ namespace BenchMark
 	}
 
 	template< typename Expected, typename Actual, typename Tolerance >
-	void checkArrayClose(BenchMarkResults& results, Expected const& expected, Actual const& actual, int const count, Tolerance const& tolerance, char const* const testName, char const* const filename, int const line, BenchMarkAllocator* allocator)
+	void checkArrayClose(BenchMarkResults& results, Expected const& expected, Actual const& actual, int const count, Tolerance const& tolerance, char const* const testName, char const* const filename, int const line, Allocator* allocator)
 	{
 		bool equal = true;
 		for (int i = 0; i < count; ++i)

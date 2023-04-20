@@ -6,7 +6,7 @@ namespace BenchMark
     class BenchMarkResults;
     class BenchMarkContext;
     class BenchMarkReporter;
-    class BenchMarkAllocator;
+    class Allocator;
     
     struct BenchMark;
     struct BenchMarkFixture;
@@ -31,7 +31,7 @@ namespace BenchMark
 
     struct BenchMarkFixture
     {
-        BenchMarkFixture(const char* name, const char* filename, const int lineNumber, BenchMarkAllocator** allocator, BenchMarkSuite* suite);
+        BenchMarkFixture(const char* name, const char* filename, const int lineNumber, Allocator** allocator, BenchMarkSuite* suite);
 
         BenchMark* mBenchMarkListHead;
         BenchMark* mBenchMarkListTail;
@@ -44,7 +44,7 @@ namespace BenchMark
         BenchMarkSetup    mSetup;
         BenchMarkTeardown mTeardown;
 
-        BenchMarkAllocator** mAllocator;
+        Allocator** mAllocator;
         BenchMarkFixture*    mFixtureNext;
     };
 

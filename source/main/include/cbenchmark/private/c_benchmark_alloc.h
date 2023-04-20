@@ -1,6 +1,8 @@
 #ifndef __CBENCHMARK_ALLOCATOR_H__
 #define __CBENCHMARK_ALLOCATOR_H__
 
+#include "cbenchmark/private/c_types.h"
+
 namespace BenchMark
 {
     class Allocator
@@ -112,6 +114,12 @@ namespace BenchMark
         T*       End() { return m_data + m_size; }
         T const* End() const { return m_data + m_size; }
 
+        T& Alloc()
+        {
+            m_size++;
+            return m_data[m_size - 1];
+        }
+
         bool PushBack(const T& value)
         {
             if (m_size == m_capacity)
@@ -131,6 +139,7 @@ namespace BenchMark
         }
 
         inline const T& Front() const { return m_data[i]; }
+        inline T& Back() { return m_data[i]; }
 
         inline void Clear() { m_size = 0; }
 

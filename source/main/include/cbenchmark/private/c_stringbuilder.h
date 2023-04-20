@@ -3,12 +3,12 @@
 
 namespace BenchMark
 {
-    class BenchMarkAllocator;
+    class Allocator;
 
     class StringBuilder
     {
     public:
-        StringBuilder(BenchMarkAllocator* allocator, const int capacity = 480);
+        StringBuilder(Allocator* allocator, const int capacity = 480);
         ~StringBuilder();
 
         char const* getText() const;
@@ -40,7 +40,7 @@ namespace BenchMark
         void  growBuffer(int capacity);
 
         char                mDefaultBuffer[STATIC_CHUNK_SIZE];
-        BenchMarkAllocator* mAllocator;
+        Allocator* mAllocator;
         int                 mCapacity;
         int                 mCursor;
         char*               mBuffer;

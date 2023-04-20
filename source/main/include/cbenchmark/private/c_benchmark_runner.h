@@ -6,6 +6,7 @@
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
 #include "cbenchmark/private/c_benchmark_reporter.h"
+#include "cbenchmark/private/c_benchmark_alloc.h"
 
 namespace BenchMark
 {
@@ -16,18 +17,14 @@ namespace BenchMark
 
     struct RunResults
     {
-        s32           num_non_aggregates = 0;
-        s32           max_non_aggregates = 0;
-        BenchMarkRun* non_aggregates;
-        s32           num_aggregates = 0;
-        s32           max_aggregates = 0;
-        BenchMarkRun* aggregates_only;
-        bool          display_report_aggregates_only = false;
-        bool          file_report_aggregates_only    = false;
+        Array<BenchMarkRun> non_aggregates;
+        Array<BenchMarkRun> aggregates_only;
+        bool                display_report_aggregates_only = false;
+        bool                file_report_aggregates_only    = false;
     };
 
     class BenchMarkRunner;
-    void                                    CreateRunner(BenchMarkRunner*& r, Allocator* a);
+    void                                    CreateRunner(BenchMarkRunner*& r, Allocator* a, const BenchMarkInstance* b_, PerfCountersMeasurement* pcm_, BenchMarkReporter::PerFamilyRunReports* reports_for_family_);
     void                                    DestroyRunner(BenchMarkRunner*& r);
     int                                     GetNumRepeats(BenchMarkRunner* r);
     bool                                    HasRepeatsRemaining(BenchMarkRunner* r);

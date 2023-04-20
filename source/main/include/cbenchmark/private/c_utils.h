@@ -2,6 +2,7 @@
 #define __CBENCHMARK_UTILS_H__
 
 #include "cbenchmark/private/c_config.h"
+#include "cbenchmark/private/c_types.h"
 
 namespace BenchMark
 {
@@ -22,6 +23,7 @@ namespace BenchMark
     extern void        gStringPrint(char* dest, int n, const char* format, unsigned long i);
     extern void        gStringPrint(char* dest, int n, const char* format, unsigned long long i);
     extern void        gStringPrint(char* dest, int n, const char* format, float const f);
+    extern s32         gCompareStrings(char const* const expected, char const* const actual);
     extern bool        gAreStringsEqual(char const* const expected, char const* const actual);
     inline int         gRoundUpToMultipleOfPow2Number(int n, int pow2Number) { return (n + (pow2Number - 1)) & ~(pow2Number - 1); }
 } // namespace BenchMark

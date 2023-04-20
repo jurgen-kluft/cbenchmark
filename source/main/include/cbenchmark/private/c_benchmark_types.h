@@ -3,6 +3,7 @@
 
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
+#include "cbenchmark/private/c_benchmark_alloc.h"
 
 namespace BenchMark
 {
@@ -25,6 +26,7 @@ namespace BenchMark
 
     struct Counter
     {
+        Counter() : id(0), flags(), value(0) {}
         u64          id;
         CounterFlags flags;
         double       value;
@@ -47,11 +49,10 @@ namespace BenchMark
 
     struct Counters
     {
-        Counter counters[8];
-        s64     num;
+        Array<Counter> counters;
 
-        Counter&       operator[](s32 index) { return counters[index]; }
-        Counter const& operator[](s32 index) const { return counters[index]; }
+        Counters() {}
+        Counters(Counters const& other) { counters.Copy(other.counters); }
 
         static double Finish(Counter const& c, IterationCount iterations, double cpu_time, double num_threads)
         {
@@ -81,7 +82,7 @@ namespace BenchMark
 
         static void Finish(Counters& c, IterationCount iterations, double cpu_time, double num_threads)
         {
-            for (s32 i = 0; i < c.num; ++i)
+            for (s32 i = 0; i < c.counters.Size(); ++i)
             {
                 c.counters[i].value = Finish(c.counters[i], iterations, cpu_time, num_threads);
             }
@@ -89,7 +90,7 @@ namespace BenchMark
 
         static s32 Find(Counters const& c, u64 id)
         {
-            for (s32 i = 0; i < c.num; ++i)
+            for (s32 i = 0; i < c.counters.Size(); ++i)
             {
                 if (c.counters[i].id == id)
                 {
@@ -102,7 +103,7 @@ namespace BenchMark
         static void Increment(Counters& l, Counters const& r)
         {
             // add counters present in both or just in *l
-            for (s32 i = 0; i < l.num; ++i)
+            for (s32 i = 0; i < l.counters.Size(); ++i)
             {
                 Counter& lc = l.counters[i];
 
@@ -113,13 +114,13 @@ namespace BenchMark
                 }
             }
             // add counters present in r, but not in *l
-            for (s32 i = 0; i < r.num; ++i)
+            for (s32 i = 0; i < r.counters.Size(); ++i)
             {
                 Counter const& rc = r.counters[i];
-                const s32 it = Find(l, rc.id);
+                const s32      it = Find(l, rc.id);
                 if (it < 0)
                 {
-                    l.counters[l.num++] = rc;
+                    l.counters.PushBack(rc);
                 }
             }
         }

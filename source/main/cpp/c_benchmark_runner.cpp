@@ -113,7 +113,7 @@ namespace BenchMark
     public:
         BenchMarkRunner();
 
-        void                                    Init(const BenchMarkInstance* b_, PerfCountersMeasurement* pmc_, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
+        void                                    Init(Allocator* allocator, const BenchMarkInstance* b_, PerfCountersMeasurement* pmc_, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
         int                                     GetNumRepeats() const { return repeats; }
         bool                                    HasRepeatsRemaining() const { return GetNumRepeats() != num_repetitions_done; }
         void                                    DoOneRepetition();
@@ -138,7 +138,7 @@ namespace BenchMark
         void* operator new(u64 num_bytes, void* mem) { return mem; }
         void  operator delete(void* mem, void*) {}
 
-        std::vector<std::thread> pool;
+        Array<std::thread> pool;
         // std::vector<MemoryManager::Result> memory_results;
 
         IterationCount iters; // preserved between repetitions!
@@ -149,6 +149,11 @@ namespace BenchMark
 
         struct IterationResults
         {
+            IterationResults()
+                : iters(0)
+                , seconds(0)
+            {
+            }
             ThreadManager::Result results;
             IterationCount        iters;
             double                seconds;
@@ -163,7 +168,7 @@ namespace BenchMark
     };
 
     // Public Interface
-    void CreateRunner(BenchMarkRunner*& r, Allocator* a) { r = a->Construct<BenchMarkRunner>(a); }
+    void CreateRunner(BenchMarkRunner*& r, Allocator* a, const BenchMarkInstance* b_, PerfCountersMeasurement* pcm_, BenchMarkReporter::PerFamilyRunReports* reports_for_family_) { r = a->Construct<BenchMarkRunner>(a, b_, pcm_, reports_for_family_); }
     void DestroyRunner(BenchMarkRunner*& r) { r->mAllocator->Destruct(r); }
 
     int                                     GetNumRepeats(BenchMarkRunner* r) { return r->GetNumRepeats(); }
@@ -196,7 +201,7 @@ namespace BenchMark
     {
     }
 
-    void BenchMarkRunner::Init(const BenchMarkInstance* b_, PerfCountersMeasurement* pcm_, BenchMarkReporter::PerFamilyRunReports* reports_for_family_)
+    void BenchMarkRunner::Init(Allocator* allocator, const BenchMarkInstance* b_, PerfCountersMeasurement* pcm_, BenchMarkReporter::PerFamilyRunReports* reports_for_family_)
     {
         instance                     = (b_);
         reports_for_family           = (reports_for_family_);
@@ -206,7 +211,10 @@ namespace BenchMark
         warmup_done                  = (!(min_warmup_time > 0.0));
         repeats                      = (instance->repetitions() != 0 ? instance->repetitions() : FLAGS_benchmark_repetitions);
         has_explicit_iteration_count = (instance->iterations() != 0 || parsed_benchtime_flag.type == BenchTimeType::ITERS);
-        pool.reserve(instance->threads() - 1);
+
+        // reserve(instance->threads() - 1);
+        pool.Init(allocator, instance->threads() - 1, instance->threads() - 1);
+
         iters                         = (has_explicit_iteration_count ? ComputeIters(*instance, parsed_benchtime_flag) : 1);
         perf_counters_measurement_ptr = (pcm_);
 
@@ -228,7 +236,7 @@ namespace BenchMark
         ThreadManager* manager = mAllocator->Construct<ThreadManager>(instance->threads());
 
         // Run all but one thread in separate threads
-        for (u64 ti = 0; ti < pool.size(); ++ti)
+        for (u64 ti = 0; ti < pool.Capacity(); ++ti)
         {
             pool[ti] = std::thread(&RunInThread, &instance, iters, static_cast<int>(ti + 1), manager, perf_counters_measurement_ptr);
         }
@@ -240,46 +248,48 @@ namespace BenchMark
 
         // The main thread has finished. Now let's wait for the other threads.
         manager->WaitForAllThreads();
-        for (std::thread& thread : pool)
-            thread.join();
+        for (u64 ti = 0; ti < pool.Size(); ++ti)
+        {
+            pool[ti].join();
+        }
 
-        IterationResults i;
+        IterationResults iteration_results;
 
         // Acquire the measurements/counters from the manager, UNDER THE LOCK!
         {
             MutexLock l(manager->GetBenchmarkMutex());
-            i.results = manager->results;
+            iteration_results.results = manager->results;
         }
 
         // And get rid of the manager.
         mAllocator->Destruct(manager);
 
         // Adjust real/manual time stats since they were reported per thread.
-        i.results.real_time_used /= instance->threads();
-        i.results.manual_time_used /= instance->threads();
-        
+        iteration_results.results.real_time_used /= instance->threads();
+        iteration_results.results.manual_time_used /= instance->threads();
+
         // If we were measuring whole-process CPU usage, adjust the CPU time too.
         if (instance->measure_process_cpu_time())
-            i.results.cpu_time_used /= instance->threads();
+            iteration_results.results.cpu_time_used /= instance->threads();
 
         // BM_VLOG(2) << "Ran in " << i.results.cpu_time_used << "/" << i.results.real_time_used << "\n";
 
         // By using KeepRunningBatch a benchmark can iterate more times than
         // requested, so take the iteration count from i.results.
-        i.iters = i.results.iterations / instance->threads();
+        iteration_results.iters = iteration_results.results.iterations / instance->threads();
 
         // Base decisions off of real time if requested by this benchmark.
-        i.seconds = i.results.cpu_time_used;
+        iteration_results.seconds = iteration_results.results.cpu_time_used;
         if (instance->use_manual_time())
         {
-            i.seconds = i.results.manual_time_used;
+            iteration_results.seconds = iteration_results.results.manual_time_used;
         }
         else if (instance->use_real_time())
         {
-            i.seconds = i.results.real_time_used;
+            iteration_results.seconds = iteration_results.results.real_time_used;
         }
 
-        return i;
+        return iteration_results;
     }
 
     template <typename T> T min(T a, T b) { return a < b ? a : b; }
@@ -389,6 +399,7 @@ namespace BenchMark
             RunWarmUp();
 
         IterationResults i;
+
         // We *may* be gradually increasing the length (iteration count)
         // of the benchmark until we decide the results are significant.
         // And once we do, we report those last results and exit.
@@ -422,8 +433,7 @@ namespace BenchMark
         // Ok, now actually report.
         IterationCount memory_iterations = 0;
 
-        BenchMarkRun& report = run_results.non_aggregates[run_results.num_non_aggregates++];
-
+        BenchMarkRun& report = run_results.non_aggregates.Alloc();
         CreateRunReport(report, instance, i.results, memory_iterations, i.seconds, num_repetitions_done, repeats);
 
         if (reports_for_family)
@@ -441,7 +451,7 @@ namespace BenchMark
         // assert(!HasRepeatsRemaining() && "Did not run all repetitions yet?");
 
         // Calculate additional statistics over the repetitions of this instance->
-        run_results.num_aggregates = ComputeStats(run_results.non_aggregates, run_results.num_non_aggregates, run_results.aggregates_only, run_results.max_aggregates);
+        ComputeStats(mAllocator, run_results.non_aggregates, run_results.aggregates_only);
 
         return std::move(run_results);
     }

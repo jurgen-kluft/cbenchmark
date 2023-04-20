@@ -43,14 +43,27 @@ namespace BenchMark
 
         struct Result
         {
-            IterationCount iterations       = 0;
-            double         real_time_used   = 0;
-            double         cpu_time_used    = 0;
-            double         manual_time_used = 0;
-            s64            complexity_n     = 0;
-            const char*    report_label_    = nullptr;
-            const char*    skip_message_    = nullptr;
-            Skipped        skipped_         = {Skipped::NotSkipped};
+            Result() 
+            : iterations(0)
+            , real_time_used(0.0)
+            , cpu_time_used(0.0)
+            , manual_time_used(0.0)
+            , complexity_n(0)
+            , report_label_(nullptr)
+            , skip_message_(nullptr)
+            , skipped_({Skipped::NotSkipped}) 
+            {
+                
+            }
+
+            IterationCount iterations;
+            double         real_time_used;
+            double         cpu_time_used;
+            double         manual_time_used;
+            s64            complexity_n;
+            const char*    report_label_;
+            const char*    skip_message_;
+            Skipped        skipped_;
             Counters       counters;
         };
         GUARDED_BY(GetBenchmarkMutex()) Result results;
