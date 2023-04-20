@@ -40,6 +40,7 @@ namespace BenchMark
                     char* dst = new char[state.Range(0)];
                     memset(src, 'x', state.Range(0));
 
+                    // timing starts after 'BM_ITERATE'
                     BM_ITERATE
                     {
                         // state.PauseTiming();
