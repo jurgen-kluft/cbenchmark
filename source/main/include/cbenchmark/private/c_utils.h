@@ -6,6 +6,7 @@
 namespace BenchMark
 {
     extern void        gStringCopy(char* dst, const char* src, int max);
+    extern void        gStringAppend(char*& dst, const char* dstEnd, const char* src);
     extern const char* gStringFind(const char* src, const char* findstr);
     extern char*       gStringFind(char* src, const char* findstr);
     extern int         gStringLength(const char* str);

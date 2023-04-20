@@ -1,22 +1,102 @@
 #ifndef __CBENCHMARK_TESTREPORTER_H__
 #define __CBENCHMARK_TESTREPORTER_H__
 
+#include "cbenchmark/private/c_benchmark_types.h"
+
 namespace BenchMark
 {
-	class BenchMarkReporter
-	{
-	public:
-		virtual			~BenchMarkReporter() {}
+    class BenchMarkRun;
 
-		virtual void	reportBenchMarkSuiteStart(int numBenchMarks, char const* name) = 0;
-		virtual void	reportBenchMarkSuiteEnd(char const* name, float secondsElapsed) = 0;
-		virtual void	reportBenchMarkFixtureStart(int numBenchMarks, char const* name) = 0;
-		virtual void	reportBenchMarkFixtureEnd(char const* name, float secondsElapsed) = 0;
-		virtual void	reportBenchMarkStart(char const* name) = 0;
-		virtual void	reportBenchMarkEnd(char const* name, float secondsElapsed) = 0;
-		virtual void	reportFailure(char const* file, int const line, char const* name, char const* failure)= 0;
-		virtual void	reportSummary(float secondsElapsed, int failureCount, int testCount) = 0;
-	};
-}
+    class TextStream
+    {
+    public:
+        char*       stream; // stream cursor
+        char*       sos;    // start of stream
+        const char* eos;    // end of stream
+    };
 
-#endif	///<__XUNITTEST_TESTREPORTER_H__
+    class BenchMarkReporter
+    {
+    public:
+        struct Context
+        {
+            Context();
+            
+            // CPUInfo const&    cpu_info;
+            // SystemInfo const& sys_info;
+
+            // The number of chars in the longest benchmark name.
+            s32                name_field_width;
+            static const char* executable_name;
+        };
+
+        struct PerFamilyRunReports
+        {
+            PerFamilyRunReports()
+                : num_runs_total(0)
+                , num_runs_done(0)
+            {
+            }
+
+            // How many runs will all instances of this benchmark perform?
+            int num_runs_total;
+
+            // How many runs have happened already?
+            int num_runs_done;
+
+            // The reports about (non-errneous!) runs of this family.
+            s32           num_runs;
+            BenchMarkRun** runs;
+        };
+
+        // Construct a BenchMarkReporter with the output stream set to 'std::cout'
+        // and the error stream set to 'std::cerr'
+        BenchMarkReporter();
+
+        // Called once for every suite of benchmarks run.
+        // The parameter "context" contains information that the
+        // reporter may wish to use when generating its report, for example the
+        // platform under which the benchmarks are running. The benchmark run is
+        // never started if this function returns false, allowing the reporter
+        // to skip runs based on the context information.
+        virtual bool ReportContext(const Context& context) = 0;
+
+        // Called once for each group of benchmark runs, gives information about
+        // the configurations of the runs.
+        virtual void ReportRunsConfig(double /*min_time*/, bool /*has_explicit_iters*/, IterationCount /*iters*/) {}
+
+        // Called once for each group of benchmark runs, gives information about
+        // cpu-time and heap memory usage during the benchmark run. If the group
+        // of runs contained more than two entries then 'report' contains additional
+        // elements representing the mean and standard deviation of those runs.
+        // Additionally if this group of runs was the last in a family of benchmarks
+        // 'reports' contains additional entries representing the asymptotic
+        // complexity and RMS of that benchmark family.
+        virtual void ReportRuns(BenchMarkRun* reports, s32 count) = 0;
+
+        // Called once and only once after ever group of benchmarks is run and reported.
+        virtual void Finalize() {}
+
+        // REQUIRES: The object referenced by 'out' is valid for the lifetime of the reporter.
+        void SetOutputStream(TextStream* out) { output_stream_ = out; }
+
+        // REQUIRES: The object referenced by 'err' is valid for the lifetime of the reporter.
+        void SetErrorStream(TextStream* err) { error_stream_ = err; }
+
+        TextStream& GetOutputStream() const { return *output_stream_; }
+        TextStream& GetErrorStream() const { return *error_stream_; }
+
+        virtual ~BenchMarkReporter();
+
+        // Write a human readable string to 'out' representing the specified 'context'.
+        // REQUIRES: 'out' is non-null.
+        static void PrintBasicContext(TextStream* out, Context const& context);
+
+    private:
+        TextStream* output_stream_;
+        TextStream* error_stream_;
+    };
+
+} // namespace BenchMark
+
+#endif ///<__XUNITTEST_TESTREPORTER_H__

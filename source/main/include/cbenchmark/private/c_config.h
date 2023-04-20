@@ -3,43 +3,16 @@
 
 namespace BenchMark
 {
-    class BenchMarkAllocator
+    class Alloctor;
+    class BenchMarkObserver;
+
+    class BenchMarkContext
     {
     public:
-        virtual ~BenchMarkAllocator() {}
+        BenchMarkContext();
 
-        virtual void*        Allocate(unsigned int size, unsigned int alignment = sizeof(void*)) = 0;
-        virtual unsigned int Deallocate(void* ptr)                                               = 0;
-    };
-
-    class BenchMarkAllocatorEx : public BenchMarkAllocator
-    {
-        BenchMarkAllocator* mAllocator;
-
-    public:
-        BenchMarkAllocatorEx(BenchMarkAllocator* allocator)
-            : mAllocator(allocator)
-            , mNumAllocations(0)
-        {
-        }
-
-        virtual void* Allocate(unsigned int size, unsigned int alignment)
-        {
-            IncNumAllocations();
-            return mAllocator->Allocate(size, alignment);
-        }
-
-        virtual unsigned int Deallocate(void* ptr)
-        {
-            DecNumAllocations();
-            return mAllocator->Deallocate(ptr);
-        }
-
-        void ResetNumAllocations() { mNumAllocations = 0; }
-        void IncNumAllocations() { ++mNumAllocations; }
-        void DecNumAllocations() { --mNumAllocations; }
-        int  GetNumAllocations() const { return mNumAllocations; }
-        int  mNumAllocations;
+        Allocator*         mAllocator;
+        BenchMarkObserver* mObserver;
     };
 
     class BenchMarkObserver
@@ -55,25 +28,6 @@ namespace BenchMark
 
         virtual void BeginBenchMark(const char* filename, const char* suite_name, const char* fixture_name, const char* test_name) = 0;
         virtual void EndBenchMark()                                                                                                = 0;
-    };
-
-    class BenchMarkContext
-    {
-    public:
-        BenchMarkContext();
-
-        BenchMarkAllocator* mAllocator;
-        BenchMarkObserver*  mObserver;
-    };
-
-    class NullAllocator : public BenchMarkAllocator
-    {
-    public:
-        NullAllocator() {}
-
-        virtual void*        Allocate(unsigned int size, unsigned int alignment) { return 0; }
-        virtual unsigned int Deallocate(void* ptr) { return 0; }
-        void                 Release() {}
     };
 
     class NullObserver : public BenchMarkObserver

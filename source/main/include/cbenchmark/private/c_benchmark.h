@@ -14,18 +14,18 @@ namespace BenchMark
 
     typedef void (*BenchMarkSetup)(BenchMarkResults& _results);
     typedef void (*BenchMarkTeardown)(BenchMarkResults& _results);
-    typedef void (*BenchMarkRun)(const char* name, BenchMarkResults& _results, int const maxBenchMarkTimeInMs);
+    typedef void (*BenchMarkFunction)(const char* name, BenchMarkResults& _results, int const maxBenchMarkTimeInMs);
 
     struct BenchMark
     {
-        BenchMark(char const* name, char const* filename, const int lineNumber, BenchMarkRun run, BenchMarkFixture* fixture);
+        BenchMark(char const* name, char const* filename, const int lineNumber, BenchMarkFunction run, BenchMarkFixture* fixture);
 
         char const* const mName;
         char const* const mFilename;
         int const         mLineNumber;
         mutable bool      mTimeConstraintExempt;
 
-        BenchMarkRun mBenchMarkRun;
+        BenchMarkFunction mBenchMarkRun;
         BenchMark*   mBenchMarkNext;
     };
 
@@ -65,7 +65,7 @@ namespace BenchMark
     class SetRunForBenchMark
     {
     public:
-        SetRunForBenchMark(BenchMark* test, BenchMarkRun run) { test->mBenchMarkRun = run; }
+        SetRunForBenchMark(BenchMark* test, BenchMarkFunction run) { test->mBenchMarkRun = run; }
     };
 
     class SetSetupForFixture
