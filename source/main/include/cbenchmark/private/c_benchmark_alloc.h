@@ -30,7 +30,6 @@ namespace BenchMark
         virtual unsigned int v_Deallocate(void* ptr)                                               = 0;
     };
 
-
     class NullAllocator : public Allocator
     {
     public:
@@ -79,7 +78,7 @@ namespace BenchMark
             , m_capacity(0)
         {
         }
-        ~Array() { m_alloc->Deallocate(m_data); }
+        ~Array() { if (m_alloc != nullptr) m_alloc->Deallocate(m_data); }
 
         void Init(Allocator* alloc, s32 size, s32 cap)
         {
@@ -91,6 +90,27 @@ namespace BenchMark
             m_size     = size;
             m_capacity = cap;
         }
+
+        void Copy(const Array<T>& other)
+        {
+            if (m_data != nullptr)
+                m_alloc->Deallocate(m_data);
+
+            m_alloc    = other.m_alloc;
+            m_data     = (T*)m_alloc->Allocate(sizeof(T) * other.m_capacity, sizeof(T));
+            m_size     = other.m_size;
+            m_capacity = other.m_capacity;
+
+            for (s32 i = 0; i < m_size; ++i)
+                m_data[i] = other.m_data[i];
+        }
+
+        bool Empty() const { return m_size == 0; }
+
+        T*       Begin() { return m_data; }
+        T const* Begin() const { return m_data; }
+        T*       End() { return m_data + m_size; }
+        T const* End() const { return m_data + m_size; }
 
         bool PushBack(const T& value)
         {
@@ -110,6 +130,8 @@ namespace BenchMark
             return false;
         }
 
+        inline const T& Front() const { return m_data[i]; }
+
         inline void Clear() { m_size = 0; }
 
         inline T&       operator[](s32 i) { return m_data[i]; }
@@ -124,7 +146,6 @@ namespace BenchMark
         s32        m_size;
         s32        m_capacity;
     };
-
 
 } // namespace BenchMark
 

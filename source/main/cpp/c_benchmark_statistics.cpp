@@ -8,42 +8,50 @@
 #include <cmath>
 #include <numeric>
 #include <string>
-#include <vector>
 
 namespace BenchMark
 {
-
-    auto StatisticsSum = [](const std::vector<double>& v) { return std::accumulate(v.begin(), v.end(), 0.0); };
-
-    double StatisticsMean(const std::vector<double>& v)
+    auto StatisticsSum = [](const Array<double>& v)
     {
-        if (v.empty())
+        double sum = 0.0;
+        for (auto i = 0; i < v.Size(); ++i)
+        {
+            sum += v[i];
+        };
+        return sum;
+    };
+
+    double StatisticsMean(const Array<double>& v)
+    {
+        if (v.Empty())
             return 0.0;
-        return StatisticsSum(v) * (1.0 / v.size());
+        return StatisticsSum(v) * (1.0 / v.Size());
     }
 
-    double StatisticsMedian(const std::vector<double>& v)
+    double StatisticsMedian(const Array<double>& v)
     {
-        if (v.size() < 3)
+        if (v.Size() < 3)
             return StatisticsMean(v);
-        std::vector<double> copy(v);
 
-        auto center = copy.begin() + v.size() / 2;
-        std::nth_element(copy.begin(), center, copy.end());
+        Array<double> copy;
+        copy.Copy(v);
+
+        auto center = copy.Begin() + (v.Size() / 2);
+        std::nth_element(copy.Begin(), center, copy.End());
 
         // did we have an odd number of samples?
         // if yes, then center is the median
         // it no, then we are looking for the average between center and the value
         // before
-        if (v.size() % 2 == 1)
+        if (v.Size() % 2 == 1)
             return *center;
-        auto center2 = copy.begin() + v.size() / 2 - 1;
-        std::nth_element(copy.begin(), center2, copy.end());
+        auto center2 = copy.Begin() + v.Size() / 2 - 1;
+        std::nth_element(copy.Begin(), center2, copy.End());
         return (*center + *center2) / 2.0;
     }
 
     // Return the sum of the squares of this sample set
-    auto SumSquares = [](const std::vector<double>& v) { return std::inner_product(v.begin(), v.end(), v.begin(), 0.0); };
+    auto SumSquares = [](const Array<double>& v) { return std::inner_product(v.Begin(), v.End(), v.Begin(), 0.0); };
 
     auto Sqr  = [](const double dat) { return dat * dat; };
     auto Sqrt = [](const double dat)
@@ -54,23 +62,23 @@ namespace BenchMark
         return std::sqrt(dat);
     };
 
-    double StatisticsStdDev(const std::vector<double>& v)
+    double StatisticsStdDev(const Array<double>& v)
     {
         const auto mean = StatisticsMean(v);
-        if (v.empty())
+        if (v.Empty())
             return mean;
 
         // Sample standard deviation is undefined for n = 1
-        if (v.size() == 1)
+        if (v.Size() == 1)
             return 0.0;
 
-        const double avg_squares = SumSquares(v) * (1.0 / v.size());
-        return Sqrt(v.size() / (v.size() - 1.0) * (avg_squares - Sqr(mean)));
+        const double avg_squares = SumSquares(v) * (1.0 / v.Size());
+        return Sqrt(v.Size() / (v.Size() - 1.0) * (avg_squares - Sqr(mean)));
     }
 
-    double StatisticsCV(const std::vector<double>& v)
+    double StatisticsCV(const Array<double>& v)
     {
-        if (v.size() < 2)
+        if (v.Size() < 2)
             return 0.0;
 
         const auto stddev = StatisticsStdDev(v);
@@ -97,20 +105,20 @@ namespace BenchMark
         }
 
         // Accumulators.
-        std::vector<double> real_accumulated_time_stat;
-        std::vector<double> cpu_accumulated_time_stat;
+        Array<double> real_accumulated_time_stat;
+        Array<double> cpu_accumulated_time_stat;
 
-        real_accumulated_time_stat.reserve(reports.size());
-        cpu_accumulated_time_stat.reserve(reports.size());
+        real_accumulated_time_stat.Init(alloc, 0, reports.Size());
+        cpu_accumulated_time_stat.Init(alloc, 0, reports.Size());
 
         // All repetitions should be run with the same number of iterations so we
         // can take this information from the first benchmark.
-        const IterationCount run_iterations = reports.front().iterations;
-        
+        const IterationCount run_iterations = reports.Front().iterations;
+
         // create stats for user counters
         struct CounterStat
         {
-            Counter c;
+            Counter       c;
             Array<double> s;
         };
 
@@ -120,10 +128,10 @@ namespace BenchMark
             for (auto const& cnt : r.counters)
             {
                 auto it = counter_stats.find(cnt.first);
-                if (it == counter_stats.end())
+                if (it == counter_stats.End())
                 {
-                    it = counter_stats.emplace(cnt.first, CounterStat{cnt.second, std::vector<double>{}}).first;
-                    it->second.s.reserve(reports.size());
+                    it = counter_stats.emplace(cnt.first, CounterStat{cnt.second, Array<double>{}}).first;
+                    it->second.s.reserve(reports.Size());
                 }
                 else
                 {
@@ -139,21 +147,21 @@ namespace BenchMark
             BM_CHECK_EQ(run_iterations, run.iterations);
             if (run.skipped.IsSkipped())
                 continue;
-            real_accumulated_time_stat.emplace_back(run.real_accumulated_time);
-            cpu_accumulated_time_stat.emplace_back(run.cpu_accumulated_time);
+            real_accumulated_time_stat.PushBack(run.real_accumulated_time);
+            cpu_accumulated_time_stat.PushBack(run.cpu_accumulated_time);
 
             // user counters
             for (auto const& cnt : run.counters_)
             {
                 auto it = counter_stats.find(cnt.first);
-                BM_CHECK_NE(it, counter_stats.end());
+                BM_CHECK_NE(it, counter_stats.End());
                 it->second.s.emplace_back(cnt.second);
             }
         }
 
         // Only add label if it is same for all runs
         std::string report_label = reports[0].report_label;
-        for (int i = 1; i < reports.size(); i++)
+        for (int i = 1; i < reports.Size(); i++)
         {
             if (reports[i].report_label != report_label)
             {
@@ -162,9 +170,9 @@ namespace BenchMark
             }
         }
 
-        const double iteration_rescale_factor = double(reports.size()) / double(run_iterations);
+        const double iteration_rescale_factor = double(reports.Size()) / double(run_iterations);
 
-        for (int i=0; i<reports[0].statistics.count_; i++)
+        for (int i = 0; i < reports[0].statistics.count_; i++)
         {
             const auto& Stat = reports[0].statistics[i];
 
@@ -186,7 +194,7 @@ namespace BenchMark
             // Similarly, if there are N repetitions with 1 iterations each,
             // an aggregate will be computed over N measurements, not 1.
             // Thus it is best to simply use the count of separate reports.
-            data.iterations = reports.size();
+            data.iterations = reports.Size();
 
             data.real_accumulated_time = Stat.compute_(real_accumulated_time_stat);
             data.cpu_accumulated_time  = Stat.compute_(cpu_accumulated_time_stat);
@@ -213,10 +221,8 @@ namespace BenchMark
                 data.counters[kv.first] = c;
             }
 
-            results.push_back(data);
+            results.PushBack(data);
         }
-
-        return results;
     }
 
 } // namespace BenchMark
