@@ -5,6 +5,7 @@
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
+#include "cbenchmark/private/c_benchmark_name.h"
 
 namespace BenchMark
 {
@@ -43,8 +44,7 @@ namespace BenchMark
 
         const char* BenchMarkName();
 
-        char          benchmark_name[256];
-        const char*   run_name;
+        BenchmarkName run_name;
         s64           family_index;
         s64           per_family_instance_index;
         RunType       run_type;

@@ -2,12 +2,46 @@
 #include "cbenchmark/private/c_benchmark_reporter.h"
 #include "cbenchmark/private/c_benchmark_check.h"
 #include "cbenchmark/private/c_benchmark_run.h"
+#include "cbenchmark/private/c_benchmark_types.h"
 
 #include <algorithm>
 #include <cmath>
 
 namespace BenchMark
 {
+    // integer power function
+    template <typename T> T ipow(T x, u32 y)
+    {
+        T temp   = x;
+        T result = 1;
+        while (y > 0)
+        {
+            if ((y & 1) == 1)
+            {
+                result *= temp;
+            }
+            y    = y >> 1;
+            temp = temp * temp;
+        }
+        return result;
+    }
+
+    // double power function
+    double dpow(double x, u32 y)
+    {
+        double temp   = x;
+        double result = 1;
+        while (y > 0)
+        {
+            if ((y & 1) == 1)
+            {
+                result *= temp;
+            }
+            y    = y >> 1;
+            temp = temp * temp;
+        }
+        return result;
+    }
 
     // Internal function to calculate the different scalability forms
     BigO::Func* FittingCurve(BigO complexity)
@@ -16,8 +50,8 @@ namespace BenchMark
         switch (complexity.bigo)
         {
             case BigO::O_N: return [](IterationCount n) -> double { return static_cast<double>(n); };
-            case BigO::O_N_Squared: return [](IterationCount n) -> double { return std::pow(n, 2); };
-            case BigO::O_N_Cubed: return [](IterationCount n) -> double { return std::pow(n, 3); };
+            case BigO::O_N_Squared: return [](IterationCount n) -> double { return ipow(n, 2); };
+            case BigO::O_N_Cubed: return [](IterationCount n) -> double { return ipow(n, 3); };
             case BigO::O_Log_N: return [](IterationCount n) { return kLog2E * log(static_cast<double>(n)); };
             case BigO::O_N_Log_N: return [](IterationCount n) { return kLog2E * n * log(static_cast<double>(n)); };
             case BigO::O_1:
@@ -56,7 +90,7 @@ namespace BenchMark
         double sigma_time_gn    = 0.0;
 
         // Calculate least square fitting parameter
-        for (size_t i = 0; i < n.Size(); ++i)
+        for (s32 i = 0; i < n.Size(); ++i)
         {
             double gn_i = fitting_curve(n[i]);
             sigma_gn_squared += gn_i * gn_i;
@@ -72,7 +106,7 @@ namespace BenchMark
 
         // Calculate RMS
         double rms = 0.0;
-        for (size_t i = 0; i < n.Size(); ++i)
+        for (s32 i = 0; i < n.Size(); ++i)
         {
             double fit = result.coef * fitting_curve(n[i]);
             rms += pow((time[i] - fit), 2);
@@ -103,7 +137,7 @@ namespace BenchMark
 
         if (complexity.Is(BigO::O_Auto))
         {
-            u32 fit_curves[] = {BigO::O_Log_N, BigO::O_N, BigO::O_N_Log_N, BigO::O_N_Squared, BigO::O_N_Cubed};
+            u32 const fit_curves[] = {BigO::O_Log_N, BigO::O_N, BigO::O_N_Log_N, BigO::O_N_Squared, BigO::O_N_Cubed};
 
             // Take O(1) as default best fitting curve
             best_fit            = MinimalLeastSq(n, time, FittingCurve(BigO::O_1));
@@ -146,7 +180,7 @@ namespace BenchMark
         cpu_time.Init(alloc, 0, reports.Size());
 
         // Populate the accumulators.
-        for (size_t i = 0; i < reports.Size(); ++i)
+        for (s32 i = 0; i < reports.Size(); ++i)
         {
             const Run& run = reports[i];
 
@@ -174,8 +208,8 @@ namespace BenchMark
 
         // TODO Seems to use BenchMarkName structure to construct a run name.
 
-        const char* run_name = reports[0].run_name;
-        run_name.args.clear();
+        BenchmarkName run_name = reports[0].run_name;
+        run_name.args          = nullptr;
 
         // Get the data from the accumulator to Run's.
         Run& big_o                      = bigo.Alloc();
