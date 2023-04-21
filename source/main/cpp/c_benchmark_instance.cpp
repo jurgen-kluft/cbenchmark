@@ -11,7 +11,7 @@
 #include "cbenchmark/private/c_benchmark_name.h"
 #include "cbenchmark/private/c_benchmark_instance.h"
 #include "cbenchmark/private/c_benchmark_state.h"
-#include "cbenchmark/private/c_benchmark_declared.h"
+#include "cbenchmark/private/c_benchmark_entity.h"
 
 namespace BenchMark
 {
@@ -31,10 +31,9 @@ namespace BenchMark
 
         // Merge ReportLabel
         // char           report_label_[64];
-        
+
         // Merge SkipMessage
         // char           skip_message_[64];
-
     }
 
     BenchMarkInstance::BenchMarkInstance()
@@ -81,17 +80,17 @@ namespace BenchMark
     BenchMarkState BenchMarkInstance::Run(IterationCount iters, int thread_id, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results) const
     {
         BenchMarkState state(name_.function_name, iters, &args_, thread_id, threads_, timer, manager, results);
-        benchmark_->Run(state);
+        benchmark_->run_(state);
         return state;
     }
 
-    void BenchMarkInstance::init(Allocator* allocator, BenchMarkDeclared* benchmark, int family_index, int per_family_instance_index, int thread_count, Arg* args)
+    void BenchMarkInstance::init(Allocator* allocator, BenchMarkEntity* benchmark, int family_index, int per_family_instance_index, int thread_count, Arg* args)
     {
         benchmark_                 = benchmark;
         family_index_              = family_index;
         per_family_instance_index_ = (per_family_instance_index);
         aggregation_report_mode_   = (benchmark->aggregation_report_mode_);
-        time_unit_                 = (benchmark->GetTimeUnit());
+        time_unit_                 = (benchmark->time_unit_);
         measure_process_cpu_time_  = (benchmark->measure_process_cpu_time_);
         use_real_time_             = (benchmark->use_real_time_);
         use_manual_time_           = (benchmark->use_manual_time_);
@@ -104,81 +103,80 @@ namespace BenchMark
         iterations_                = (benchmark->iterations_);
         threads_                   = (thread_count);
 
-        args_ = (args);
+        // args_ = (args);
 
-        {
-            name_.function_name = benchmark->name_;
+        // name_.function_name = benchmark->name_;
 
-            size_t arg_i = 0;
-            for (const auto& arg : args)
-            {
-                if (!name_.args.empty())
-                {
-                    name_.args += '/';
-                }
+        // size_t arg_i = 0;
+        // for (const auto& arg : args)
+        // {
+        //     if (!name_.args.empty())
+        //     {
+        //         name_.args += '/';
+        //     }
 
-                if (arg_i < benchmark->arg_names_.size())
-                {
-                    const auto& arg_name = benchmark->arg_names_[arg_i];
-                    if (!arg_name.empty())
-                    {
-                        name_.args += StrFormat("%s:", arg_name.c_str());
-                    }
-                }
+        //     if (arg_i < benchmark->arg_names_.size())
+        //     {
+        //         const auto& arg_name = benchmark->arg_names_[arg_i];
+        //         if (!arg_name.empty())
+        //         {
+        //             name_.args += StrFormat("%s:", arg_name.c_str());
+        //         }
+        //     }
 
-                name_.args += StrFormat("%" PRId64, arg);
-                ++arg_i;
-            }
+        //     name_.args += StrFormat("%" PRId64, arg);
+        //     ++arg_i;
+        // }
 
-            if (!IsZero(benchmark->min_time_))
-            {
-                name_.min_time = StrFormat("min_time:%0.3f", benchmark->min_time_);
-            }
+        // if (!IsZero(benchmark->min_time_))
+        // {
+        //     name_.min_time = StrFormat("min_time:%0.3f", benchmark->min_time_);
+        // }
 
-            if (!IsZero(benchmark->min_warmup_time_))
-            {
-                name_.min_warmup_time = StrFormat("min_warmup_time:%0.3f", benchmark->min_warmup_time_);
-            }
+        // if (!IsZero(benchmark->min_warmup_time_))
+        // {
+        //     name_.min_warmup_time = StrFormat("min_warmup_time:%0.3f", benchmark->min_warmup_time_);
+        // }
 
-            if (benchmark->iterations_ != 0)
-            {
-                name_.iterations = StrFormat("iterations:%lu", static_cast<unsigned long>(benchmark->iterations_));
-            }
+        // if (benchmark->iterations_ != 0)
+        // {
+        //     name_.iterations = StrFormat("iterations:%lu", static_cast<unsigned long>(benchmark->iterations_));
+        // }
 
-            if (benchmark->repetitions_ != 0)
-            {
-                name_.repetitions = StrFormat("repeats:%d", benchmark->repetitions_);
-            }
+        // if (benchmark->repetitions_ != 0)
+        // {
+        //     name_.repetitions = StrFormat("repeats:%d", benchmark->repetitions_);
+        // }
 
-            if (benchmark->measure_process_cpu_time_)
-            {
-                name_.time_type = "process_time";
-            }
+        // if (benchmark->measure_process_cpu_time_)
+        // {
+        //     name_.time_type = "process_time";
+        // }
 
-            if (benchmark->use_manual_time_)
-            {
-                if (!name_.time_type.empty())
-                {
-                    name_.time_type += '/';
-                }
-                name_.time_type += "manual_time";
-            }
-            else if (benchmark->use_real_time_)
-            {
-                if (!name_.time_type.empty())
-                {
-                    name_.time_type += '/';
-                }
-                name_.time_type += "real_time";
-            }
+        // if (benchmark->use_manual_time_)
+        // {
+        //     if (!name_.time_type.empty())
+        //     {
+        //         name_.time_type += '/';
+        //     }
+        //     name_.time_type += "manual_time";
+        // }
+        // else if (benchmark->use_real_time_)
+        // {
+        //     if (!name_.time_type.empty())
+        //     {
+        //         name_.time_type += '/';
+        //     }
+        //     name_.time_type += "real_time";
+        // }
 
-            if (!benchmark->thread_counts_.empty())
-            {
-                name_.threads = StrFormat("threads:%d", threads_);
-            }
+        // if (!benchmark->thread_counts_.empty())
+        // {
+        //     name_.threads = StrFormat("threads:%d", threads_);
+        // }
 
-            setup_    = benchmark->setup_;
-            teardown_ = benchmark->teardown_;
-        }
+        setup_    = benchmark->setup_;
+        teardown_ = benchmark->teardown_;
     }
+
 } // namespace BenchMark

@@ -162,7 +162,7 @@ namespace BenchMark
     };
 
 
-#define BM_ITERATE for (state.m_iterations = 0; state.m_iterations < state.m_max_iterations; ++state.m_iterations)
+#define BM_ITERATE while (state.KeepRunning())
 
 #define BM_RUN                                           \
     class BMInitConfig                                   \

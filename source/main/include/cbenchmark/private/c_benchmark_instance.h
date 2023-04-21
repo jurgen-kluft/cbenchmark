@@ -9,7 +9,7 @@
 
 namespace BenchMark
 {
-    class BenchMarkDeclared;
+    class BenchMarkEntity;
     class BenchMarkState;
     class ThreadTimer;
     class ThreadManager;
@@ -48,7 +48,7 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void                  init(Allocator* allocator, BenchMarkDeclared * benchmark, int family_index, int per_family_instance_index, int thread_count, Arg* args);
+        void                  init(Allocator* allocator, BenchMarkEntity * benchmark, int family_index, int per_family_instance_index, int thread_count, Arg* args);
         const BenchmarkName&  name() const { return name_; }
         int                   family_index() const { return family_index_; }
         int                   per_family_instance_index() const { return per_family_instance_index_; }
@@ -72,7 +72,7 @@ namespace BenchMark
 
     private:
         BenchmarkName            name_;
-        BenchMarkDeclared * benchmark_;
+        BenchMarkEntity * benchmark_;
         int                      family_index_;
         int                      per_family_instance_index_;
         AggregationReportMode    aggregation_report_mode_;
