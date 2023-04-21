@@ -3,7 +3,7 @@
 
 namespace BenchMark
 {
-    class Alloctor;
+    class Allocator;
     class BenchMarkObserver;
 
     class BenchMarkContext

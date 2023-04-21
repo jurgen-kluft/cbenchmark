@@ -14,6 +14,8 @@ namespace BenchMark
     class BenchMarkRun;
     class BenchMarkInstance;
     class PerfCountersMeasurement;
+    class ThreadManager;
+    class ThreadTimer;
 
     struct RunResults
     {
@@ -34,6 +36,13 @@ namespace BenchMark
     double                                  GetMinTime(BenchMarkRunner* r);
     bool                                    HasExplicitIters(BenchMarkRunner* r);
     IterationCount                          GetIters(BenchMarkRunner* r);
+    void                                    StartStopBarrier(ThreadManager* tm);
+    void                                    TimerStart(ThreadTimer* timer);
+    void                                    TimerStop(ThreadTimer* timer);
+    bool                                    TimerIsRunning(ThreadTimer* timer);
+    void                                    TimerSetIterationTime(ThreadTimer* timer, double seconds);
+    void                                    ThreadManagerSkipWithMessage(ThreadManager* m, const char* msg, Skipped skipped);
+    void                                    ThreadManagerSetLabel(ThreadManager* m, const char* format, double value);
 
 } // namespace BenchMark
 

@@ -78,7 +78,7 @@ namespace BenchMark
     // given by the lambda expression.
     //   - n             : Vector containing the size of the benchmark tests.
     //   - time          : Vector containing the times for the benchmark tests.
-    //   - fitting_curve : lambda expression (e.g. [](int64_t n) {return n; };).
+    //   - fitting_curve : lambda expression (e.g. [](s64 n) {return n; };).
 
     // For a deeper explanation on the algorithm logic, please refer to
     // https://en.wikipedia.org/wiki/Least_squares#Least_squares,_regression_analysis_and_statistics
@@ -109,7 +109,7 @@ namespace BenchMark
         for (s32 i = 0; i < n.Size(); ++i)
         {
             double fit = result.coef * fitting_curve(n[i]);
-            rms += pow((time[i] - fit), 2);
+            rms += dpow((time[i] - fit), 2);
         }
 
         // Normalized RMS by the mean of the observed values
@@ -123,8 +123,8 @@ namespace BenchMark
     // minimizing the sum of squares of relative error.
     //   - n          : Vector containing the size of the benchmark tests.
     //   - time       : Vector containing the times for the benchmark tests.
-    //   - complexity : If different than oAuto, the fitting curve will stick to
-    //                  this one. If it is oAuto, it will be calculated the best
+    //   - complexity : If different than O_Auto, the fitting curve will stick to
+    //                  this one. If it is O_Auto, it will be calculated the best
     //                  fitting curve.
     LeastSq MinimalLeastSq(const Array<s64>& n, const Array<double>& time, const BigO complexity)
     {
@@ -234,7 +234,7 @@ namespace BenchMark
         // should not be multiplied at all. So, here, we _divide_ it by the
         // multiplier so that when it is multiplied later the result is the
         // correct one.
-        double multiplier = GetTimeUnitMultiplier(reports[0].time_unit);
+        const double multiplier = reports[0].time_unit.GetTimeUnitMultiplier();
 
         // Only add label to mean/stddev if it is same for all runs
         Run& rms                      = bigo.Alloc();
@@ -253,8 +253,7 @@ namespace BenchMark
         rms.cpu_accumulated_time      = result_cpu.rms / multiplier;
         rms.report_rms                = true;
         rms.complexity                = result_cpu.complexity;
-        // don't forget to keep the time unit, or we won't be able to
-        // recover the correct value.
+        // don't forget to keep the time unit, or we won't be able to recover the correct value.
         rms.time_unit = reports[0].time_unit;
     }
 

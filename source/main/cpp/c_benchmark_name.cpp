@@ -12,53 +12,43 @@
 
 namespace BenchMark
 {
-    static s32 StringLen(const char* str)
+    static void StringAppend(char*& str, char const* strEnd, const char* sep, const char* append)
     {
-        if (str == nullptr)
-            return 0;
-
-        s32 len = 0;
-        while (str[len] != '\0')
-            ++len;
-        return len;
-    }
-
-    static void StringAppend(char*& str, const char* sep, const char* append)
-    {
-        while (sep != nullptr && *sep != '\0')
+        while (sep != nullptr && *sep != '\0' && str < strEnd)
         {
             *str++ = *sep++;
         }
-        while (*append != '\0')
+        while (*append != '\0' && str < strEnd)
         {
             *str++ = *append++;
         }
     }
 
-    char* BenchmarkName::FullName(Allocator* allocator) const 
+    s32 BenchmarkName::FullNameLen() const
     {
-        s32 len = 0;
-        len += StringLen(function_name);
-        len += StringLen(args);
-        len += StringLen(min_time);
-        len += StringLen(min_warmup_time);
-        len += StringLen(iterations);
-        len += StringLen(repetitions);
-        len += StringLen(time_type);
-        len += StringLen(threads);
+        s32 len = gStringLength(function_name);
+        len += 1 + gStringLength(args);
+        len += 1 + gStringLength(min_time);
+        len += 1 + gStringLength(min_warmup_time);
+        len += 1 + gStringLength(iterations);
+        len += 1 + gStringLength(repetitions);
+        len += 1 + gStringLength(time_type);
+        len += 1 + gStringLength(threads);
+        return len;
+    }
 
-        char* full_name = (char*)allocator->Allocate(len + 8);
-        
-        char* str = full_name;
-        StringAppend(str, nullptr, function_name);
-        StringAppend(str, "/", args);
-        StringAppend(str, "/", min_time);
-        StringAppend(str, "/", min_warmup_time);
-        StringAppend(str, "/", iterations);
-        StringAppend(str, "/", repetitions);
-        StringAppend(str, "/", time_type);
-        StringAppend(str, "/", threads);
+    char* BenchmarkName::FullName(char* dst, const char* dstEnd) const
+    {
+        char* str = dst;
+        StringAppend(str, dstEnd, nullptr, function_name);
+        StringAppend(str, dstEnd, "/", args);
+        StringAppend(str, dstEnd, "/", min_time);
+        StringAppend(str, dstEnd, "/", min_warmup_time);
+        StringAppend(str, dstEnd, "/", iterations);
+        StringAppend(str, dstEnd, "/", repetitions);
+        StringAppend(str, dstEnd, "/", time_type);
+        StringAppend(str, dstEnd, "/", threads);
 
-        return full_name;
+        return str;
     }
 } // namespace BenchMark

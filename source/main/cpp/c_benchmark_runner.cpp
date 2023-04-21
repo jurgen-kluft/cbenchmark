@@ -179,6 +179,25 @@ namespace BenchMark
     double                                  GetMinTime(BenchMarkRunner* r) { return r->GetMinTime(); }
     bool                                    HasExplicitIters(BenchMarkRunner* r) { return r->HasExplicitIters(); }
     IterationCount                          GetIters(BenchMarkRunner* r) { return r->GetIters(); }
+    void                                    StartStopBarrier(ThreadManager* tm) { tm->StartStopBarrier(); }
+    void                                    TimerStart(ThreadTimer* timer) { timer->StartTimer(); }
+    void                                    TimerStop(ThreadTimer* timer) { timer->StopTimer(); }
+    bool                                    TimerIsRunning(ThreadTimer* timer) { return timer->IsRunning(); }
+    void                                    TimerSetIterationTime(ThreadTimer* timer, double seconds) { timer->SetIterationTime(seconds); }
+    void                                    ThreadManagerSkipWithMessage(ThreadManager* m, const char* msg, Skipped skipped)
+    {
+        MutexLock l(m->GetBenchmarkMutex());
+        if (m->results.skipped_.IsNotSkipped())
+        {
+            gStringCopy(m->results.skip_message_, msg, sizeof(m->results.skip_message_) - 1);
+            m->results.skipped_      = skipped;
+        }
+    }
+    void                                    ThreadManagerSetLabel(ThreadManager* m, const char* format, double value)
+    {
+        MutexLock l(m->GetBenchmarkMutex());
+        gStringPrint(m->results.report_label_, sizeof(m->results.report_label_) - 1, format, value);
+    }
 
     static double FLAGS_benchmark_min_time                = 0.5;
     static double FLAGS_benchmark_min_warmup_time         = 0.5;

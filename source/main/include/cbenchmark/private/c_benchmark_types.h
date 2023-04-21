@@ -26,7 +26,6 @@ namespace BenchMark
 
     struct Counter
     {
-        Counter() : id(0), flags(), value(0) {}
         u64          id;
         CounterFlags flags;
         double       value;

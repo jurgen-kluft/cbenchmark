@@ -7,6 +7,10 @@ namespace BenchMark
     {               \
     }
 
+#define BM_ASSERT(b) \
+    {               \
+    }
+
 // preserve whitespacing between operators for alignment
 #define BM_CHECK_EQ(a, b) BM_CHECK((a) == (b))
 #define BM_CHECK_NE(a, b) BM_CHECK((a) != (b))

@@ -5,9 +5,13 @@
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
+#include "cbenchmark/private/c_benchmark_check.h"
 
 namespace BenchMark
 {
+    class ThreadTimer;
+    class ThreadManager;
+
     // BenchMarkState is passed to a running Benchmark and contains state for the benchmark to use.
     class BenchMarkState
     {
@@ -121,11 +125,11 @@ namespace BenchMark
         // REQUIRES: a benchmark has exited its benchmarking loop.
         inline void SetBytesProcessed(s64 bytes)
         {
-            counters_[CounterType::BytesProcessed].value = static_cast<double>(bytes);
-            counters_[CounterType::BytesProcessed].flags = {CounterFlags::IsRate | CounterFlags::Is1024};
+            counters_.counters[CounterType::BytesProcessed].value = static_cast<double>(bytes);
+            counters_.counters[CounterType::BytesProcessed].flags = {CounterFlags::IsRate | CounterFlags::Is1024};
         }
 
-        inline s64 GetBytesProcessed() const { return (s64)counters_[CounterType::BytesProcessed].value; }
+        inline s64 GetBytesProcessed() const { return (s64)counters_.counters[CounterType::BytesProcessed].value; }
 
         // If this routine is called with complexity_n > 0 and complexity report is
         // requested for the
@@ -143,11 +147,11 @@ namespace BenchMark
         // REQUIRES: a benchmark has exited its benchmarking loop.
         inline void SetItemsProcessed(s64 items)
         {
-            counters_[CounterType::ItemsProcessed].value = static_cast<double>(items);
-            counters_[CounterType::ItemsProcessed].flags = CounterFlags::IsRate;
+            counters_.counters[CounterType::ItemsProcessed].value = static_cast<double>(items);
+            counters_.counters[CounterType::ItemsProcessed].flags = CounterFlags::IsRate;
         }
 
-        inline s64 GetItemsProcessed() const { return (s64)counters_[CounterType::ItemsProcessed].value; }
+        inline s64 GetItemsProcessed() const { return (s64)counters_.counters[CounterType::ItemsProcessed].value; }
 
         // If this routine is called, the specified label is printed at the
         // end of the benchmark report line for the currently executing
@@ -155,26 +159,22 @@ namespace BenchMark
         //  static void BM_Compress(benchmark::BenchMarkState& state) {
         //    ...
         //    double compress = input_size / output_size;
-        //    state.SetLabel(StrFormat("compress:%.1f%%", 100.0*compression));
+        //    state.SetLabel("compress:%.1f%%", 100.0 * compress);
         //  }
         // Produces output that looks like:
         //  BM_Compress   50         50   14115038  compress:27.3%
         //
         // REQUIRES: a benchmark has exited its benchmarking loop.
-        void SetLabel(const char* label);
+        void SetLabel(const char* format, double value);
 
         // Range arguments for this run. CHECKs if the argument has been set.
-        inline s64 Range(s32 pos = 0) const
-        {
-            //            assert(range_.size() > pos);
-            return range_[pos];
-        }
+        inline s64 Range(s32 pos = 0) const { return range_[pos & 0x3]; }
 
         // Number of threads concurrently executing the benchmark.
-        // inline int threads() const { return threads_; }
+        inline int Threads() const { return threads_; }
 
         // Index of the executing thread. Values from [0, threads).
-        // inline int thread_index() const { return thread_index_; }
+        inline int ThreadIndex() const { return thread_index_; }
 
         inline IterationCount Iterations() const
         {
@@ -226,15 +226,48 @@ namespace BenchMark
 
         const char* name_;
 
-        // const int   thread_index_;
-        // const int   threads_;
+        const int thread_index_;
+        const int threads_;
 
-        // internal::ThreadTimer* const             timer_;
-        // internal::ThreadManager* const           manager_;
-        // internal::PerfCountersMeasurement* const perf_counters_measurement_;
+        ThreadTimer* const   timer_;
+        ThreadManager* const manager_;
 
         friend class BenchmarkInstance;
     };
+
+    inline bool BenchMarkState::KeepRunning() { return KeepRunningInternal(1, false); }
+    inline bool BenchMarkState::KeepRunningBatch(IterationCount n) { return KeepRunningInternal(n, true); }
+
+    inline bool BenchMarkState::KeepRunningInternal(IterationCount n, bool is_batch)
+    {
+        // total_iterations_ is set to 0 by the constructor, and always set to a nonzero value by StartKepRunning().
+        BM_ASSERT(n > 0);
+        BM_ASSERT(is_batch || n == 1); // n must be 1 unless is_batch is true.
+
+        if (BENCHMARK_BUILTIN_EXPECT(total_iterations_ >= n, true))
+        {
+            total_iterations_ -= n;
+            return true;
+        }
+        if (!started_)
+        {
+            StartKeepRunning();
+            if (skipped_.IsNotSkipped() && total_iterations_ >= n)
+            {
+                total_iterations_ -= n;
+                return true;
+            }
+        }
+        // For non-batch runs, total_iterations_ must be 0 by now.
+        if (is_batch && total_iterations_ != 0)
+        {
+            batch_leftover_   = n - total_iterations_;
+            total_iterations_ = 0;
+            return true;
+        }
+        FinishKeepRunning();
+        return false;
+    }
 
 } // namespace BenchMark
 

@@ -101,7 +101,7 @@ namespace BenchMark
 
         inline const char* ToString() const
         {
-            switch (flags)
+            switch (bigo)
             {
                 case BigO::O_1: return "O(1)";
                 case BigO::O_N: return "O(N)";

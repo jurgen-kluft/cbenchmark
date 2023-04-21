@@ -19,15 +19,18 @@ namespace BenchMark
             OO_Defaults     = OO_ColorTabular
         };
 
-        explicit ConsoleReporter(OutputOptions opts_ = OO_Defaults)
+        explicit ConsoleReporter(TextStream* out_stream, TextStream* error_stream, OutputOptions opts_ = OO_Defaults)
             : output_options_(opts_)
+            , prev_counters_()
             , name_field_width_(0)
             , printed_header_(false)
         {
+            SetOutputStream(out_stream);
+            SetErrorStream(error_stream);
         }
 
         virtual bool ReportContext(const Context& context);
-        virtual void ReportRuns(BenchMarkRun* reports, s32 num_reports);
+        virtual void ReportRuns(Array<BenchMarkRun>& reports);
 
     protected:
         virtual void PrintRunData(const BenchMarkRun& report);

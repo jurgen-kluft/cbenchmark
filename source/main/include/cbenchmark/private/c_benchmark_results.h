@@ -2,6 +2,7 @@
 #define __CBENCHMARK_RESULTS_H__
 
 #include "cbenchmark/private/c_types.h"
+#include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_types.h"
 
 namespace BenchMark
@@ -128,10 +129,16 @@ namespace BenchMark
     class BMRegisterCounter
     {
     public:
-        BMRegisterCounter(BenchMarkConfig& config, const char* name, CounterFlags flags, double value) { config.m_counters[config.m_num_counters++] = {name, flags, value}; }
+        BMRegisterCounter(BenchMarkConfig& config, u64 id, CounterFlags flags, double value) { config.m_counters[config.m_num_counters++] = {id, flags, value}; }
     };
 
-#define BM_COUNTER(name, flags) BMRegisterCounter registerCounter_##name(config, #name, flags, 0)
+    enum EBenchMarkCounters
+    {
+        items_per_second = 0,
+        bytes_per_second = 1,
+    };
+
+#define BM_COUNTER(id, flags) BMRegisterCounter registerCounter_##id(config, id, flags, 0)
 
 #define BM_TIMEUNIT(tu) static const TimeUnit time_unit(tu)
 #define BM_MINTIME(time) static const MinTime min_time = {time}

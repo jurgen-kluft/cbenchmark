@@ -3,6 +3,13 @@
 
 #include <string>
 
+enum EUserCounters
+{
+    test = 3,
+    test2 = 4,
+    test3 = 5,
+};
+
 namespace BenchMark
 {
     BM_SUITE(test_suite)

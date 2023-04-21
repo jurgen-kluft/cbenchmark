@@ -2,18 +2,12 @@
 #define __CBENCHMARK_TESTREPORTER_H__
 
 #include "cbenchmark/private/c_benchmark_types.h"
+#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_stringbuilder.h"
 
 namespace BenchMark
 {
     class BenchMarkRun;
-
-    class TextStream
-    {
-    public:
-        char*       stream; // stream cursor
-        char*       sos;    // start of stream
-        const char* eos;    // end of stream
-    };
 
     class BenchMarkReporter
     {
@@ -21,7 +15,7 @@ namespace BenchMark
         struct Context
         {
             Context();
-            
+
             // CPUInfo const&    cpu_info;
             // SystemInfo const& sys_info;
 
@@ -35,6 +29,7 @@ namespace BenchMark
             PerFamilyRunReports()
                 : num_runs_total(0)
                 , num_runs_done(0)
+                , runs(nullptr)
             {
             }
 
@@ -45,13 +40,15 @@ namespace BenchMark
             int num_runs_done;
 
             // The reports about (non-errneous!) runs of this family.
-            s32           num_runs;
-            BenchMarkRun** runs;
+            Array<BenchMarkRun>* runs;
         };
 
         // Construct a BenchMarkReporter with the output stream set to 'std::cout'
         // and the error stream set to 'std::cerr'
         BenchMarkReporter();
+
+        void SetOutputStream(TextStream* out);
+        void SetErrorStream(TextStream* err);
 
         // Called once for every suite of benchmarks run.
         // The parameter "context" contains information that the
@@ -72,7 +69,7 @@ namespace BenchMark
         // Additionally if this group of runs was the last in a family of benchmarks
         // 'reports' contains additional entries representing the asymptotic
         // complexity and RMS of that benchmark family.
-        virtual void ReportRuns(BenchMarkRun* reports, s32 count) = 0;
+        virtual void ReportRuns(Array<BenchMarkRun>& reports) = 0;
 
         // Called once and only once after ever group of benchmarks is run and reported.
         virtual void Finalize() {}
@@ -83,14 +80,14 @@ namespace BenchMark
         // REQUIRES: The object referenced by 'err' is valid for the lifetime of the reporter.
         void SetErrorStream(TextStream* err) { error_stream_ = err; }
 
-        TextStream& GetOutputStream() const { return *output_stream_; }
-        TextStream& GetErrorStream() const { return *error_stream_; }
+        TextStream* GetOutputStream() const { return output_stream_; }
+        TextStream* GetErrorStream() const { return error_stream_; }
 
         virtual ~BenchMarkReporter();
 
         // Write a human readable string to 'out' representing the specified 'context'.
         // REQUIRES: 'out' is non-null.
-        static void PrintBasicContext(TextStream* out, Context const& context);
+        static void PrintBasicContext(TextStreamWriter& out, Context const& context);
 
     private:
         TextStream* output_stream_;

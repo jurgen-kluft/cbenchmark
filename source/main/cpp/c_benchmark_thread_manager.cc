@@ -43,17 +43,16 @@ namespace BenchMark
 
         struct Result
         {
-            Result() 
-            : iterations(0)
-            , real_time_used(0.0)
-            , cpu_time_used(0.0)
-            , manual_time_used(0.0)
-            , complexity_n(0)
-            , report_label_(nullptr)
-            , skip_message_(nullptr)
-            , skipped_({Skipped::NotSkipped}) 
+            Result()
+                : iterations(0)
+                , real_time_used(0.0)
+                , cpu_time_used(0.0)
+                , manual_time_used(0.0)
+                , complexity_n(0)
+                , skipped_({Skipped::NotSkipped})
             {
-                
+                report_label_[0] = '\0';
+                skip_message_[0] = '\0';
             }
 
             IterationCount iterations;
@@ -61,8 +60,8 @@ namespace BenchMark
             double         cpu_time_used;
             double         manual_time_used;
             s64            complexity_n;
-            const char*    report_label_;
-            const char*    skip_message_;
+            char           report_label_[64];
+            char           skip_message_[64];
             Skipped        skipped_;
             Counters       counters;
         };
@@ -129,7 +128,7 @@ namespace BenchMark
         // Called by each thread
         void SetIterationTime(double seconds) { manual_time_used_ += seconds; }
 
-        bool running() const { return running_; }
+        bool IsRunning() const { return running_; }
 
         // REQUIRES: timer is not running
         double real_time_used() const

@@ -15,15 +15,6 @@ namespace BenchMark
             dst[i] = '\0';
     }
 
-    void gStringAppend(char*& dst, const char* dstEnd, const char* src)
-    {
-        while (dst < dstEnd && *src != '\0')
-        {
-            *dst++ = *src++;
-        }
-        *dst = '\0';
-    }
-
     const char* gStringFind(const char* src, const char* findstr)
     {
         if (*findstr == '\0')

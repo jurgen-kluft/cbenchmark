@@ -42,7 +42,7 @@ namespace BenchMark
         {
         }
 
-        const char* BenchMarkName();
+        const char* BenchMarkName(Allocator* alloc);
 
         BenchmarkName run_name;
         s64           family_index;

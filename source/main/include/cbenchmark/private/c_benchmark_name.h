@@ -32,7 +32,8 @@ namespace BenchMark
         char* threads;
 
         // Return the full name of the benchmark with each non-empty field separated by a '/'
-        char* FullName(Allocator* alloc) const;
+        s32 FullNameLen() const;
+        char* FullName(char* dst, const char* dstEnd) const;
     };
 
 } // namespace BenchMark

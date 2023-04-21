@@ -12,20 +12,28 @@
 #include "cbenchmark/private/c_benchmark_instance.h"
 #include "cbenchmark/private/c_benchmark_state.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
+#include "cbenchmark/private/c_benchmark_alloc.h"
 
 namespace BenchMark
 {
-    const char* BenchMarkRun::BenchMarkName()
+    const char* BenchMarkRun::BenchMarkName(Allocator* alloc)
     {
-        char* name = benchmark_name;
-        const char* nameEnd = name + sizeof(benchmark_name) - 1;
-        gStringAppend(name, nameEnd, run_name);
+        s32 len = run_name.FullNameLen();
         if (run_type == RT_Aggregate)
         {
-            gStringAppend(name, nameEnd, "_");
-            gStringAppend(name, nameEnd, aggregate_name);
+            len += 1 + gStringLength(aggregate_name);
         }
-        return benchmark_name;
+        char* name    = (char*)alloc->Allocate(len + 1, 1);
+        char* nameEnd = name + len;
+        nameEnd[0]    = '\0';
+
+        char* str = name;
+        str       = run_name.FullName(str, nameEnd);
+        if (run_type == RT_Aggregate)
+        {
+            gStringAppend(str, nameEnd, "_");
+            gStringAppend(str, nameEnd, aggregate_name);
+        }
     }
 
     double BenchMarkRun::GetAdjustedRealTime() const
