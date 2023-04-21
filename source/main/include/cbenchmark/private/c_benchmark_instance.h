@@ -15,12 +15,40 @@ namespace BenchMark
     class ThreadManager;
     class PerfCountersMeasurement;
 
+    struct BenchMarkRunResult
+    {
+        BenchMarkRunResult()
+            : iterations(0)
+            , real_time_used(0.0)
+            , cpu_time_used(0.0)
+            , manual_time_used(0.0)
+            , complexity_n(0)
+            , skipped_({Skipped::NotSkipped})
+        {
+            report_label_[0] = '\0';
+            skip_message_[0] = '\0';
+        }
+
+        IterationCount iterations;
+        double         real_time_used;
+        double         cpu_time_used;
+        double         manual_time_used;
+        s64            complexity_n;
+        Counters       counters;
+        Skipped        skipped_;
+        char           report_label_[64];
+        char           skip_message_[64];
+
+        void Merge(const BenchMarkRunResult& other);
+    };
+
     // Information kept per benchmark we may want to run
     class BenchMarkInstance
     {
     public:
-        BenchMarkInstance(BenchMarkDeclared* benchmark, int family_index, int per_family_instance_index, Arg* args, int num_args);
+        BenchMarkInstance();
 
+        void                  init(Allocator* allocator, BenchMarkDeclared * benchmark, int family_index, int per_family_instance_index, int thread_count, Arg* args);
         const BenchmarkName&  name() const { return name_; }
         int                   family_index() const { return family_index_; }
         int                   per_family_instance_index() const { return per_family_instance_index_; }
@@ -38,31 +66,30 @@ namespace BenchMark
         IterationCount        iterations() const { return iterations_; }
         int                   threads() const { return threads_; }
 
-        void Setup() const;
-        void Teardown() const;
-
-        BenchMarkState Run(IterationCount iters, int threadid, ThreadTimer* timer, ThreadManager* manager, PerfCountersMeasurement* perf_counters_measurement) const;
+        void           Setup() const;
+        void           Teardown() const;
+        BenchMarkState Run(IterationCount iters, int threadid, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results) const;
 
     private:
-        BenchmarkName         name_;
-        BenchMarkDeclared*    benchmark_;
-        const int             family_index_;
-        const int             per_family_instance_index_;
-        AggregationReportMode aggregation_report_mode_;
-        Arg                   args_;
-        TimeUnit              time_unit_;
-        bool                  measure_process_cpu_time_;
-        bool                  use_real_time_;
-        bool                  use_manual_time_;
-        BigO                  complexity_;
-        BigO::Func*           complexity_lambda_;
-        Counters              counters_;
-        Statistics            statistics_;
-        int                   repetitions_;
-        double                min_time_;
-        double                min_warmup_time_;
-        IterationCount        iterations_;
-        int                   threads_; // Number of concurrent threads to us
+        BenchmarkName            name_;
+        BenchMarkDeclared * benchmark_;
+        int                      family_index_;
+        int                      per_family_instance_index_;
+        AggregationReportMode    aggregation_report_mode_;
+        Array<s64>               args_;
+        TimeUnit                 time_unit_;
+        bool                     measure_process_cpu_time_;
+        bool                     use_real_time_;
+        bool                     use_manual_time_;
+        BigO                     complexity_;
+        BigO::Func*              complexity_lambda_;
+        Counters                 counters_;
+        Statistics               statistics_;
+        int                      repetitions_;
+        double                   min_time_;
+        double                   min_warmup_time_;
+        IterationCount           iterations_;
+        int                      threads_; // Number of concurrent threads to us
 
         typedef void (*callback_function)(const BenchMarkState&);
         callback_function setup_    = nullptr;

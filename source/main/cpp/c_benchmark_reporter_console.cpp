@@ -9,7 +9,7 @@ namespace BenchMark
         /* TO BE IMPLEMENTED */
         return false;
     }
-    void ConsoleReporter::ReportRuns(Array<BenchMarkRun>& reports)
+    void ConsoleReporter::ReportRuns(Array<BenchMarkRun*> const& reports)
     {
         /* TO BE IMPLEMENTED */
         return;

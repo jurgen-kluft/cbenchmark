@@ -7,7 +7,7 @@ namespace BenchMark
 {
     class BenchMarkRun;
 
-    void ComputeBigO(Allocator* alloc, const Array<BenchMarkRun>& reports, Array<BenchMarkRun>& bigo);
+    void ComputeBigO(Allocator* alloc, const Array<BenchMarkRun*>& reports, Array<BenchMarkRun*>& bigo);
 
 } // namespace BenchMark
 

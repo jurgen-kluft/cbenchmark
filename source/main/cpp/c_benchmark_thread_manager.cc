@@ -14,6 +14,7 @@ namespace BenchMark
 {
     typedef s64 IterationCount;
 
+    // TODO This is more like a ThreadMonitor so should be renamed
     class ThreadManager
     {
     public:
@@ -41,31 +42,6 @@ namespace BenchMark
             end_condition_.wait(lock.native_handle(), [this]() { return alive_threads_ == 0; });
         }
 
-        struct Result
-        {
-            Result()
-                : iterations(0)
-                , real_time_used(0.0)
-                , cpu_time_used(0.0)
-                , manual_time_used(0.0)
-                , complexity_n(0)
-                , skipped_({Skipped::NotSkipped})
-            {
-                report_label_[0] = '\0';
-                skip_message_[0] = '\0';
-            }
-
-            IterationCount iterations;
-            double         real_time_used;
-            double         cpu_time_used;
-            double         manual_time_used;
-            s64            complexity_n;
-            char           report_label_[64];
-            char           skip_message_[64];
-            Skipped        skipped_;
-            Counters       counters;
-        };
-        GUARDED_BY(GetBenchmarkMutex()) Result results;
 
     private:
         mutable Mutex    benchmark_mutex_;
@@ -75,6 +51,7 @@ namespace BenchMark
         Condition        end_condition_;
     };
 
+    // TODO to be implemented
     double ProcessCPUUsage() { return 0.0; }  // Return the CPU usage of the current process
     double ChildrenCPUUsage() { return 0.0; } // Return the CPU usage of the children of the current process
     double ThreadCPUUsage() { return 0.0; }   // Return the CPU usage of the current thread

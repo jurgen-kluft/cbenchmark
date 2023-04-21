@@ -30,7 +30,7 @@ namespace BenchMark
         }
 
         virtual bool ReportContext(const Context& context);
-        virtual void ReportRuns(Array<BenchMarkRun>& reports);
+        virtual void ReportRuns(Array<BenchMarkRun*> const& reports);
 
     protected:
         virtual void PrintRunData(const BenchMarkRun& report);

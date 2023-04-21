@@ -10,7 +10,12 @@ namespace BenchMark
     {
         typedef double(Func)(const Array<double>& values);
 
-        Statistic() : name_(nullptr), compute_(nullptr), unit_({StatisticUnit::Time}) {}
+        Statistic()
+            : name_(nullptr)
+            , compute_(nullptr)
+            , unit_({StatisticUnit::Time})
+        {
+        }
 
         Statistic(const char*& name, Func* compute, StatisticUnit unit = {StatisticUnit::Time})
             : name_(name)
@@ -26,7 +31,7 @@ namespace BenchMark
 
     struct Statistics
     {
-        static const size_t MaxStatistics = 10;
+        static const s32 MaxStatistics = 10;
 
         Statistics()
             : count_(0)
@@ -41,10 +46,10 @@ namespace BenchMark
             }
         }
 
-        const Statistic& operator[](size_t index) const { return statistics_[index]; }
-        size_t           size() const { return count_; }
+        const Statistic& operator[](s32 index) const { return statistics_[index]; }
+        s32              Size() const { return count_; }
 
-        size_t    count_;
+        s32       count_;
         Statistic statistics_[MaxStatistics];
     };
 
@@ -58,6 +63,9 @@ namespace BenchMark
             DisplayReportAggregatesOnly = 1U << 2U,                                              // Display reporter should only output aggregates
             ReportAggregatesOnly        = FileReportAggregatesOnly | DisplayReportAggregatesOnly // Both reporters should only display aggregates.
         };
+
+        AggregationReportMode() : mode(Unspecified) {}
+        AggregationReportMode(u32 mode) : mode(mode) {}
 
         u32 mode;
     };

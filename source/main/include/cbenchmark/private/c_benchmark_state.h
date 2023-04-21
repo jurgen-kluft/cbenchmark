@@ -6,11 +6,13 @@
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
 #include "cbenchmark/private/c_benchmark_check.h"
+#include "cbenchmark/private/c_benchmark_alloc.h"
 
 namespace BenchMark
 {
     class ThreadTimer;
     class ThreadManager;
+    struct BenchMarkRunResult;
 
     // BenchMarkState is passed to a running Benchmark and contains state for the benchmark to use.
     class BenchMarkState
@@ -168,7 +170,7 @@ namespace BenchMark
         void SetLabel(const char* format, double value);
 
         // Range arguments for this run. CHECKs if the argument has been set.
-        inline s64 Range(s32 pos = 0) const { return range_[pos & 0x3]; }
+        inline s64 Range(s32 pos = 0) const { return (*range_)[pos & 0x3]; }
 
         // Number of threads concurrently executing the benchmark.
         inline int Threads() const { return threads_; }
@@ -208,7 +210,7 @@ namespace BenchMark
         Skipped skipped_;
 
         // items we don't need on the first cache line
-        s64 range_[4];
+        Array<s64> const* range_;
         s64 complexity_n_;
 
     public:
@@ -216,7 +218,7 @@ namespace BenchMark
         Counters counters_;
 
     private:
-        BenchMarkState(const char* name, IterationCount max_iters, s64* ranges, int num_ranges);
+        BenchMarkState(const char* name, IterationCount max_iters, Array<s64> const* range, int thread_index, int threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
 
         void StartKeepRunning();
         // Implementation of KeepRunning() and KeepRunningBatch().
@@ -231,8 +233,9 @@ namespace BenchMark
 
         ThreadTimer* const   timer_;
         ThreadManager* const manager_;
+        BenchMarkRunResult* results_;
 
-        friend class BenchmarkInstance;
+        friend class BenchMarkInstance;
     };
 
     inline bool BenchMarkState::KeepRunning() { return KeepRunningInternal(1, false); }

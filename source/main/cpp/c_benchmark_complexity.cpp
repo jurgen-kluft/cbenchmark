@@ -165,7 +165,8 @@ namespace BenchMark
 
     typedef BenchMarkRun Run;
 
-    void ComputeBigO(Allocator* alloc, const Array<Run>& reports, Array<Run>& bigo)
+    // TODO Could benefit from an additional 'temp' allocator 
+    void ComputeBigO(Allocator* alloc, const Array<Run*>& reports, Array<Run*>& bigo)
     {
         if (reports.Size() < 2)
             return;
@@ -182,25 +183,26 @@ namespace BenchMark
         // Populate the accumulators.
         for (s32 i = 0; i < reports.Size(); ++i)
         {
-            const Run& run = reports[i];
+            const Run* run = reports[i];
 
-            // BM_CHECK_GT(run.complexity_n, 0) << "Did you forget to call SetComplexityN?";
-            n.PushBack(run.complexity_n);
-            real_time.PushBack(run.real_accumulated_time / run.iterations);
-            cpu_time.PushBack(run.cpu_accumulated_time / run.iterations);
+            // BM_CHECK_GT(run->complexity_n, 0) << "Did you forget to call SetComplexityN?";
+            n.PushBack(run->complexity_n);
+            real_time.PushBack(run->real_accumulated_time / run->iterations);
+            cpu_time.PushBack(run->cpu_accumulated_time / run->iterations);
         }
 
         LeastSq result_cpu;
         LeastSq result_real;
 
-        if (reports[0].complexity.Is(BigO::O_Lambda))
+        const Run* run0 = reports[0];
+        if (run0->complexity.Is(BigO::O_Lambda))
         {
-            result_cpu  = MinimalLeastSq(n, cpu_time, reports[0].complexity_lambda);
-            result_real = MinimalLeastSq(n, real_time, reports[0].complexity_lambda);
+            result_cpu  = MinimalLeastSq(n, cpu_time, run0->complexity_lambda);
+            result_real = MinimalLeastSq(n, real_time, run0->complexity_lambda);
         }
         else
         {
-            result_cpu  = MinimalLeastSq(n, cpu_time, reports[0].complexity);
+            result_cpu  = MinimalLeastSq(n, cpu_time, run0->complexity);
             result_real = MinimalLeastSq(n, real_time, result_cpu.complexity);
         }
 
@@ -208,53 +210,55 @@ namespace BenchMark
 
         // TODO Seems to use BenchMarkName structure to construct a run name.
 
-        BenchmarkName run_name = reports[0].run_name;
+        BenchmarkName run_name = run0->run_name;
         run_name.args          = nullptr;
 
         // Get the data from the accumulator to Run's.
-        Run& big_o                      = bigo.Alloc();
-        big_o.run_name                  = run_name;
-        big_o.family_index              = reports[0].family_index;
-        big_o.per_family_instance_index = reports[0].per_family_instance_index;
-        big_o.run_type                  = Run::RT_Aggregate;
-        big_o.repetitions               = reports[0].repetitions;
-        big_o.repetition_index          = Run::no_repetition_index;
-        big_o.threads                   = reports[0].threads;
-        big_o.aggregate_name            = "BigO";
-        big_o.aggregate_unit            = {StatisticUnit::Time};
-        big_o.report_label              = reports[0].report_label;
-        big_o.iterations                = 0;
-        big_o.real_accumulated_time     = result_real.coef;
-        big_o.cpu_accumulated_time      = result_cpu.coef;
-        big_o.report_big_o              = true;
-        big_o.complexity                = result_cpu.complexity;
+        Run*& big_o                      = bigo.Alloc();
+        big_o                            = alloc->Construct<Run>();
+        big_o->run_name                  = run_name;
+        big_o->family_index              = run0->family_index;
+        big_o->per_family_instance_index = run0->per_family_instance_index;
+        big_o->run_type                  = Run::RT_Aggregate;
+        big_o->repetitions               = run0->repetitions;
+        big_o->repetition_index          = Run::no_repetition_index;
+        big_o->threads                   = run0->threads;
+        big_o->aggregate_name            = "BigO";
+        big_o->aggregate_unit            = {StatisticUnit::Time};
+        big_o->report_label              = run0->report_label;
+        big_o->iterations                = 0;
+        big_o->real_accumulated_time     = result_real.coef;
+        big_o->cpu_accumulated_time      = result_cpu.coef;
+        big_o->report_big_o              = true;
+        big_o->complexity                = result_cpu.complexity;
 
         // All the time results are reported after being multiplied by the
         // time unit multiplier. But since RMS is a relative quantity it
         // should not be multiplied at all. So, here, we _divide_ it by the
         // multiplier so that when it is multiplied later the result is the
         // correct one.
-        const double multiplier = reports[0].time_unit.GetTimeUnitMultiplier();
+        const double multiplier = run0->time_unit.GetTimeUnitMultiplier();
 
         // Only add label to mean/stddev if it is same for all runs
-        Run& rms                      = bigo.Alloc();
-        rms.run_name                  = run_name;
-        rms.family_index              = reports[0].family_index;
-        rms.per_family_instance_index = reports[0].per_family_instance_index;
-        rms.run_type                  = Run::RT_Aggregate;
-        rms.aggregate_name            = "RMS";
-        rms.aggregate_unit            = {StatisticUnit::Percentage};
-        rms.report_label              = big_o.report_label;
-        rms.iterations                = 0;
-        rms.repetition_index          = Run::no_repetition_index;
-        rms.repetitions               = reports[0].repetitions;
-        rms.threads                   = reports[0].threads;
-        rms.real_accumulated_time     = result_real.rms / multiplier;
-        rms.cpu_accumulated_time      = result_cpu.rms / multiplier;
-        rms.report_rms                = true;
-        rms.complexity                = result_cpu.complexity;
+        Run*& rms                      = bigo.Alloc();
+        rms                            = alloc->Construct<Run>();
+        rms->run_name                  = run_name;
+        rms->family_index              = run0->family_index;
+        rms->per_family_instance_index = run0->per_family_instance_index;
+        rms->run_type                  = Run::RT_Aggregate;
+        rms->aggregate_name            = "RMS";
+        rms->aggregate_unit            = {StatisticUnit::Percentage};
+        rms->report_label              = big_o->report_label;
+        rms->iterations                = 0;
+        rms->repetition_index          = Run::no_repetition_index;
+        rms->repetitions               = run0->repetitions;
+        rms->threads                   = run0->threads;
+        rms->real_accumulated_time     = result_real.rms / multiplier;
+        rms->cpu_accumulated_time      = result_cpu.rms / multiplier;
+        rms->report_rms                = true;
+        rms->complexity                = result_cpu.complexity;
         // don't forget to keep the time unit, or we won't be able to recover the correct value.
-        rms.time_unit = reports[0].time_unit;
+        rms->time_unit = run0->time_unit;
     }
 
 } // namespace BenchMark

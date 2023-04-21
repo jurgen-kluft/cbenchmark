@@ -5,16 +5,25 @@ namespace BenchMark
 {
     class Allocator;
 
+    typedef void (*TextStreamFlush)(void* context, char const* text, int length);
+
     struct TextStream
     {
         inline bool isEof() const { return stream >= eos; }
         inline int  getN() const { return (int)(eos - stream); }
         inline int  used() const { return (int)(stream - sos); }
         inline int  capacity() const { return (int)(eos - sos); }
+        inline void flush(void* context = nullptr)
+        {
+            if (func_flush != nullptr)
+                func_flush(context, sos, used());
+            stream = sos;
+        }
 
-        char*       stream; // stream cursor
-        char*       sos;    // start of stream
-        const char* eos;    // end of stream
+        char*           stream; // stream cursor
+        char*           sos;    // start of stream
+        const char*     eos;    // end of stream
+        TextStreamFlush func_flush;
     };
 
     class TextStreamWriter

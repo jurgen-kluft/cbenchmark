@@ -120,6 +120,15 @@ namespace BenchMark
             return m_data[m_size - 1];
         }
 
+        bool PushBack(Array<T>& other)
+        {
+            if (m_size + other.m_size > m_capacity)
+                return false;
+            for (s32 i = 0; i < other.m_size; ++i)
+                m_data[m_size++] = other.m_data[i];
+            return true;
+        }
+
         bool PushBack(const T& value)
         {
             if (m_size == m_capacity)
@@ -136,6 +145,23 @@ namespace BenchMark
                 return true;
             }
             return false;
+        }
+
+        s32 Find(const T& value) const
+        {
+            for (s32 i = 0; i < m_size; ++i)
+            {
+                if (m_data[i] == value)
+                    return i;
+            }
+            return -1;
+        }
+
+        void Erase(s32 i)
+        {
+            for (s32 j = i; j < m_size - 1; ++j)
+                m_data[j] = m_data[j + 1];
+            --m_size;
         }
 
         inline const T& Front() const { return m_data[i]; }

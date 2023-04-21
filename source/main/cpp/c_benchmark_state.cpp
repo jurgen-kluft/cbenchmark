@@ -15,6 +15,31 @@
 
 namespace BenchMark
 {
+    BenchMarkState::BenchMarkState(const char* name, IterationCount max_iters, Array<s64> const* range, int thread_index, int threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results)
+        : name_(name)
+        , max_iterations(max_iters)
+        , range_(range)
+        , thread_index_(thread_index)
+        , threads_(threads)
+        , timer_(timer)
+        , manager_(manager)
+        , results_(results)
+    {
+    }
+
+    static void ResultSkipWithMessage(BenchMarkRunResult* rr, const char* msg, Skipped skipped)
+    {
+        if (rr->skipped_.IsNotSkipped())
+        {
+            gStringCopy(rr->skip_message_, msg, sizeof(rr->skip_message_) - 1);
+            rr->skipped_ = skipped;
+        }
+    }
+    static void ResultSetLabel(BenchMarkRunResult* rr, const char* format, double value)
+    {
+        gStringFormatAppend(rr->report_label_, &rr->report_label_[64] - 1, format, value);
+    }
+
     void BenchMarkState::PauseTiming()
     {
         // Add in time accumulated so far
@@ -31,7 +56,7 @@ namespace BenchMark
     void BenchMarkState::SkipWithMessage(const char* msg)
     {
         skipped_ = {Skipped::SkippedWithMessage};
-        ThreadManagerSkipWithMessage(manager_, msg, skipped_);
+        ResultSkipWithMessage(results_, msg, skipped_);
         total_iterations_ = 0;
         if (TimerIsRunning(timer_))
             TimerStop(timer_);
@@ -40,14 +65,14 @@ namespace BenchMark
     void BenchMarkState::SkipWithError(const char* msg)
     {
         skipped_ = {Skipped::SkippedWithError};
-        ThreadManagerSkipWithMessage(manager_, msg, skipped_);
+        ResultSkipWithMessage(results_, msg, skipped_);
         total_iterations_ = 0;
         if (TimerIsRunning(timer_))
             TimerStop(timer_);
     }
 
     void BenchMarkState::SetIterationTime(double seconds) { TimerSetIterationTime(timer_, seconds); }
-    void BenchMarkState::SetLabel(const char* format, double value) { ThreadManagerSetLabel(manager_, format, value); }
+    void BenchMarkState::SetLabel(const char* format, double value) { ResultSetLabel(results_, format, value); }
 
     void BenchMarkState::StartKeepRunning()
     {

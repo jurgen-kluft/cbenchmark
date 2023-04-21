@@ -134,7 +134,7 @@ namespace BenchMark
 
     private:
         friend class BenchmarkFamilies;
-        friend class BenchmarkInstance;
+        friend class BenchMarkInstance;
 
         char*                 name_;
         AggregationReportMode aggregation_report_mode_;
@@ -155,7 +155,7 @@ namespace BenchMark
         BigO::Func*    complexity_lambda_;
         Statistics     statistics_;
 
-        // int            thread_counts_[16];
+        int            thread_counts_[16];
 
         typedef void (*callback_function)(const BenchMarkState&);
         callback_function setup_;

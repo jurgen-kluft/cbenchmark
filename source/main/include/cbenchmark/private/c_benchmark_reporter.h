@@ -29,7 +29,7 @@ namespace BenchMark
             PerFamilyRunReports()
                 : num_runs_total(0)
                 , num_runs_done(0)
-                , runs(nullptr)
+                , runs()
             {
             }
 
@@ -40,7 +40,7 @@ namespace BenchMark
             int num_runs_done;
 
             // The reports about (non-errneous!) runs of this family.
-            Array<BenchMarkRun>* runs;
+            Array<BenchMarkRun*> runs;
         };
 
         // Construct a BenchMarkReporter with the output stream set to 'std::cout'
@@ -69,7 +69,7 @@ namespace BenchMark
         // Additionally if this group of runs was the last in a family of benchmarks
         // 'reports' contains additional entries representing the asymptotic
         // complexity and RMS of that benchmark family.
-        virtual void ReportRuns(Array<BenchMarkRun>& reports) = 0;
+        virtual void ReportRuns(Array<BenchMarkRun*> const& reports) = 0;
 
         // Called once and only once after ever group of benchmarks is run and reported.
         virtual void Finalize() {}

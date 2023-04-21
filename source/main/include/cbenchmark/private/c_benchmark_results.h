@@ -149,6 +149,7 @@ namespace BenchMark
 #define BM_TEST(name)                                                             \
     namespace nsBM##name                                                          \
     {                                                                             \
+        bool            test_enabled = true;                                      \
         BenchMarkConfig config;                                                   \
         void            BM_Run(BenchMarkRuntime& runtime, BenchMarkState& state); \
     }                                                                             \
@@ -160,36 +161,8 @@ namespace BenchMark
         const char* m_error_message;
     };
 
-    struct BenchMarkState
-    {
-        // maybe have a high-performance 'forward' allocator for the benchmark itself
-        s64     m_range[4];
-        Counter m_counters[8];
-        s64     m_iterations;
-        s64     m_max_iterations;
-        s64     m_complexity_n;
 
-        void Error(const char* reason);
-
-        bool Skipped() const;
-
-        void FinishKeepRunning();
-
-        void PauseTiming();
-        void ResumeTiming();
-
-        s64 Range(s32 i) const { return m_range[i]; }
-        s64 Iterations() const { return m_iterations; }
-
-        void SetItemsProcessed(s64 items) { m_counters[0].value = (double)items; }
-        void SetBytesProcessed(s64 bytes) { m_counters[1].value = (double)bytes; }
-
-        void SetComplexityN(s64 n) { m_complexity_n = n; }
-    };
-
-#define BM_ITERATE \
-    for (state.m_iterations = 0; state.m_iterations < state.m_max_iterations; ++state.m_iterations)
-
+#define BM_ITERATE for (state.m_iterations = 0; state.m_iterations < state.m_max_iterations; ++state.m_iterations)
 
 #define BM_RUN                                           \
     class BMInitConfig                                   \
@@ -208,25 +181,27 @@ namespace BenchMark
     BMInitConfig init_config(config);                    \
     void         BM_Run(BenchMarkRuntime& runtime, BenchMarkState& state)
 
-#define BM_SUITE(name)                                                        \
-    namespace nsBM##name                                                      \
-    {                                                                         \
-        static const TimeUnit      time_unit       = {TimeUnit::Millisecond}; \
-        static const MinTime       min_time        = {5.0};                   \
-        static const MinWarmupTime min_warmup_time = {1.0};                   \
-        static const Iterations    iterations      = {1000};                  \
-        static const Repetitions   repetitions     = {5};                     \
-    }                                                                         \
+#define BM_SUITE(name)                                                  \
+    namespace nsBM##name                                                \
+    {                                                                   \
+        static TimeUnit      time_unit       = {TimeUnit::Millisecond}; \
+        static MinTime       min_time        = {5.0};                   \
+        static MinWarmupTime min_warmup_time = {1.0};                   \
+        static Iterations    iterations      = {1000};                  \
+        static Repetitions   repetitions     = {5};                     \
+        static bool          suite_enabled   = true;                    \
+    }                                                                   \
     namespace nsBM##name
 
-#define BM_FIXTURE(name)                                     \
-    namespace nsBM##name                                     \
-    {                                                        \
-        static const MinTime       min_time        = {5.0};  \
-        static const MinWarmupTime min_warmup_time = {1.0};  \
-        static const Iterations    iterations      = {1000}; \
-        static const Repetitions   repetitions     = {5};    \
-    }                                                        \
+#define BM_FIXTURE(name)                               \
+    namespace nsBM##name                               \
+    {                                                  \
+        static MinTime       min_time        = {5.0};  \
+        static MinWarmupTime min_warmup_time = {1.0};  \
+        static Iterations    iterations      = {1000}; \
+        static Repetitions   repetitions     = {5};    \
+        static bool          fixture_enabled = true;   \
+    }                                                  \
     namespace nsBM##name
 
 } // namespace BenchMark
