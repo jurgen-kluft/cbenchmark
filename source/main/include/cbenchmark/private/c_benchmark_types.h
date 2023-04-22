@@ -22,6 +22,7 @@ namespace BenchMark
     {
         s64 args[16];
         s64 size() const { return sizeof(args) / sizeof(args[0]); }
+        static ArgVector empty;
     };
 
     struct Counter
