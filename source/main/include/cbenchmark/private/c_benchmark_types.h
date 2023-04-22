@@ -11,18 +11,37 @@ namespace BenchMark
 
     struct Arg
     {
-        Arg() { args[0] = args[1] = args[2] = args[3] = -1; }
-        Arg(s64 arg0, s64 arg1 = -1, s64 arg2 = -1, s64 arg3 = -1) { args[0] = args[1] = args[2] = args[3] = arg3; }
-
-        s64 args[4];
-        s32 size() const { return sizeof(args) / sizeof(args[0]); }
+        s64 x,y,w,z;
     };
 
-    struct ArgVector
+    struct ArgRange
     {
-        s64 args[16];
-        s64 size() const { return sizeof(args) / sizeof(args[0]); }
-        static ArgVector empty;
+        ArgRange() {}
+        ArgRange(s64 _lo, s64 _hi, s64 _multi)
+            : lo(_lo)
+            , hi(_hi)
+            , multi(_multi)
+        {
+        }
+
+        s64 lo, hi;
+        s64 multi;
+        static ArgRange empty;
+    };
+
+    struct ArgDenseRange
+    {
+        ArgDenseRange() {}
+        ArgDenseRange(s64 _start, s64 _limit, s64 _step)
+            : start(_start)
+            , limit(_limit)
+            , step(_step)
+        {
+        }
+
+        s64 start;
+        s64 limit;
+        s64 step;
     };
 
     struct Counter
@@ -30,6 +49,7 @@ namespace BenchMark
         u64          id;
         CounterFlags flags;
         double       value;
+        Counter*     next;
     };
 
     struct CounterType

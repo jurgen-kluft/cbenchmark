@@ -13,6 +13,10 @@ namespace BenchMark
         void*        Allocate(unsigned int size, unsigned int alignment = sizeof(void*)) { return v_Allocate(size, alignment); }
         unsigned int Deallocate(void* ptr) { return v_Deallocate(ptr); }
 
+        template<typename T>
+        T* Malloc(unsigned int size) { return (T*)v_Allocate(size, sizeof(void*)); }
+        void Free(void* ptr) { v_Deallocate(ptr); }
+
         // Construct and Destruct
         template <typename T, typename... Args> T* Construct(Args... args)
         {

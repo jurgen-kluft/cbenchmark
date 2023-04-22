@@ -17,11 +17,11 @@ namespace BenchMark
 
             BM_FIXTURE_SETTINGS
             {
-                BM_ARG({8, 32, 128, 512, 2048, 8192, 32768});
-                BM_NAMED_ARG("x", {8, 16, 32, 64, 128});
+                BM_ARG(8, 32, 128);
+                BM_NAMED_ARG(x, 8, 16, 32, 64, 128);
 
-                BM_ARGRANGE({8, 64, 512, 4 << 10, 8 << 10, 9, 9, 9}, {128, 512}, {128, 512});
-                BM_NAMED_ARGRANGE("x", {8, 64, 512, 4 << 10, 8 << 10, 9, 9, 9}, "y", {128, 512}, "z", {128, 512});
+                BM_ARGRANGE({8, 512, 32}, {128, 512, 128});
+                BM_NAMED_ARGRANGE("x", {8, 512, 32}, "y", {128, 512, 128}, "z", {4, 32, 8});
 
                 BM_ARGPRODUCT({8, 16, 32, 64, 128}, {1, 2, 3, 4});
 
@@ -48,8 +48,9 @@ namespace BenchMark
             {
                 // here we have our benchmark code, for example
                 // to benchmark memcpy we can do something like this:
-                char* src = new char[state.Range(0)];
-                char* dst = new char[state.Range(0)];
+                char* src = allocator->Malloc<char>(state.Range(0));
+                char* dst = allocator->Malloc<char>(state.Range(0));
+                
                 memset(src, 'x', state.Range(0));
 
                 // timing starts after 'BM_ITERATE'
@@ -62,9 +63,10 @@ namespace BenchMark
                     memcpy(dst, src, state.Range(0));
                 }
 
-                state.SetBytesProcessed(int64_t(state.Iterations()) * int64_t(state.Range(0)));
-                delete[] src;
-                delete[] dst;
+                state.SetBytesProcessed(s64(state.Iterations()) * s64(state.Range(0)));
+
+                allocator->Free(src);
+                allocator->Free(dst);
             }
         }
     }

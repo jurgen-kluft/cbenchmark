@@ -1,5 +1,5 @@
-#ifndef __CBENCHMARK_BENCHMARK_DECLARED_H__
-#define __CBENCHMARK_BENCHMARK_DECLARED_H__
+#ifndef __CBENCHMARK_BENCHMARK_RUN_H__
+#define __CBENCHMARK_BENCHMARK_RUN_H__
 
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_types.h"
@@ -98,4 +98,4 @@ namespace BenchMark
 
 } // namespace BenchMark
 
-#endif // __CBENCHMARK_BENCHMARK_DECLARED_H__
+#endif // __CBENCHMARK_BENCHMARK_RUN_H__

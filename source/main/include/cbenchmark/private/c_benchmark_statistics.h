@@ -3,12 +3,19 @@
 
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
+#include "cbenchmark/private/c_benchmark_alloc.h"
 
 namespace BenchMark
 {
+    class BenchMarkRun;
+
+    double StatisticsMean(const Array<double>& v);
+    double StatisticsMedian(const Array<double>& v);
+    double StatisticsCV(const Array<double>& v);
+
     struct Statistic
     {
-        typedef double(Func)(const Array<double>& values);
+        typedef double(*Func)(const Array<double>& values);
 
         Statistic()
             : name_(nullptr)
@@ -17,7 +24,7 @@ namespace BenchMark
         {
         }
 
-        Statistic(const char*& name, Func* compute, StatisticUnit unit = {StatisticUnit::Time})
+        Statistic(const char* name, Func compute, StatisticUnit unit = {StatisticUnit::Time})
             : name_(name)
             , compute_(compute)
             , unit_(unit)
@@ -25,7 +32,7 @@ namespace BenchMark
         }
 
         const char*   name_;
-        Func*         compute_;
+        Func          compute_;
         StatisticUnit unit_;
     };
 
@@ -64,14 +71,20 @@ namespace BenchMark
             ReportAggregatesOnly        = FileReportAggregatesOnly | DisplayReportAggregatesOnly // Both reporters should only display aggregates.
         };
 
-        AggregationReportMode() : mode(Unspecified) {}
-        AggregationReportMode(u32 mode) : mode(mode) {}
+        AggregationReportMode()
+            : mode(Unspecified)
+        {
+        }
+        AggregationReportMode(u32 mode)
+            : mode(mode)
+        {
+        }
 
         u32 mode;
     };
 
     // Returns the number of reports that were aggregated into the result.
-    void ComputeStats(Allocator* alloc, const Array<BenchMarkRun>& reports, Array<BenchMarkRun>& result);
+    void ComputeStats(Allocator* alloc, const Array<BenchMarkRun*>& reports, Array<BenchMarkRun*>& result);
 
     double StatisticsMean(const Array<double>& data);
     double StatisticsMedian(const Array<double>& data);

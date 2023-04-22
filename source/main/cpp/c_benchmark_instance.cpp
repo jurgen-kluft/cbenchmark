@@ -44,9 +44,7 @@ namespace BenchMark
         , aggregation_report_mode_(AggregationReportMode::Default)
         , args_()
         , time_unit_(TimeUnit::Nanosecond)
-        , measure_process_cpu_time_(false)
-        , use_real_time_(false)
-        , use_manual_time_(false)
+        , time_settings_()
         , complexity_(BigO::O_None)
         , complexity_lambda_(nullptr)
         , counters_()
@@ -79,21 +77,20 @@ namespace BenchMark
 
     BenchMarkState BenchMarkInstance::Run(IterationCount iters, int thread_id, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results) const
     {
+        // TODO Allocator, needs to be thread-safe!
         BenchMarkState state(name_.function_name, iters, &args_, thread_id, threads_, timer, manager, results);
-        benchmark_->run_(state);
+        benchmark_->run_(state, allocator);
         return state;
     }
 
-    void BenchMarkInstance::init(Allocator* allocator, BenchMarkEntity* benchmark, int family_index, int per_family_instance_index, int thread_count, Arg* args)
+    void BenchMarkInstance::init(Allocator* allocator, BenchMarkEntity* benchmark, int family_index, int per_family_instance_index, int thread_count)
     {
         benchmark_                 = benchmark;
         family_index_              = family_index;
         per_family_instance_index_ = (per_family_instance_index);
         aggregation_report_mode_   = (benchmark->aggregation_report_mode_);
         time_unit_                 = (benchmark->time_unit_);
-        measure_process_cpu_time_  = (benchmark->measure_process_cpu_time_);
-        use_real_time_             = (benchmark->use_real_time_);
-        use_manual_time_           = (benchmark->use_manual_time_);
+        time_settings_             = (benchmark->time_settings_);
         complexity_                = (benchmark->complexity_);
         complexity_lambda_         = (benchmark->complexity_lambda_);
         statistics_                = (benchmark->statistics_);

@@ -15,14 +15,10 @@ namespace BenchMark
     class BenchMarkReporter;
     struct BenchMarkState;
 
-#define BM_ARG              \
-    settings->AddArgName(); \
-    settings->AddArg
-
+#define BM_ARG(...) settings->AddArg({__VA_ARGS__});
 #define BM_ARGRANGE settings->SetArgRange
 #define BM_ARGPRODUCT settings->SetArgProduct
-
-#define BM_NAMED_ARG settings->AddNamedArg
+#define BM_NAMED_ARG(tag, ...) settings->SetNamedArg(#tag, {__VA_ARGS__});
 #define BM_NAMED_ARGRANGE settings->SetNamedArgRange
 
 #define BM_COUNTER settings->AddCounter
@@ -34,10 +30,10 @@ namespace BenchMark
 
 #define BM_ITERATE while (state.KeepRunning())
 
-    class BMUnit
+    class BenchMarkUnit
     {
     public:
-        BMUnit*           next;
+        BenchMarkUnit*    next;
         BenchMarkEntity*  entity;
         run_function      run;
         settings_function settings;
@@ -47,10 +43,10 @@ namespace BenchMark
         int               lineNumber;
     };
 
-    class BMFixture
+    class BenchMarkFixture
     {
     public:
-        void AddBMUnit(BMUnit* bmu)
+        void AddUnit(BenchMarkUnit* bmu)
         {
             if (head == nullptr)
                 head = bmu;
@@ -58,9 +54,9 @@ namespace BenchMark
                 tail->next = bmu;
             tail = bmu;
         }
-        BMUnit*           head;
-        BMUnit*           tail;
-        BMFixture*        next;
+        BenchMarkUnit*    head;
+        BenchMarkUnit*    tail;
+        BenchMarkFixture* next;
         settings_function settings;
         setup_function    setup;
         teardown_function teardown;
@@ -70,10 +66,10 @@ namespace BenchMark
         int               lineNumber;
     };
 
-    class BMSuite
+    class BenchMarkSuite
     {
     public:
-        void AddBMFixture(BMFixture* bm)
+        void AddFixture(BenchMarkFixture* bm)
         {
             if (head == nullptr)
                 head = bm;
@@ -81,9 +77,9 @@ namespace BenchMark
                 tail->next = bm;
             tail = bm;
         }
-        BMFixture*        head;
-        BMFixture*        tail;
-        BMSuite*          next;
+        BenchMarkFixture* head;
+        BenchMarkFixture* tail;
+        BenchMarkSuite*   next;
         settings_function settings;
         setup_function    setup;
         teardown_function teardown;
@@ -96,7 +92,7 @@ namespace BenchMark
 #define BM_TEST_DISABLE(name)                    \
     namespace nsBMU##name                        \
     {                                            \
-        extern BMUnit __unit;                    \
+        extern BenchMarkUnit __unit;             \
     }                                            \
     class SetBMUnitDisable##name                 \
     {                                            \
@@ -108,11 +104,11 @@ namespace BenchMark
     }
 
 #define BM_TEST(bmname)                                                                      \
-    void BM_Run_##bmname(BenchMarkState& state);                                             \
+    void BM_Run_##bmname(BenchMarkState& state, Allocator* allocator);                       \
     namespace nsBMU##bmname                                                                  \
     {                                                                                        \
         static BenchMarkEntity __entity;                                                     \
-        static BMUnit          __unit;                                                       \
+        static BenchMarkUnit   __unit;                                                       \
         class BMRegisterUnit                                                                 \
         {                                                                                    \
         public:                                                                              \
@@ -123,18 +119,18 @@ namespace BenchMark
                 __unit.name       = _name;                                                   \
                 __unit.filename   = _filename;                                               \
                 __unit.lineNumber = _lineNumber;                                             \
-                __fixture.AddBMUnit(&__unit);                                                \
+                __fixture.AddUnit(&__unit);                                                  \
             }                                                                                \
         };                                                                                   \
         static BMRegisterUnit __register(#bmname, __FILE__, __LINE__ + 2);                   \
     }                                                                                        \
-    void BM_Run_##bmname(BenchMarkState& state)
+    void BM_Run_##bmname(BenchMarkState& state, Allocator* allocator)
 
 #define BM_SETTINGS(name)                                                   \
     void BMUnitSettings##name(Allocator* alloc, BenchMarkEntity* settings); \
     namespace nsBMU##name                                                   \
     {                                                                       \
-        extern BMUnit __unit;                                               \
+        extern BenchMarkUnit __unit;                                        \
         class SetBMUnitSettings                                             \
         {                                                                   \
         public:                                                             \
@@ -149,7 +145,7 @@ namespace BenchMark
 #define BM_FIXTURE(bmname)                                                                      \
     namespace nsBMF##bmname                                                                     \
     {                                                                                           \
-        static BMFixture __fixture;                                                             \
+        static BenchMarkFixture __fixture;                                                      \
         class BMRegisterFixture                                                                 \
         {                                                                                       \
         public:                                                                                 \
@@ -158,7 +154,7 @@ namespace BenchMark
                 __fixture.name       = _name;                                                   \
                 __fixture.filename   = _filename;                                               \
                 __fixture.lineNumber = _lineNumber;                                             \
-                __suite.AddBMFixture(&__fixture);                                               \
+                __suite.AddFixture(&__fixture);                                                 \
             }                                                                                   \
         };                                                                                      \
         static BMRegisterFixture __register(#bmname, __FILE__, __LINE__ + 2);                   \
@@ -202,10 +198,10 @@ namespace BenchMark
     void BMFixtureSettings(Allocator* alloc, BenchMarkEntity* settings)
 
 #define BM_SUITE(bmname)                                                                  \
-    extern void RegisterBenchMarkSuite(BMSuite*);                                         \
+    extern void RegisterBenchMarkSuite(BenchMarkSuite*);                                  \
     namespace nsBMS##bmname                                                               \
     {                                                                                     \
-        static BMSuite __suite;                                                           \
+        static BenchMarkSuite __suite;                                                    \
         class BMSRegister                                                                 \
         {                                                                                 \
         public:                                                                           \

@@ -5,11 +5,11 @@
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_name.h"
+#include "cbenchmark/private/c_benchmark_entity.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
 
 namespace BenchMark
 {
-    class BenchMarkEntity;
     class BenchMarkState;
     class ThreadTimer;
     class ThreadManager;
@@ -48,15 +48,15 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void                  init(Allocator* allocator, BenchMarkEntity * benchmark, int family_index, int per_family_instance_index, int thread_count, Arg* args);
+        void                  init(Allocator* allocator, BenchMarkEntity* benchmark, int family_index, int per_family_instance_index, int thread_count);
         const BenchmarkName&  name() const { return name_; }
         int                   family_index() const { return family_index_; }
         int                   per_family_instance_index() const { return per_family_instance_index_; }
         AggregationReportMode aggregation_report_mode() const { return aggregation_report_mode_; }
         TimeUnit              time_unit() const { return time_unit_; }
-        bool                  measure_process_cpu_time() const { return measure_process_cpu_time_; }
-        bool                  use_real_time() const { return use_real_time_; }
-        bool                  use_manual_time() const { return use_manual_time_; }
+        bool                  measure_process_cpu_time() const { return time_settings_.MeasureProcessCpuTime(); }
+        bool                  use_real_time() const { return time_settings_.UseRealTime(); }
+        bool                  use_manual_time() const { return time_settings_.UseManualTime(); }
         BigO                  complexity() const { return complexity_; }
         BigO::Func*           complexity_lambda() const { return complexity_lambda_; }
         Statistics const&     statistics() const { return statistics_; }
@@ -71,25 +71,23 @@ namespace BenchMark
         BenchMarkState Run(IterationCount iters, int threadid, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results) const;
 
     private:
-        BenchmarkName            name_;
-        BenchMarkEntity * benchmark_;
-        int                      family_index_;
-        int                      per_family_instance_index_;
-        AggregationReportMode    aggregation_report_mode_;
-        Array<s64>               args_;
-        TimeUnit                 time_unit_;
-        bool                     measure_process_cpu_time_;
-        bool                     use_real_time_;
-        bool                     use_manual_time_;
-        BigO                     complexity_;
-        BigO::Func*              complexity_lambda_;
-        Counters                 counters_;
-        Statistics               statistics_;
-        int                      repetitions_;
-        double                   min_time_;
-        double                   min_warmup_time_;
-        IterationCount           iterations_;
-        int                      threads_; // Number of concurrent threads to us
+        BenchmarkName         name_;
+        BenchMarkEntity*      benchmark_;
+        int                   family_index_;
+        int                   per_family_instance_index_;
+        AggregationReportMode aggregation_report_mode_;
+        Array<s64>            args_;
+        TimeUnit              time_unit_;
+        TimeSettings          time_settings_;
+        BigO                  complexity_;
+        BigO::Func*           complexity_lambda_;
+        Counters              counters_;
+        Statistics            statistics_;
+        int                   repetitions_;
+        double                min_time_;
+        double                min_warmup_time_;
+        IterationCount        iterations_;
+        int                   threads_; // Number of concurrent threads to us
 
         typedef void (*callback_function)(const BenchMarkState&);
         callback_function setup_    = nullptr;

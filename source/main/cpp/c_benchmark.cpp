@@ -9,6 +9,7 @@
 #include "cbenchmark/private/c_benchmark_run.h"
 #include "cbenchmark/private/c_benchmark_runner.h"
 #include "cbenchmark/private/c_benchmark_complexity.h"
+#include "cbenchmark/private/c_benchmark_entity.h"
 #include "cbenchmark/private/c_time_helpers.h"
 #include "cbenchmark/private/c_stringbuilder.h"
 #include "cbenchmark/private/c_stdout.h"
@@ -18,6 +19,8 @@
 
 namespace BenchMark
 {
+    // TODO deal with global settings
+
     static s32  FLAGS_benchmark_repetitions                = 1;
     static bool FLAGS_benchmark_enable_random_interleaving = false;
 
@@ -59,31 +62,28 @@ namespace BenchMark
 
     struct XorRandom
     {
-        u64 shuffle_table[4];
-
-        XorRandom(u64 seed)
+        u64 s0, s1;
+        inline XorRandom(u64 seed)
+            : s0(seed)
+            , s1(0)
         {
-            shuffle_table[0] = seed;
-            shuffle_table[1] = 0;
-            shuffle_table[2] = 0;
-            shuffle_table[3] = 0;
-            for (int i = 0; i < 4; ++i)
-                next();
+            next();
+            next();
         }
 
-        u64 next(void)
+        inline u64 next(void)
         {
-            u64 s1           = shuffle_table[0];
-            u64 s0           = shuffle_table[1];
-            u64 result       = s0 + s1;
-            shuffle_table[0] = s0;
-            s1 ^= s1 << 23;
-            shuffle_table[1] = s1 ^ s0 ^ (s1 >> 18) ^ (s0 >> 5);
+            u64 ss1    = s0;
+            u64 ss0    = s1;
+            u64 result = ss0 + ss1;
+            s0         = ss0;
+            ss1 ^= ss1 << 23;
+            s1 = ss1 ^ ss0 ^ (ss1 >> 18) ^ (ss0 >> 5);
             return result;
         }
-    }
+    };
 
-    RandomShuffle(Array<s64>& indices)
+    static void RandomShuffle(Array<s64>& indices)
     {
         XorRandom rng(0xdeadbeef);
         for (int i = 0; i < indices.Size(); ++i)
@@ -93,7 +93,7 @@ namespace BenchMark
         }
     }
 
-    void RunBenchmarks(Allocator* allocator, const Array<BenchMarkInstance*>& benchmarks, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    void RunBenchmarks(Allocator* allocator, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
     {
         // Note the file_reporter can be null.
         BM_CHECK(display_reporter != nullptr);
@@ -102,9 +102,9 @@ namespace BenchMark
         bool might_have_aggregates = FLAGS_benchmark_repetitions > 1;
         s64  name_field_width      = 10;
         s64  stat_field_width      = 0;
-        for (int i = 0; i < benchmarks.Size(); ++i)
+        for (int i = 0; i < benchmark_instances.Size(); ++i)
         {
-            const BenchMarkInstance* benchmark = benchmarks[i];
+            const BenchMarkInstance* benchmark = benchmark_instances[i];
             name_field_width                   = max<s64>(name_field_width, benchmark->name().FullNameLen());
             might_have_aggregates |= benchmark->repetitions() > 1;
 
@@ -122,8 +122,8 @@ namespace BenchMark
         BenchMarkReporter::Context context;
         context.name_field_width = name_field_width;
 
-        // Keep track of running times of all instances of each benchmark family.
-        // std::map<int /*family_index*/, BenchMarkReporter::PerFamilyRunReports> per_family_reports;
+        // Keep track of running times of all instances of each benchmark benchmark.
+        // std::map<int /*benchmark_index*/, BenchMarkReporter::PerFamilyRunReports> per_family_reports;
         Array<int>                                     family_indices;
         Array<BenchMarkReporter::PerFamilyRunReports*> per_family_reports;
 
@@ -136,22 +136,22 @@ namespace BenchMark
 
             // Benchmarks to run
             Array<BenchMarkRunner*> runners;
-            runners.Init(allocator, 0, benchmarks.Size());
+            runners.Init(allocator, 0, benchmark_instances.Size());
 
-            // Count the number of benchmarks with threads to warn the user in case
+            // Count the number of benchmark_instances with threads to warn the user in case
             // performance counters are used.
             int benchmarks_with_threads = 0;
 
-            // Loop through all benchmarks
-            for (int i = 0; i < benchmarks.Size(); ++i)
+            // Loop through all benchmark_instances
+            for (int i = 0; i < benchmark_instances.Size(); ++i)
             {
-                const BenchMarkInstance* benchmark = benchmarks[i];
+                const BenchMarkInstance* benchmark = benchmark_instances[i];
 
                 BenchMarkReporter::PerFamilyRunReports* reports_for_family = nullptr;
                 if (!benchmark->complexity().Is(BigO::O_None))
                 {
-                    s32 const family_index = family_indices.Find(benchmark->family_index());
-                    if (family_index == -1)
+                    s32 const benchmark_index = family_indices.Find(benchmark->family_index());
+                    if (benchmark_index == -1)
                     {
                         family_indices.PushBack(benchmark->family_index());
                         reports_for_family = allocator->Construct<BenchMarkReporter::PerFamilyRunReports>();
@@ -159,7 +159,7 @@ namespace BenchMark
                     }
                     else
                     {
-                        reports_for_family = per_family_reports[family_index];
+                        reports_for_family = per_family_reports[benchmark_index];
                     }
                 }
 
@@ -173,7 +173,7 @@ namespace BenchMark
                 if (reports_for_family)
                     reports_for_family->num_runs_total += num_repeats_of_this_instance;
             }
-            BM_CHECK(runners.Size() == benchmarks.Size() && "Unexpected runner count.");
+            BM_CHECK(runners.Size() == benchmark_instances.Size() && "Unexpected runner count.");
 
             Array<s64> repetition_indices;
             repetition_indices.Init(allocator, 0, num_repetitions_total);
@@ -210,7 +210,7 @@ namespace BenchMark
                 RunResults* run_results = GetResults(runner);
 
                 // Maybe calculate complexity report
-                if (auto* reports_for_family = GetReportsForFamily(runner))
+                if (BenchMarkReporter::PerFamilyRunReports* reports_for_family = GetReportsForFamily(runner))
                 {
                     if (reports_for_family->num_runs_done == reports_for_family->num_runs_total)
                     {
@@ -221,14 +221,14 @@ namespace BenchMark
                         // run_results->aggregates_only.insert(run_results->aggregates_only.end(), additional_run_stats.begin(), additional_run_stats.end());
                         run_results->aggregates_only.PushBack(additional_run_stats);
 
-                        const s32 family_index       = reports_for_family->runs.Front()->family_index;
-                        const s32 family_index_index = family_indices.Find(family_index);
+                        const s32 benchmark_index    = reports_for_family->runs.Front()->family_index;
+                        const s32 family_index_index = family_indices.Find(benchmark_index);
 
-                        // Remove the family
+                        // Remove the benchmark
                         family_indices.Erase(family_index_index);
                         per_family_reports.Erase(family_index_index);
 
-                        // Destroy the family object, when using a forward allocator this does nothing
+                        // Destroy the benchmark object, when using a forward allocator this does nothing
                         allocator->Destruct(reports_for_family);
                     }
                 }
@@ -242,6 +242,54 @@ namespace BenchMark
 
         FlushStreams(display_reporter);
         FlushStreams(file_reporter);
+    }
+
+    // Permutations is determined by the number of inputs to repeat a benchmark on.
+    // If this is "large" then warn the user during configuration.
+    static constexpr size_t kMaxPerms = 100;
+
+    bool CreateBenchMarkInstances(int next_family_index, BenchMarkEntity* benchmark, Array<BenchMarkInstance*>& benchmark_instances, Allocator* allocator)
+    {
+        if (!benchmark->enabled_)
+            return false;
+
+        // Special list of thread counts to use when none are specified
+        const int one_thread[]      = {1};
+        int       next_family_index = 0;
+
+        int benchmark_index              = next_family_index;
+        int per_benchmark_instance_index = 0;
+
+        const int* thread_counts     = (benchmark->thread_counts_ == nullptr ? one_thread : benchmark->thread_counts_);
+        const int  num_thread_counts = (benchmark->thread_counts_ == nullptr ? 1 : benchmark->num_thread_counts_);
+
+        // Have BenchMarkEntity create the arguments for this benchmark
+
+        const int perms = benchmark->BuildArgs();
+        benchmark_instances.Init(allocator, 0, perms * num_thread_counts);
+
+        for (int arg_index = 0; arg_index < perms; ++arg_index)
+        {
+            for (int i = 0; i < num_thread_counts; ++i)
+            {
+                const int num_threads = thread_counts[i];
+
+                BenchMarkInstance*& instance = benchmark_instances.Alloc();
+                instance                     = allocator->Construct<BenchMarkInstance>();
+                instance->init(allocator, benchmark, benchmark_index, per_benchmark_instance_index, num_threads);
+                instance->SetArgs(benchmark, arg_index);
+
+                benchmark_instances.PushBack(instance);
+                ++per_benchmark_instance_index;
+
+                // Only bump the next benchmark index once we've estabilished that
+                // at least one instance of this benchmark will be run.
+                if (next_family_index == benchmark_index)
+                    ++next_family_index;
+            }
+        }
+
+        return true;
     }
 
 } // namespace BenchMark
