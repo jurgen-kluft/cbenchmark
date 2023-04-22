@@ -93,7 +93,7 @@ namespace BenchMark
         }
     }
 
-    void RunBenchmarks(Allocator* allocator, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    void RunBenchMarkInstances(Allocator* allocator, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
     {
         // Note the file_reporter can be null.
         BM_CHECK(display_reporter != nullptr);
@@ -290,6 +290,85 @@ namespace BenchMark
         }
 
         return true;
+    }
+
+    namespace BenchMarkSuiteList
+    {
+        static BenchMarkSuite* head = nullptr;
+        static BenchMarkSuite* tail = nullptr;
+    } // namespace BenchMarkSuiteList
+
+    void RegisterBenchMarkSuite(BenchMarkSuite* suite)
+    {
+        if (BenchMarkSuiteList::head == nullptr)
+        {
+            BenchMarkSuiteList::head = suite;
+            BenchMarkSuiteList::tail = suite;
+        }
+        else
+        {
+            BenchMarkSuiteList::tail->next = suite;
+            BenchMarkSuiteList::tail       = suite;
+        }
+    }
+
+    void RunBenchMarkSuite(Allocator* allocator, BenchMarkSuite* suite, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    {
+        if (suite->disabled)
+            return;
+
+        // Report the details of this benchmark suite ?
+        // - name / filename / line number
+        // - list
+        //   - fixture name(num units)
+
+        // A benchmark-suite has a list of benchmark-fixtures where every fixture has a list of benchmark-units.
+        // A benchmark-unit is a BenchMarkEntity (should be merged int one object)
+        int next_family_index = 0;
+
+        BenchMarkFixture* fixture = suite->head;
+        while (fixture != nullptr)
+        {
+            if (fixture->disabled)
+            {
+                fixture = fixture->next;
+                continue;
+            }
+
+            // Report the details of this fixture ?
+            // - name / filename / line number
+            // - num units
+
+            BenchMarkUnit* unit = fixture->head;
+            while (unit != nullptr)
+            {
+                BenchMarkEntity* entity = unit->entity;
+
+                Array<BenchMarkInstance*> benchmark_instances;
+                if (CreateBenchMarkInstances(next_family_index, entity, benchmark_instances, allocator))
+                {
+                    // Report the details of this benchmark unit ?
+                    // - name / filename / line number
+
+                    RunBenchMarkInstances(allocator, benchmark_instances, display_reporter, file_reporter);
+                }
+                unit = unit->next;
+            }
+            fixture = fixture->next;
+        }
+    }
+
+    void RunBenchMarks(Allocator* allocator, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    {
+        BenchMarkSuite* suite = BenchMarkSuiteList::head;
+        while (suite != nullptr)
+        {
+            if (!suite->disabled)
+            {
+                RunBenchMarkSuite(allocator, suite, display_reporter, file_reporter);
+            }
+            suite = suite->next;
+        }
     }
 
 } // namespace BenchMark
