@@ -27,10 +27,17 @@ namespace BenchMark
     {
         if (count_only_)
         {
+            args_               = Array<Args>();
+            arg_                = Array<Args>();
+            arg_ranges_         = Array<ArgRange>();
+            arg_names_          = Array<const char*>();
+            thread_counts_      = Array<s32>();
+            statistics_         = Array<Statistic>();
             args_count_         = 0;
             arg_count_          = 0;
             arg_ranges_count_   = 0;
             arg_names_count_    = 0;
+            counters_size_      = 2;
             thread_counts_size_ = 0;
             statistics_count_   = 4;
         }
@@ -41,12 +48,16 @@ namespace BenchMark
             arg_ranges_.Init(allocator, 0, arg_ranges_count_);
             arg_names_.Init(allocator, 0, arg_names_count_);
             thread_counts_.Init(allocator, 0, thread_counts_size_);
+            counters_.Init(allocator, 0, counters_size_);
             statistics_.Init(allocator, 0, statistics_count_);
 
             AddStatisticsComputer(Statistic("mean", StatisticsMean, {StatisticUnit::Time}));
             AddStatisticsComputer(Statistic("median", StatisticsMedian, {StatisticUnit::Time}));
             AddStatisticsComputer(Statistic("stddev", StatisticsStdDev, {StatisticUnit::Time}));
             AddStatisticsComputer(Statistic("cv", StatisticsCV, {StatisticUnit::Percentage}));
+
+            AddCounter("items per second", CounterFlags::IsRate);
+            AddCounter("bytes per second", CounterFlags::IsRate);
         }
     }
 
@@ -60,7 +71,7 @@ namespace BenchMark
         statistics_.PushBack(stat);
     }
 
-    void BenchMarkUnit::SetEnabled(bool enabled) { enabled_ = enabled; }
+    void BenchMarkUnit::SetEnabled(bool enabled) { disabled = enabled ? 0 : 1; }
 
     void BenchMarkUnit::AddArgs(s32 const* args, s32 argc)
     {
@@ -114,9 +125,18 @@ namespace BenchMark
             thread_counts_.PushBack(thread_counts[i]);
     }
 
+    void BenchMarkUnit::AddCounter(const char* name, CounterFlags flags, double value)
+    {
+        if (count_only_)
+        {
+            counters_size_ += 1;
+            return;
+        }
+        counters_.PushBack({name, flags, value});
+    }
+
     void BenchMarkUnit::SetComplexity(BigO complexity) { complexity_ = complexity; }
     void BenchMarkUnit::SetComplexity(BigO::Func* complexity_lambda) { complexity_lambda_ = complexity_lambda; }
-    void BenchMarkUnit::AddCounter(const char* name, CounterFlags flags, double value) {}
     void BenchMarkUnit::SetTimeUnit(TimeUnit tu) { time_unit_ = tu; }
     void BenchMarkUnit::SetMinTime(double min_time) { min_time_ = min_time; }
     void BenchMarkUnit::SetMinWarmupTime(double min_warmup_time) { min_warmup_time_ = min_warmup_time; }

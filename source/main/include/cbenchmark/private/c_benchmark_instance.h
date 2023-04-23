@@ -62,22 +62,22 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void                  init(Allocator* allocator, BenchMarkEntity* benchmark, int per_family_instance_index, int thread_count);
-        const BenchmarkName&  name() const { return name_; }
-        int                   per_family_instance_index() const { return per_family_instance_index_; }
-        AggregationReportMode aggregation_report_mode() const { return aggregation_report_mode_; }
-        TimeUnit              time_unit() const { return time_unit_; }
-        bool                  measure_process_cpu_time() const { return time_settings_.MeasureProcessCpuTime(); }
-        bool                  use_real_time() const { return time_settings_.UseRealTime(); }
-        bool                  use_manual_time() const { return time_settings_.UseManualTime(); }
-        BigO                  complexity() const { return complexity_; }
-        BigO::Func*           complexity_lambda() const { return complexity_lambda_; }
-        Statistics const&     statistics() const { return statistics_; }
-        int                   repetitions() const { return repetitions_; }
-        double                min_time() const { return min_time_; }
-        double                min_warmup_time() const { return min_warmup_time_; }
-        IterationCount        iterations() const { return iterations_; }
-        int                   threads() const { return threads_; }
+        void                    init(Allocator* allocator, BenchMarkUnit* benchmark, int per_family_instance_index, int thread_count);
+        const BenchmarkName&    name() const { return name_; }
+        int                     per_family_instance_index() const { return per_family_instance_index_; }
+        AggregationReportMode   aggregation_report_mode() const { return aggregation_report_mode_; }
+        TimeUnit                time_unit() const { return time_unit_; }
+        bool                    measure_process_cpu_time() const { return time_settings_.MeasureProcessCpuTime(); }
+        bool                    use_real_time() const { return time_settings_.UseRealTime(); }
+        bool                    use_manual_time() const { return time_settings_.UseManualTime(); }
+        BigO                    complexity() const { return complexity_; }
+        BigO::Func*             complexity_lambda() const { return complexity_lambda_; }
+        Array<Statistic> const& statistics() const { return *statistics_; }
+        int                     repetitions() const { return repetitions_; }
+        double                  min_time() const { return min_time_; }
+        double                  min_warmup_time() const { return min_warmup_time_; }
+        IterationCount          iterations() const { return iterations_; }
+        int                     threads() const { return threads_; }
 
         void           Setup() const;
         void           Teardown() const;
@@ -85,7 +85,7 @@ namespace BenchMark
 
     private:
         BenchmarkName         name_;
-        BenchMarkEntity*      benchmark_;
+        BenchMarkUnit*        benchmark_;
         int                   per_family_instance_index_;
         AggregationReportMode aggregation_report_mode_;
         Array<s32>            args_;
@@ -94,7 +94,7 @@ namespace BenchMark
         BigO                  complexity_;
         BigO::Func*           complexity_lambda_;
         Counters              counters_;
-        Statistics            statistics_;
+        Array<Statistic>*     statistics_;
         int                   repetitions_;
         double                min_time_;
         double                min_warmup_time_;

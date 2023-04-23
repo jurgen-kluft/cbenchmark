@@ -4,6 +4,7 @@
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_utils.h"
 
 namespace BenchMark
 {
@@ -27,10 +28,9 @@ namespace BenchMark
 
     struct Counter
     {
-        u64          id;
+        const char*  name;
         CounterFlags flags;
         double       value;
-        Counter*     next;
     };
 
     struct CounterType
@@ -89,11 +89,11 @@ namespace BenchMark
             }
         }
 
-        static s32 Find(Counters const& c, u64 id)
+        static s32 Find(Counters const& c, const char* name)
         {
             for (s32 i = 0; i < c.counters.Size(); ++i)
             {
-                if (c.counters[i].id == id)
+                if (gCompareStrings(c.counters[i].name, name) == 0)
                 {
                     return i;
                 }
@@ -108,7 +108,7 @@ namespace BenchMark
             {
                 Counter& lc = l.counters[i];
 
-                const s32 it = Find(r, lc.id);
+                const s32 it = Find(r, lc.name);
                 if (it >= 0)
                 {
                     lc.value += r.counters[it].value;
@@ -118,7 +118,7 @@ namespace BenchMark
             for (s32 i = 0; i < r.counters.Size(); ++i)
             {
                 Counter const& rc = r.counters[i];
-                const s32      it = Find(l, rc.id);
+                const s32      it = Find(l, rc.name);
                 if (it < 0)
                 {
                     l.counters.PushBack(rc);

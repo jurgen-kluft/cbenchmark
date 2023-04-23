@@ -65,21 +65,20 @@ namespace BenchMark
     class BenchMarkUnit
     {
     public:
-        Allocator*            allocator;
-        Array<Args>           final_args_; // {...}[]
-        bool                  enabled_;
-        TimeUnit              time_unit_;
-        TimeSettings          time_settings_;
-        AggregationReportMode aggregation_report_mode_;
-        bool                  count_only_;       // Settings are applied in two passes
-        s32                   arg_names_count_;  //
-        Array<const char*>    arg_names_;        // Arg names (default = x,y,z,w)
-        s32                   args_count_;       //
-        Array<Args>           args_;             // {x,y,z,w}[]
-        s32                   arg_count_;        //
-        Array<Args>           arg_;              // x[], y[], z[], w[]
-        s32                   arg_ranges_count_; //
-        Array<ArgRange>       arg_ranges_;       // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
+        Allocator*            allocator;                //
+        Array<Args>           final_args_;              // {...}[]
+        TimeUnit              time_unit_;               // time unit to use for output
+        TimeSettings          time_settings_;           //
+        AggregationReportMode aggregation_report_mode_; //
+        bool                  count_only_;              // Settings are applied in two passes
+        s32                   arg_names_count_;         //
+        Array<const char*>    arg_names_;               // Arg names (default = x,y,z,w)
+        s32                   args_count_;              //
+        Array<Args>           args_;                    // {x,y,z,w}[]
+        s32                   arg_count_;               //
+        Array<Args>           arg_;                     // x[], y[], z[], w[]
+        s32                   arg_ranges_count_;        //
+        Array<ArgRange>       arg_ranges_;              // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
         int                   thread_counts_size_;
         Array<s32>            thread_counts_;
         int                   range_multiplier_;
@@ -87,27 +86,29 @@ namespace BenchMark
         double                min_time_;
         double                min_warmup_time_;
         IterationCount        iterations_;
-        Counters              counters_;
+        s32                   counters_size_;
+        Array<Counter>        counters_;
         BigO                  complexity_;
         BigO::Func*           complexity_lambda_;
         s32                   statistics_count_;
         Array<Statistic>      statistics_;
         setup_function        setup_;
         teardown_function     teardown_;
-        run_function          run;
-        settings_function     settings;
-        BenchMarkUnit*        next;
-        BenchMarkUnit*        entity;
-        const char*           name;
-        const char*           filename;
-        int                   disabled;
-        int                   lineNumber;
+        settings_function     settings_;
+        run_function          run_;
+        // -----------------------------------------------------------------
+        BenchMarkUnit* next;       // the fixture has a singly-linked list of benchmarks
+        const char*    name;       // the name of the benchmark
+        const char*    filename;   // the source file this benchmark was declared
+        int            disabled;   // 0 = enabled, 1 = disabled, should this benchmark be run?
+        int            lineNumber; // the line number in the source file
 
         s32 BuildArgs();
 
         void PrepareSettings(bool count_only);
         void SetDefaults();
         void SetEnabled(bool enabled);
+        bool IsDisabled() const { return disabled != 0; }
         void AddArgs(s32 const* args, s32 argc);
         void AddArg(const s32* args, s32 argc);
         void AddRange(s32 lo, s32 hi, s32 multiplier, s32 mode);

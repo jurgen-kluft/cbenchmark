@@ -9,7 +9,7 @@
 #include "cbenchmark/private/c_benchmark_run.h"
 #include "cbenchmark/private/c_benchmark_runner.h"
 #include "cbenchmark/private/c_benchmark_complexity.h"
-#include "cbenchmark/private/c_benchmark_entity.h"
+#include "cbenchmark/private/c_benchmark_unit.h"
 #include "cbenchmark/private/c_time_helpers.h"
 #include "cbenchmark/private/c_stringbuilder.h"
 #include "cbenchmark/private/c_stdout.h"
@@ -101,7 +101,7 @@ namespace BenchMark
             name_field_width                   = max<s32>(name_field_width, benchmark->name().FullNameLen());
             might_have_aggregates |= benchmark->repetitions() > 1;
 
-            Statistics const& stats = benchmark->statistics();
+            Array<Statistic> const& stats = benchmark->statistics();
             for (int j = 0; j < stats.Size(); ++j)
             {
                 Statistic const& Stat = stats[j];
@@ -254,28 +254,21 @@ namespace BenchMark
     // If this is "large" then warn the user during configuration.
     static constexpr size_t kMaxPerms = 100;
 
-    bool CreateBenchMarkInstances(Allocator* allocator, BenchMarkEntity* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
+    bool CreateBenchMarkInstances(Allocator* allocator, BenchMarkUnit* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
     {
-        if (!benchmark->enabled_)
-            return false;
+        const Array<s32>& thread_counts     = benchmark->thread_counts_;
+        const s32         num_thread_counts = thread_counts.Empty() ? 1 : thread_counts.Size();
 
-        // Special list of thread counts to use when none are specified
-        const int one_thread[] = {1};
-
-        const int* thread_counts     = (benchmark->thread_counts_ == nullptr ? one_thread : benchmark->thread_counts_);
-        const int  num_thread_counts = (benchmark->thread_counts_ == nullptr ? 1 : benchmark->thread_counts_size_);
-
-        // Have BenchMarkEntity create the arguments for this benchmark
-
-        const int perms = benchmark->BuildArgs();
+        // Have BenchMarkUnit create the arguments for this benchmark
+        const s32 perms = benchmark->BuildArgs();
         benchmark_instances.Init(allocator, 0, perms * num_thread_counts);
 
-        int per_benchmark_instance_index = 0;
-        for (int arg_index = 0; arg_index < perms; ++arg_index)
+        s32 per_benchmark_instance_index = 0;
+        for (s32 arg_index = 0; arg_index < perms; ++arg_index)
         {
-            for (int i = 0; i < num_thread_counts; ++i)
+            for (s32 i = 0; i < num_thread_counts; ++i)
             {
-                const int num_threads = thread_counts[i];
+                const s32 num_threads = thread_counts.Empty() ? 1 : thread_counts[i];
 
                 BenchMarkInstance*& instance = benchmark_instances.Alloc();
                 instance                     = allocator->Construct<BenchMarkInstance>();
@@ -320,7 +313,7 @@ namespace BenchMark
         //   - fixture name(num units)
 
         // A benchmark-suite has a list of benchmark-fixtures where every fixture has a list of benchmark-units.
-        // A benchmark-unit is a BenchMarkEntity (should be merged int one object)
+        // A benchmark-unit is a BenchMarkUnit (should be merged int one object)
 
         BenchMarkFixture* fixture = suite->head;
         while (fixture != nullptr)
@@ -335,10 +328,21 @@ namespace BenchMark
             // - name / filename / line number
             // - num units
 
-            BenchMarkEntity* unit = fixture->head;
+            BenchMarkUnit* unit = fixture->head;
             while (unit != nullptr)
             {
+                if (!unit->IsDisabled())
                 {
+                    // Apply the settings for this benchmark unit, from Suite, Fixture and Unit
+                    // Two passes
+                    for (s32 i = 0; i < 2; ++i)
+                    {
+                        unit->PrepareSettings(i == 0);
+                        suite->settings(allocator, unit);
+                        fixture->settings(allocator, unit);
+                        unit->settings_(allocator, unit);
+                    }
+
                     Array<BenchMarkInstance*> benchmark_instances;
                     if (CreateBenchMarkInstances(allocator, unit, benchmark_instances))
                     {
@@ -353,6 +357,9 @@ namespace BenchMark
                     {
                         allocator->Destruct(benchmark_instances[i]);
                     }
+
+                    // Reset the settings for this benchmark unit (release memory)
+                    unit->PrepareSettings(true);
                 }
 
                 unit = unit->next;
