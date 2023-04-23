@@ -166,7 +166,7 @@ namespace BenchMark
     typedef BenchMarkRun Run;
 
     // TODO Could benefit from an additional 'temp' allocator 
-    void ComputeBigO(Allocator* alloc, const Array<Run*>& reports, Array<Run*>& bigo)
+    void ComputeBigO(Allocator* alloc, Allocator* temp, const Array<Run*>& reports, Array<Run*>& bigo)
     {
         if (reports.Size() < 2)
             return;
@@ -176,9 +176,9 @@ namespace BenchMark
         Array<double> real_time;
         Array<double> cpu_time;
 
-        n.Init(alloc, 0, reports.Size());
-        real_time.Init(alloc, 0, reports.Size());
-        cpu_time.Init(alloc, 0, reports.Size());
+        n.Init(temp, 0, reports.Size());
+        real_time.Init(temp, 0, reports.Size());
+        cpu_time.Init(temp, 0, reports.Size());
 
         // Populate the accumulators.
         for (s32 i = 0; i < reports.Size(); ++i)

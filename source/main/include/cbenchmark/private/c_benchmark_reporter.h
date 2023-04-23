@@ -33,22 +33,16 @@ namespace BenchMark
             {
             }
 
-            // How many runs will all instances of this benchmark perform?
-            int num_runs_total;
-
-            // How many runs have happened already?
-            int num_runs_done;
-
-            // The reports about (non-errneous!) runs of this family.
-            Array<BenchMarkRun*> runs;
+            int                  num_runs_total; // How many runs will all instances of this benchmark perform?
+            int                  num_runs_done;  // How many runs have happened already?
+            Array<BenchMarkRun*> runs;           // The reports about (non-errneous!) runs of this family.
         };
 
-        // Construct a BenchMarkReporter with the output stream set to 'std::cout'
-        // and the error stream set to 'std::cerr'
         BenchMarkReporter();
+        virtual ~BenchMarkReporter();
 
-        void SetOutputStream(TextStream* out);
-        void SetErrorStream(TextStream* err);
+        void SetOutputStream(TextStream* out) { output_stream_ = out; }
+        void SetErrorStream(TextStream* err) { error_stream_ = err; }
 
         // Called once for every suite of benchmarks run.
         // The parameter "context" contains information that the
@@ -72,18 +66,10 @@ namespace BenchMark
         virtual void ReportRuns(Array<BenchMarkRun*> const& reports) = 0;
 
         // Called once and only once after ever group of benchmarks is run and reported.
+        virtual void Flush() = 0;
+
+        // Called once and only once after ever group of benchmarks is run and reported.
         virtual void Finalize() {}
-
-        // REQUIRES: The object referenced by 'out' is valid for the lifetime of the reporter.
-        void SetOutputStream(TextStream* out) { output_stream_ = out; }
-
-        // REQUIRES: The object referenced by 'err' is valid for the lifetime of the reporter.
-        void SetErrorStream(TextStream* err) { error_stream_ = err; }
-
-        TextStream* GetOutputStream() const { return output_stream_; }
-        TextStream* GetErrorStream() const { return error_stream_; }
-
-        virtual ~BenchMarkReporter();
 
         // Write a human readable string to 'out' representing the specified 'context'.
         // REQUIRES: 'out' is non-null.

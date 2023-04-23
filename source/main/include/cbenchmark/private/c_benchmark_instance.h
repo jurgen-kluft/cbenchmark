@@ -15,6 +15,21 @@ namespace BenchMark
     class ThreadManager;
     class PerfCountersMeasurement;
 
+    struct BenchMarkGlobals
+    {
+        BenchMarkGlobals();
+
+        double FLAGS_benchmark_min_time;
+        double FLAGS_benchmark_min_warmup_time;
+        bool   FLAGS_benchmark_report_aggregates_only;
+        bool   FLAGS_benchmark_display_aggregates_only;
+        bool   FLAGS_benchmark_repetitions;
+        s32    FLAGS_benchmark_repetitions;
+        bool   FLAGS_benchmark_enable_random_interleaving;
+    };
+
+    static BenchMarkGlobals g_benchmark_globals;
+
     struct BenchMarkRunResult
     {
         BenchMarkRunResult()
@@ -48,9 +63,8 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void                  init(Allocator* allocator, BenchMarkEntity* benchmark, int family_index, int per_family_instance_index, int thread_count);
+        void                  init(Allocator* allocator, BenchMarkEntity* benchmark, int per_family_instance_index, int thread_count);
         const BenchmarkName&  name() const { return name_; }
-        int                   family_index() const { return family_index_; }
         int                   per_family_instance_index() const { return per_family_instance_index_; }
         AggregationReportMode aggregation_report_mode() const { return aggregation_report_mode_; }
         TimeUnit              time_unit() const { return time_unit_; }
@@ -73,7 +87,6 @@ namespace BenchMark
     private:
         BenchmarkName         name_;
         BenchMarkEntity*      benchmark_;
-        int                   family_index_;
         int                   per_family_instance_index_;
         AggregationReportMode aggregation_report_mode_;
         Array<s64>            args_;

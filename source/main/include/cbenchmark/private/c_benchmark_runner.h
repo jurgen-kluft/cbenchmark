@@ -26,21 +26,22 @@ namespace BenchMark
     };
 
     class BenchMarkRunner;
-    void                                    CreateRunner(BenchMarkRunner*& r, Allocator* a, const BenchMarkInstance* b_, PerfCountersMeasurement* pcm_, BenchMarkReporter::PerFamilyRunReports* reports_for_family_);
-    void                                    DestroyRunner(BenchMarkRunner*& r);
-    int                                     GetNumRepeats(const BenchMarkRunner* r);
-    bool                                    HasRepeatsRemaining(const BenchMarkRunner* r);
-    void                                    DoOneRepetition(BenchMarkRunner* r);
-    RunResults*                             GetResults(BenchMarkRunner* r);
-    BenchMarkReporter::PerFamilyRunReports* GetReportsForFamily(const BenchMarkRunner* r);
-    double                                  GetMinTime(const BenchMarkRunner* r);
-    bool                                    HasExplicitIters(const BenchMarkRunner* r);
-    IterationCount                          GetIters(const BenchMarkRunner* r);
-    void                                    StartStopBarrier(ThreadManager* tm);
-    void                                    TimerStart(ThreadTimer* timer);
-    void                                    TimerStop(ThreadTimer* timer);
-    bool                                    TimerIsRunning(ThreadTimer* timer);
-    void                                    TimerSetIterationTime(ThreadTimer* timer, double seconds);
+    BenchMarkRunner* CreateRunner(Allocator* a);
+    void             InitRunner(BenchMarkRunner* r, Allocator* a, Allocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
+    void             InitRunResults(BenchMarkRunner* r, BenchMarkGlobals* globals, RunResults& results);
+    void             DestroyRunner(BenchMarkRunner*& r, Allocator* a);
+    int              GetNumRepeats(const BenchMarkRunner* r);
+    bool             HasRepeatsRemaining(const BenchMarkRunner* r);
+    void             DoOneRepetition(BenchMarkRunner* r, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
+    void             AggregateResults(BenchMarkRunner* r, Allocator* alloc, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only);
+    double           GetMinTime(const BenchMarkRunner* r);
+    bool             HasExplicitIters(const BenchMarkRunner* r);
+    IterationCount   GetIters(const BenchMarkRunner* r);
+    void             StartStopBarrier(ThreadManager* tm);
+    void             TimerStart(ThreadTimer* timer);
+    void             TimerStop(ThreadTimer* timer);
+    bool             TimerIsRunning(ThreadTimer* timer);
+    void             TimerSetIterationTime(ThreadTimer* timer, double seconds);
 
 } // namespace BenchMark
 

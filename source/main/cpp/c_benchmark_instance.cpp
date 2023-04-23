@@ -15,6 +15,17 @@
 
 namespace BenchMark
 {
+    BenchMarkGlobals::BenchMarkGlobals()
+    {
+        FLAGS_benchmark_min_time                   = 0.5;
+        FLAGS_benchmark_min_warmup_time            = 0.5;
+        FLAGS_benchmark_report_aggregates_only     = true;
+        FLAGS_benchmark_display_aggregates_only    = false;
+        FLAGS_benchmark_repetitions                = 1;
+        FLAGS_benchmark_repetitions                = 1;
+        FLAGS_benchmark_enable_random_interleaving = false;
+    }
+
     void BenchMarkRunResult::Merge(const BenchMarkRunResult& other)
     {
         iterations += other.iterations;
@@ -39,7 +50,6 @@ namespace BenchMark
     BenchMarkInstance::BenchMarkInstance()
         : name_()
         , benchmark_(nullptr)
-        , family_index_(0)
         , per_family_instance_index_(0)
         , aggregation_report_mode_(AggregationReportMode::Default)
         , args_()
@@ -83,10 +93,9 @@ namespace BenchMark
         return state;
     }
 
-    void BenchMarkInstance::init(Allocator* allocator, BenchMarkEntity* benchmark, int family_index, int per_family_instance_index, int thread_count)
+    void BenchMarkInstance::init(Allocator* allocator, BenchMarkEntity* benchmark, int per_family_instance_index, int thread_count)
     {
         benchmark_                 = benchmark;
-        family_index_              = family_index;
         per_family_instance_index_ = (per_family_instance_index);
         aggregation_report_mode_   = (benchmark->aggregation_report_mode_);
         time_unit_                 = (benchmark->time_unit_);

@@ -19,20 +19,13 @@
 
 namespace BenchMark
 {
-    // TODO deal with global settings
-
-    static s32  FLAGS_benchmark_repetitions                = 1;
-    static bool FLAGS_benchmark_enable_random_interleaving = false;
-
     // Flushes streams after invoking reporter methods that write to them. This
     // ensures users get timely updates even when streams are not line-buffered.
     void FlushStreams(BenchMarkReporter* reporter)
     {
         if (!reporter)
             return;
-
-        reporter->GetOutputStream()->flush();
-        reporter->GetErrorStream()->flush();
+        reporter->Flush();
     }
 
     // Reports in both display and file reporters.
@@ -93,13 +86,13 @@ namespace BenchMark
         }
     }
 
-    void RunBenchMarkInstances(Allocator* allocator, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    void RunBenchMarkInstances(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
     {
         // Note the file_reporter can be null.
         BM_CHECK(display_reporter != nullptr);
 
         // Determine the width of the name field using a minimum width of 10.
-        bool might_have_aggregates = FLAGS_benchmark_repetitions > 1;
+        bool might_have_aggregates = globals->FLAGS_benchmark_repetitions > 1;
         s64  name_field_width      = 10;
         s64  stat_field_width      = 0;
         for (int i = 0; i < benchmark_instances.Size(); ++i)
@@ -122,10 +115,11 @@ namespace BenchMark
         BenchMarkReporter::Context context;
         context.name_field_width = name_field_width;
 
-        // Keep track of running times of all instances of each benchmark benchmark.
-        // std::map<int /*benchmark_index*/, BenchMarkReporter::PerFamilyRunReports> per_family_reports;
-        Array<int>                                     family_indices;
-        Array<BenchMarkReporter::PerFamilyRunReports*> per_family_reports;
+        BenchMarkReporter::PerFamilyRunReports* reports_for_family = nullptr;
+        if (!benchmark_instances[0]->complexity().Is(BigO::O_None))
+        {
+            reports_for_family = temp->Construct<BenchMarkReporter::PerFamilyRunReports>();
+        }
 
         if (display_reporter->ReportContext(context) && (!file_reporter || file_reporter->ReportContext(context)))
         {
@@ -136,7 +130,10 @@ namespace BenchMark
 
             // Benchmarks to run
             Array<BenchMarkRunner*> runners;
-            runners.Init(allocator, 0, benchmark_instances.Size());
+            runners.Init(temp, 0, benchmark_instances.Size());
+
+            Array<RunResults*> run_results;
+            run_results.Init(temp, 0, benchmark_instances.Size());
 
             // Count the number of benchmark_instances with threads to warn the user in case
             // performance counters are used.
@@ -147,36 +144,27 @@ namespace BenchMark
             {
                 const BenchMarkInstance* benchmark = benchmark_instances[i];
 
-                BenchMarkReporter::PerFamilyRunReports* reports_for_family = nullptr;
-                if (!benchmark->complexity().Is(BigO::O_None))
-                {
-                    s32 const benchmark_index = family_indices.Find(benchmark->family_index());
-                    if (benchmark_index == -1)
-                    {
-                        family_indices.PushBack(benchmark->family_index());
-                        reports_for_family = allocator->Construct<BenchMarkReporter::PerFamilyRunReports>();
-                        per_family_reports.PushBack(reports_for_family);
-                    }
-                    else
-                    {
-                        reports_for_family = per_family_reports[benchmark_index];
-                    }
-                }
-
                 benchmarks_with_threads += (benchmark->threads() > 0);
 
-                BenchMarkRunner* runner = allocator->Construct<BenchMarkRunner>(allocator, benchmark, reports_for_family);
+                BenchMarkRunner* runner = CreateRunner(temp);
+                InitRunner(runner, allocator, temp, globals, benchmark);
                 runners.PushBack(runner);
 
-                int num_repeats_of_this_instance = GetNumRepeats(runner);
+                const int num_repeats_of_this_instance = GetNumRepeats(runner);
                 num_repetitions_total += num_repeats_of_this_instance;
                 if (reports_for_family)
                     reports_for_family->num_runs_total += num_repeats_of_this_instance;
+
+                RunResults* results = temp->Construct<RunResults>();
+                results->non_aggregates.Init(temp, 0, num_repeats_of_this_instance);
+                results->aggregates_only.Init(temp, 0, num_repeats_of_this_instance);
+                InitRunResults(runner, globals, *results);
+                run_results.PushBack(results);
             }
             BM_CHECK(runners.Size() == benchmark_instances.Size() && "Unexpected runner count.");
 
             Array<s64> repetition_indices;
-            repetition_indices.Init(allocator, 0, num_repetitions_total);
+            repetition_indices.Init(temp, 0, num_repetitions_total);
 
             for (s32 runner_index = 0, num_runners = runners.Size(); runner_index != num_runners; ++runner_index)
             {
@@ -187,7 +175,7 @@ namespace BenchMark
             }
             BM_CHECK(repetition_indices.Size() == num_repetitions_total && "Unexpected number of repetition indexes.");
 
-            if (FLAGS_benchmark_enable_random_interleaving)
+            if (globals->FLAGS_benchmark_enable_random_interleaving)
             {
                 RandomShuffle(repetition_indices);
             }
@@ -196,8 +184,12 @@ namespace BenchMark
             {
                 const s64        repetition_index = repetition_indices[i];
                 BenchMarkRunner* runner           = runners[repetition_index];
+                RunResults*      results          = run_results[repetition_index];
 
-                DoOneRepetition(runner);
+                BenchMarkRun*& report = results->non_aggregates.Alloc();
+                report                = allocator->Construct<BenchMarkRun>();
+
+                DoOneRepetition(runner, report, reports_for_family);
                 if (HasRepeatsRemaining(runner))
                     continue;
 
@@ -207,35 +199,49 @@ namespace BenchMark
                 if (file_reporter)
                     file_reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner));
 
-                RunResults* run_results = GetResults(runner);
+                AggregateResults(runner, allocator, results->non_aggregates, results->aggregates_only);
 
                 // Maybe calculate complexity report
-                if (BenchMarkReporter::PerFamilyRunReports* reports_for_family = GetReportsForFamily(runner))
+                if (reports_for_family != nullptr)
                 {
                     if (reports_for_family->num_runs_done == reports_for_family->num_runs_total)
                     {
                         Array<BenchMarkRun*> additional_run_stats;
                         additional_run_stats.Init(allocator, 0, 2);
-                        ComputeBigO(allocator, reports_for_family->runs, additional_run_stats);
+                        ComputeBigO(allocator, temp, reports_for_family->runs, additional_run_stats);
 
                         // run_results->aggregates_only.insert(run_results->aggregates_only.end(), additional_run_stats.begin(), additional_run_stats.end());
-                        run_results->aggregates_only.PushBack(additional_run_stats);
-
-                        const s32 benchmark_index    = reports_for_family->runs.Front()->family_index;
-                        const s32 family_index_index = family_indices.Find(benchmark_index);
-
-                        // Remove the benchmark
-                        family_indices.Erase(family_index_index);
-                        per_family_reports.Erase(family_index_index);
-
-                        // Destroy the benchmark object, when using a forward allocator this does nothing
-                        allocator->Destruct(reports_for_family);
+                        results->aggregates_only.PushBack(additional_run_stats);
                     }
                 }
 
-                Report(display_reporter, file_reporter, run_results);
+                Report(display_reporter, file_reporter, results);
+
+                // Destroy the reports
+                for (int i = 0; i < results->non_aggregates.Size(); ++i)
+                {
+                    temp->Destruct(results->non_aggregates[i]);
+                }
+                for (int i = 0; i < results->aggregates_only.Size(); ++i)
+                {
+                    temp->Destruct(results->aggregates_only[i]);
+                }
+                temp->Destruct(results);
+            }
+
+            // Destroy the reports for family
+            if (reports_for_family != nullptr)
+            {
+                temp->Destruct(reports_for_family);
+            }
+
+            // Destroy all runners
+            for (int i = 0; i < runners.Size(); ++i)
+            {
+                temp->Destruct(runners[i]);
             }
         }
+
         display_reporter->Finalize();
         if (file_reporter)
             file_reporter->Finalize();
@@ -248,17 +254,13 @@ namespace BenchMark
     // If this is "large" then warn the user during configuration.
     static constexpr size_t kMaxPerms = 100;
 
-    bool CreateBenchMarkInstances(int next_family_index, BenchMarkEntity* benchmark, Array<BenchMarkInstance*>& benchmark_instances, Allocator* allocator)
+    bool CreateBenchMarkInstances(Allocator* allocator, BenchMarkEntity* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
     {
         if (!benchmark->enabled_)
             return false;
 
         // Special list of thread counts to use when none are specified
-        const int one_thread[]      = {1};
-        int       next_family_index = 0;
-
-        int benchmark_index              = next_family_index;
-        int per_benchmark_instance_index = 0;
+        const int one_thread[] = {1};
 
         const int* thread_counts     = (benchmark->thread_counts_ == nullptr ? one_thread : benchmark->thread_counts_);
         const int  num_thread_counts = (benchmark->thread_counts_ == nullptr ? 1 : benchmark->num_thread_counts_);
@@ -268,6 +270,7 @@ namespace BenchMark
         const int perms = benchmark->BuildArgs();
         benchmark_instances.Init(allocator, 0, perms * num_thread_counts);
 
+        int per_benchmark_instance_index = 0;
         for (int arg_index = 0; arg_index < perms; ++arg_index)
         {
             for (int i = 0; i < num_thread_counts; ++i)
@@ -276,16 +279,10 @@ namespace BenchMark
 
                 BenchMarkInstance*& instance = benchmark_instances.Alloc();
                 instance                     = allocator->Construct<BenchMarkInstance>();
-                instance->init(allocator, benchmark, benchmark_index, per_benchmark_instance_index, num_threads);
-                instance->SetArgs(benchmark, arg_index);
+                instance->init(allocator, benchmark, per_benchmark_instance_index, num_threads);
 
                 benchmark_instances.PushBack(instance);
                 ++per_benchmark_instance_index;
-
-                // Only bump the next benchmark index once we've estabilished that
-                // at least one instance of this benchmark will be run.
-                if (next_family_index == benchmark_index)
-                    ++next_family_index;
             }
         }
 
@@ -312,7 +309,7 @@ namespace BenchMark
         }
     }
 
-    void RunBenchMarkSuite(Allocator* allocator, BenchMarkSuite* suite, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    void RunBenchMarkSuite(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
     {
         if (suite->disabled)
             return;
@@ -324,7 +321,6 @@ namespace BenchMark
 
         // A benchmark-suite has a list of benchmark-fixtures where every fixture has a list of benchmark-units.
         // A benchmark-unit is a BenchMarkEntity (should be merged int one object)
-        int next_family_index = 0;
 
         BenchMarkFixture* fixture = suite->head;
         while (fixture != nullptr)
@@ -343,29 +339,37 @@ namespace BenchMark
             while (unit != nullptr)
             {
                 BenchMarkEntity* entity = unit->entity;
-
-                Array<BenchMarkInstance*> benchmark_instances;
-                if (CreateBenchMarkInstances(next_family_index, entity, benchmark_instances, allocator))
                 {
-                    // Report the details of this benchmark unit ?
-                    // - name / filename / line number
+                    Array<BenchMarkInstance*> benchmark_instances;
+                    if (CreateBenchMarkInstances(allocator, entity, benchmark_instances))
+                    {
+                        // Report the details of this benchmark unit ?
+                        // - name / filename / line number
 
-                    RunBenchMarkInstances(allocator, benchmark_instances, display_reporter, file_reporter);
+                        RunBenchMarkInstances(allocator, temp, globals, benchmark_instances, display_reporter, file_reporter);
+                    }
+
+                    // Destroy the benchmark instances
+                    for (int i = 0; i < benchmark_instances.Size(); ++i)
+                    {
+                        allocator->Destruct(benchmark_instances[i]);
+                    }
                 }
+
                 unit = unit->next;
             }
             fixture = fixture->next;
         }
     }
 
-    void RunBenchMarks(Allocator* allocator, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    void RunBenchMarks(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
     {
         BenchMarkSuite* suite = BenchMarkSuiteList::head;
         while (suite != nullptr)
         {
             if (!suite->disabled)
             {
-                RunBenchMarkSuite(allocator, suite, display_reporter, file_reporter);
+                RunBenchMarkSuite(allocator, temp, globals, suite, display_reporter, file_reporter);
             }
             suite = suite->next;
         }

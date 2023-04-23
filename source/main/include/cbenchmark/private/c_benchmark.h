@@ -5,8 +5,9 @@ namespace BenchMark
 {
     class Allocator;
     class BenchMarkReporter;
+    struct BenchMarkGlobals;
 
-    void RunBenchMarks(Allocator* allocator, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter);
+    void RunBenchMarks(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter);
 
 } // namespace BenchMark
 

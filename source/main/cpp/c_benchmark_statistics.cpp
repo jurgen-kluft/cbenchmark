@@ -215,7 +215,6 @@ namespace BenchMark
             // Get the data from the accumulator to BenchMarkRun's.
             Run& data = results.Alloc();
             data.run_name                  = reports[0].run_name;
-            data.family_index              = reports[0].family_index;
             data.per_family_instance_index = reports[0].per_family_instance_index;
             data.run_type                  = BenchMarkRun::RT_Aggregate;
             data.threads                   = reports[0].threads;

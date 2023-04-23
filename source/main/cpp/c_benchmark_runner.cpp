@@ -29,7 +29,6 @@ namespace BenchMark
     {
         // Create report about this benchmark run.
         report->run_name                  = bmi->name();
-        report->family_index              = bmi->family_index();
         report->per_family_instance_index = bmi->per_family_instance_index();
         report->skipped                   = results.skipped_;
         report->skip_message              = results.skip_message_;
@@ -110,27 +109,26 @@ namespace BenchMark
     public:
         BenchMarkRunner();
 
-        void                                    Init(Allocator* allocator, const BenchMarkInstance* b_, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
-        int                                     GetNumRepeats() const { return repeats; }
-        bool                                    HasRepeatsRemaining() const { return GetNumRepeats() != num_repetitions_done; }
-        void                                    DoOneRepetition();
-        RunResults*                             GetResults();
-        BenchMarkReporter::PerFamilyRunReports* GetReportsForFamily() const { return reports_for_family; }
-        double                                  GetMinTime() const { return min_time; }
-        bool                                    HasExplicitIters() const { return has_explicit_iteration_count; }
-        IterationCount                          GetIters() const { return iters; }
+        void           Init(Allocator* allocator, Allocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
+        int            GetNumRepeats() const { return repeats; }
+        bool           HasRepeatsRemaining() const { return GetNumRepeats() != num_repetitions_done; }
+        void           DoOneRepetition(BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
+        void           AggregateResults(Allocator* alloc, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only) const;
+        double         GetMinTime() const { return min_time; }
+        bool           HasExplicitIters() const { return has_explicit_iteration_count; }
+        IterationCount GetIters() const { return iters; }
 
-        Allocator*                              mAllocator;
-        RunResults*                             run_results;
-        BenchMarkInstance const*                instance;
-        BenchMarkReporter::PerFamilyRunReports* reports_for_family;
-        BenchTimeType                           parsed_benchtime_flag;
-        double                                  min_time;
-        double                                  min_warmup_time;
-        bool                                    warmup_done;
-        int                                     repeats;
-        bool                                    has_explicit_iteration_count;
-        int                                     num_repetitions_done = 0;
+        Allocator*               allocator_;
+        Allocator*               temp_;
+        BenchMarkInstance const* instance;
+
+        BenchTimeType parsed_benchtime_flag;
+        double        min_time;
+        double        min_warmup_time;
+        bool          warmup_done;
+        int           repeats;
+        bool          has_explicit_iteration_count;
+        int           num_repetitions_done = 0;
 
         void* operator new(u64 num_bytes, void* mem) { return mem; }
         void  operator delete(void* mem, void*) {}
@@ -163,67 +161,69 @@ namespace BenchMark
     };
 
     // Public Interface
-    void CreateRunner(BenchMarkRunner*& r, Allocator* a, const BenchMarkInstance* b_, PerfCountersMeasurement* pcm_, BenchMarkReporter::PerFamilyRunReports* reports_for_family_) { r = a->Construct<BenchMarkRunner>(a, b_, pcm_, reports_for_family_); }
-    void DestroyRunner(BenchMarkRunner*& r) { r->mAllocator->Destruct(r); }
+    BenchMarkRunner* CreateRunner(Allocator* a) { return a->Construct<BenchMarkRunner>(); }
+    void             InitRunner(BenchMarkRunner* r, Allocator* a, Allocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_) { r->Init(a, t, globals, b_); }
+    void             DestroyRunner(BenchMarkRunner*& r, Allocator* a) { a->Destruct(r); }
 
-    int                                     GetNumRepeats(const BenchMarkRunner* r) { return r->GetNumRepeats(); }
-    bool                                    HasRepeatsRemaining(const BenchMarkRunner* r) { return r->HasRepeatsRemaining(); }
-    void                                    DoOneRepetition(BenchMarkRunner* r) { r->DoOneRepetition(); }
-    RunResults*                             GetResults(BenchMarkRunner* r) { return r->GetResults(); }
-    BenchMarkReporter::PerFamilyRunReports* GetReportsForFamily(const BenchMarkRunner* r) { return r->GetReportsForFamily(); }
-    double                                  GetMinTime(const BenchMarkRunner* r) { return r->GetMinTime(); }
-    bool                                    HasExplicitIters(const BenchMarkRunner* r) { return r->HasExplicitIters(); }
-    IterationCount                          GetIters(const BenchMarkRunner* r) { return r->GetIters(); }
-    void                                    StartStopBarrier(ThreadManager* tm) { tm->StartStopBarrier(); }
-    void                                    TimerStart(ThreadTimer* timer) { timer->StartTimer(); }
-    void                                    TimerStop(ThreadTimer* timer) { timer->StopTimer(); }
-    bool                                    TimerIsRunning(ThreadTimer* timer) { return timer->IsRunning(); }
-    void                                    TimerSetIterationTime(ThreadTimer* timer, double seconds) { timer->SetIterationTime(seconds); }
+    void InitRunResults(BenchMarkRunner* r, BenchMarkGlobals* globals, RunResults& results)
+    {
+        BenchMarkInstance const* instance = r->instance;
+        results.display_report_aggregates_only = (globals->FLAGS_benchmark_report_aggregates_only || globals->FLAGS_benchmark_display_aggregates_only);
+        results.file_report_aggregates_only    = globals->FLAGS_benchmark_report_aggregates_only;
+        if (instance->aggregation_report_mode().mode != AggregationReportMode::Unspecified)
+        {
+            results.display_report_aggregates_only = (instance->aggregation_report_mode().mode & AggregationReportMode::DisplayReportAggregatesOnly);
+            results.file_report_aggregates_only    = (instance->aggregation_report_mode().mode & AggregationReportMode::FileReportAggregatesOnly);
+            // BM_CHECK(FLAGS_benchmark_perf_counters.empty() || (perf_counters_measurement_ptr->num_counters() == 0)) << "Perf counters were requested but could not be set up.";
+        }
 
-    static double FLAGS_benchmark_min_time                = 0.5;
-    static double FLAGS_benchmark_min_warmup_time         = 0.5;
-    static bool   FLAGS_benchmark_report_aggregates_only  = true;
-    static bool   FLAGS_benchmark_display_aggregates_only = false;
-    static bool   FLAGS_benchmark_repetitions             = 1;
+    }
+
+    int            GetNumRepeats(const BenchMarkRunner* r) { return r->GetNumRepeats(); }
+    bool           HasRepeatsRemaining(const BenchMarkRunner* r) { return r->HasRepeatsRemaining(); }
+    void           DoOneRepetition(BenchMarkRunner* r, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family) { r->DoOneRepetition(report, reports_for_family); }
+    void           AggregateResults(BenchMarkRunner* r, Allocator* alloc, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only) { r->AggregateResults(alloc, non_aggregates, aggregates_only); }
+    double         GetMinTime(const BenchMarkRunner* r) { return r->GetMinTime(); }
+    bool           HasExplicitIters(const BenchMarkRunner* r) { return r->HasExplicitIters(); }
+    IterationCount GetIters(const BenchMarkRunner* r) { return r->GetIters(); }
+    void           StartStopBarrier(ThreadManager* tm) { tm->StartStopBarrier(); }
+    void           TimerStart(ThreadTimer* timer) { timer->StartTimer(); }
+    void           TimerStop(ThreadTimer* timer) { timer->StopTimer(); }
+    bool           TimerIsRunning(ThreadTimer* timer) { return timer->IsRunning(); }
+    void           TimerSetIterationTime(ThreadTimer* timer, double seconds) { timer->SetIterationTime(seconds); }
+
 
     BenchMarkRunner::BenchMarkRunner()
-        : instance(nullptr)
-        , reports_for_family(nullptr)
+        : allocator_(nullptr)
+        , temp_(nullptr)
+        , instance(nullptr)
         , parsed_benchtime_flag(BenchTimeType())
         , min_time(0.0)
         , min_warmup_time(0.0)
         , warmup_done(false)
-        , repeats(FLAGS_benchmark_repetitions)
+        , repeats(0)
         , has_explicit_iteration_count(false)
         , thread_pool()
         , iters(0)
     {
     }
 
-    void BenchMarkRunner::Init(Allocator* allocator, const BenchMarkInstance* b_, BenchMarkReporter::PerFamilyRunReports* reports_for_family_)
+    void BenchMarkRunner::Init(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, const BenchMarkInstance* b_)
     {
+        allocator_                   = (allocator);
+        temp_                        = (temp);
         instance                     = (b_);
-        reports_for_family           = (reports_for_family_);
-        parsed_benchtime_flag        = (BenchTimeType(FLAGS_benchmark_min_time));
+        parsed_benchtime_flag        = (BenchTimeType(globals->FLAGS_benchmark_min_time));
         min_time                     = (ComputeMinTime(b_, parsed_benchtime_flag));
-        min_warmup_time              = ((!IsZero(instance->min_time()) && instance->min_warmup_time() > 0.0) ? instance->min_warmup_time() : FLAGS_benchmark_min_warmup_time);
+        min_warmup_time              = ((!IsZero(instance->min_time()) && instance->min_warmup_time() > 0.0) ? instance->min_warmup_time() : globals->FLAGS_benchmark_min_warmup_time);
         warmup_done                  = (!(min_warmup_time > 0.0));
-        repeats                      = (instance->repetitions() != 0 ? instance->repetitions() : FLAGS_benchmark_repetitions);
+        repeats                      = (instance->repetitions() != 0 ? instance->repetitions() : globals->FLAGS_benchmark_repetitions);
         has_explicit_iteration_count = (instance->iterations() != 0 || parsed_benchtime_flag.type == BenchTimeType::ITERS);
 
         // reserve(instance->threads() - 1);
         thread_pool.Init(allocator, instance->threads() - 1, instance->threads() - 1);
 
         iters = (has_explicit_iteration_count ? ComputeIters(*instance, parsed_benchtime_flag) : 1);
-
-        run_results->display_report_aggregates_only = (FLAGS_benchmark_report_aggregates_only || FLAGS_benchmark_display_aggregates_only);
-        run_results->file_report_aggregates_only    = FLAGS_benchmark_report_aggregates_only;
-        if (instance->aggregation_report_mode().mode != AggregationReportMode::Unspecified)
-        {
-            run_results->display_report_aggregates_only = (instance->aggregation_report_mode().mode & AggregationReportMode::DisplayReportAggregatesOnly);
-            run_results->file_report_aggregates_only    = (instance->aggregation_report_mode().mode & AggregationReportMode::FileReportAggregatesOnly);
-            // BM_CHECK(FLAGS_benchmark_perf_counters.empty() || (perf_counters_measurement_ptr->num_counters() == 0)) << "Perf counters were requested but could not be set up.";
-        }
     }
 
     // TODO could really benefit from a temporary allocator
@@ -231,23 +231,27 @@ namespace BenchMark
     BenchMarkRunner::IterationResults BenchMarkRunner::DoNIterations()
     {
         // BM_VLOG(2) << "Running " << instance->name().str() << " for " << iters << "\n";
-        ThreadManager* manager = mAllocator->Construct<ThreadManager>(instance->threads());
 
-        IterationResults iteration_results;
+        // TODO allocate from a temporary allocator
+        ThreadManager* manager = temp_->Construct<ThreadManager>(instance->threads());
+
+        // TODO We should setup an allocator with memory per thread.
+        // Also the BenchMarkRunResult should be allocated from a temporary allocator.
         Array<BenchMarkRunResult*> results;
-        results.Init(mAllocator, 0, thread_pool.Capacity());
+        results.Init(temp_, 0, thread_pool.Capacity());
 
         // Run all but one thread in separate threads
         for (u64 ti = 0; ti < thread_pool.Capacity(); ++ti)
         {
             BenchMarkRunResult*& result = results.Alloc();
-            result                      = mAllocator->Construct<BenchMarkRunResult>();
-            thread_pool[ti] = std::thread(&RunInThread, instance, iters, static_cast<int>(ti + 1), manager, result);
+            result                      = temp_->Construct<BenchMarkRunResult>();
+            thread_pool[ti]             = std::thread(&RunInThread, instance, iters, static_cast<int>(ti + 1), manager, result);
         }
 
         // And run one thread here directly and use the results from iteration_results.
         // (If we were asked to run just one thread, we don't create new threads.)
         // Yes, we need to do this here *after* we start the separate threads.
+        IterationResults iteration_results;
         RunInThread(instance, iters, 0, manager, &iteration_results.results);
 
         // The main thread has finished. Now let's wait for the other threads.
@@ -262,10 +266,11 @@ namespace BenchMark
         {
             BenchMarkRunResult* rr = results[ti];
             iteration_results.results.Merge(*rr);
+            temp_->Destruct(rr);
         }
 
         // And get rid of the manager.
-        mAllocator->Destruct(manager);
+        temp_->Destruct(manager);
 
         // Adjust real/manual time stats since they were reported per thread.
         iteration_results.results.real_time_used /= instance->threads();
@@ -387,7 +392,7 @@ namespace BenchMark
         }
     }
 
-    void BenchMarkRunner::DoOneRepetition()
+    void BenchMarkRunner::DoOneRepetition(BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family)
     {
         // assert(HasRepeatsRemaining() && "Already done all repetitions?");
 
@@ -433,11 +438,9 @@ namespace BenchMark
             //                           "then we should have accepted the current iteration run.");
         }
 
-        // Ok, now actually report->
+        // Ok, now actually report
         IterationCount memory_iterations = 0;
 
-        BenchMarkRun*& report = run_results->non_aggregates.Alloc();
-        report                = mAllocator->Construct<BenchMarkRun>();
         CreateRunReport(report, instance, i.results, memory_iterations, i.seconds, num_repetitions_done, repeats);
 
         if (reports_for_family)
@@ -450,15 +453,11 @@ namespace BenchMark
         ++num_repetitions_done;
     }
 
-    RunResults* BenchMarkRunner::GetResults()
+    void BenchMarkRunner::AggregateResults(Allocator* alloc, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only) const
     {
         // assert(!HasRepeatsRemaining() && "Did not run all repetitions yet?");
 
-        // Calculate additional statistics over the repetitions of this instance->
-        ComputeStats(mAllocator, run_results->non_aggregates, run_results->aggregates_only);
-
-        RunResults* handover = run_results;
-        run_results          = nullptr;
-        return handover;
+        // Calculate additional statistics over the repetitions of this instance
+        ComputeStats(allocator_, non_aggregates, aggregates_only);
     }
 } // namespace BenchMark

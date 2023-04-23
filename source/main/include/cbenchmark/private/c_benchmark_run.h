@@ -45,7 +45,6 @@ namespace BenchMark
         const char* BenchMarkName(Allocator* alloc);
 
         BenchmarkName run_name;
-        s32           family_index;
         s32           per_family_instance_index;
         RunType       run_type;
         const char*   aggregate_name;
