@@ -10,17 +10,7 @@
 
 namespace BenchMark
 {
-    s32 BenchMarkUnit::BuildArgs() { return 0; 
-    }
-
-    void BenchMarkUnit::SetDefaults()
-    {
-        // TODO set all members to sane defaults
-        AddStatisticsComputer(Statistic("mean", StatisticsMean, {StatisticUnit::Time}));
-        AddStatisticsComputer(Statistic("median", StatisticsMedian, {StatisticUnit::Time}));
-        AddStatisticsComputer(Statistic("stddev", StatisticsStdDev, {StatisticUnit::Time}));
-        AddStatisticsComputer(Statistic("cv", StatisticsCV, {StatisticUnit::Percentage}));
-    }
+    s32 BenchMarkUnit::BuildArgs() { return 0; }
 
     void BenchMarkUnit::ReportAggregatesOnly(bool value) { aggregation_report_mode_ = value ? AggregationReportMode::ReportAggregatesOnly : AggregationReportMode::Default; }
 
@@ -33,31 +23,95 @@ namespace BenchMark
             aggregation_report_mode_.mode = static_cast<u32>(aggregation_report_mode_.mode | AggregationReportMode::DisplayReportAggregatesOnly);
     }
 
-    void BenchMarkUnit::AddStatisticsComputer(Statistic stat) {}
+    void BenchMarkUnit::PrepareSettings(bool count_only)
+    {
+        if (count_only_)
+        {
+            args_count_         = 0;
+            arg_count_          = 0;
+            arg_ranges_count_   = 0;
+            arg_names_count_    = 0;
+            thread_counts_size_ = 0;
+            statistics_count_   = 4;
+        }
+        else
+        {
+            args_.Init(allocator, 0, args_count_);
+            arg_.Init(allocator, 0, arg_count_);
+            arg_ranges_.Init(allocator, 0, arg_ranges_count_);
+            arg_names_.Init(allocator, 0, arg_names_count_);
+            thread_counts_.Init(allocator, 0, thread_counts_size_);
+            statistics_.Init(allocator, 0, statistics_count_);
+
+            AddStatisticsComputer(Statistic("mean", StatisticsMean, {StatisticUnit::Time}));
+            AddStatisticsComputer(Statistic("median", StatisticsMedian, {StatisticUnit::Time}));
+            AddStatisticsComputer(Statistic("stddev", StatisticsStdDev, {StatisticUnit::Time}));
+            AddStatisticsComputer(Statistic("cv", StatisticsCV, {StatisticUnit::Percentage}));
+        }
+    }
+
+    void BenchMarkUnit::AddStatisticsComputer(Statistic stat)
+    {
+        if (count_only_)
+        {
+            statistics_count_++;
+            return;
+        }
+        statistics_.PushBack(stat);
+    }
 
     void BenchMarkUnit::SetEnabled(bool enabled) { enabled_ = enabled; }
 
-    void BenchMarkUnit::SetDefaultArgNames()
+    void BenchMarkUnit::AddArgs(s32 const* args, s32 argc)
     {
-        arg_names_[0] = "x";
-        arg_names_[1] = "y";
-        arg_names_[2] = "z";
+        if (count_only_)
+        {
+            args_count_++;
+            return;
+        }
+        args_.PushBack(Args(args, argc));
     }
 
-    void BenchMarkUnit::SetNamedArg(int i, const char* name, const s32* args, int argc)
+    void BenchMarkUnit::AddArg(const s32* args, s32 argc)
     {
-        arg_names_.PushBack(name);
+        if (count_only_)
+        {
+            arg_count_++;
+            return;
+        }
+        arg_.PushBack(Args(args, argc));
     }
-    void BenchMarkUnit::SetNamedArgRange(int idx, const char* name, s32 lo, s32 hi, int multiplier, s32 mode)
+
+    void BenchMarkUnit::AddRange(s32 lo, s32 hi, s32 multiplier, s32 mode)
     {
-        arg_names_[idx]  = name;
-        arg_ranges_[idx] = ArgRange(lo, hi, multiplier, mode);
+        if (count_only_)
+        {
+            arg_ranges_count_++;
+            return;
+        }
+        arg_ranges_.PushBack(ArgRange(lo, hi, multiplier, mode));
+    }
+
+    void BenchMarkUnit::SetArgNames(const char** names, s32 names_size)
+    {
+        if (count_only_)
+        {
+            arg_names_count_ = names_size;
+            return;
+        }
+        for (s32 i = 0; i < names_size; ++i)
+            arg_names_.PushBack(names[i]);
     }
 
     void BenchMarkUnit::SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size)
     {
-        thread_counts_ = thread_counts;
-        thread_counts_size_ = thread_counts_size;
+        if (count_only_)
+        {
+            thread_counts_size_ = thread_counts_size;
+            return;
+        }
+        for (s32 i = 0; i < thread_counts_size; ++i)
+            thread_counts_.PushBack(thread_counts[i]);
     }
 
     void BenchMarkUnit::SetComplexity(BigO complexity) { complexity_ = complexity; }
@@ -74,203 +128,206 @@ namespace BenchMark
     // Append the powers of 'mult' in the closed interval [lo, hi].
     // Returns iterator to the start of the inserted range.
 
-    template <typename T> T min(T a, T b) { return a < b ? a : b; }
-    template <typename T> T max(T a, T b) { return a > b ? a : b; }
-
-    static s32 AddPowers(Array<s64>& dst, s64 lo, s64 hi, int mult)
+    namespace internal
     {
-        BM_CHECK_GE(lo, 0);
-        BM_CHECK_GE(hi, lo);
-        BM_CHECK_GE(mult, 2);
+        template <typename T> T min(T a, T b) { return a < b ? a : b; }
+        template <typename T> T max(T a, T b) { return a > b ? a : b; }
 
-        const s32 start_offset = dst.Size();
-
-        static const s64 kmax = std::numeric_limits<s64>::max();
-
-        // Space out the values in multiples of "mult"
-        for (s64 i = static_cast<s64>(1); i <= hi; i *= static_cast<s64>(mult))
+        static s32 AddPowers(Array<s64>& dst, s64 lo, s64 hi, int mult)
         {
-            if (i >= lo)
+            BM_CHECK_GE(lo, 0);
+            BM_CHECK_GE(hi, lo);
+            BM_CHECK_GE(mult, 2);
+
+            const s32 start_offset = dst.Size();
+
+            static const s64 kmax = std::numeric_limits<s64>::max();
+
+            // Space out the values in multiples of "mult"
+            for (s64 i = static_cast<s64>(1); i <= hi; i *= static_cast<s64>(mult))
             {
-                dst.PushBack(i);
+                if (i >= lo)
+                {
+                    dst.PushBack(i);
+                }
+                // Break the loop here since multiplying by
+                // 'mult' would move outside of the range of s64
+                if (i > kmax / mult)
+                    break;
             }
-            // Break the loop here since multiplying by
-            // 'mult' would move outside of the range of s64
-            if (i > kmax / mult)
-                break;
+
+            return start_offset;
         }
 
-        return start_offset;
-    }
-
-    static void AddNegatedPowers(Array<s64>& dst, s64 lo, s64 hi, int mult)
-    {
-        // We negate lo and hi so we require that they cannot be equal to 'min'.
-        BM_CHECK_GT(lo, std::numeric_limits<s64>::min());
-        BM_CHECK_GT(hi, std::numeric_limits<s64>::min());
-        BM_CHECK_GE(hi, lo);
-        BM_CHECK_LE(hi, 0);
-
-        // Add positive powers, then negate and reverse.
-        // Casts necessary since small integers get promoted
-        // to 'int' when negating.
-        const auto lo_complement = static_cast<s64>(-lo);
-        const auto hi_complement = static_cast<s64>(-hi);
-
-        const s32 it = AddPowers(dst, hi_complement, lo_complement, mult);
-
-        for (int i = it; i < dst.Size(); i++)
-            dst[i] *= -1;
-        for (int i = it, j = dst.Size() - 1; i < j; i++, j--)
+        static void AddNegatedPowers(Array<s64>& dst, s64 lo, s64 hi, int mult)
         {
-            const s64 tmp = dst[i];
-            dst[i]        = dst[j];
-            dst[j]        = tmp;
-        }
-    }
+            // We negate lo and hi so we require that they cannot be equal to 'min'.
+            BM_CHECK_GT(lo, std::numeric_limits<s64>::min());
+            BM_CHECK_GT(hi, std::numeric_limits<s64>::min());
+            BM_CHECK_GE(hi, lo);
+            BM_CHECK_LE(hi, 0);
 
-    static void AddRange(s64 lo, s64 hi, int mult, Array<s64>& dst, Allocator* alloc)
-    {
-        BM_CHECK_GE(hi, lo);
-        BM_CHECK_GE(mult, 2);
+            // Add positive powers, then negate and reverse.
+            // Casts necessary since small integers get promoted
+            // to 'int' when negating.
+            const auto lo_complement = static_cast<s64>(-lo);
+            const auto hi_complement = static_cast<s64>(-hi);
 
-        dst.PushBack(lo);
+            const s32 it = AddPowers(dst, hi_complement, lo_complement, mult);
 
-        // Handle lo == hi as a special case, so we then know
-        // lo < hi and so it is safe to add 1 to lo and subtract 1
-        // from hi without falling outside of the range of s64.
-        if (lo == hi)
-            return;
-
-        // Ensure that lo_inner <= hi_inner below.
-        if (lo + 1 == hi)
-        {
-            dst.PushBack(hi);
-            return;
+            for (int i = it; i < dst.Size(); i++)
+                dst[i] *= -1;
+            for (int i = it, j = dst.Size() - 1; i < j; i++, j--)
+            {
+                const s64 tmp = dst[i];
+                dst[i]        = dst[j];
+                dst[j]        = tmp;
+            }
         }
 
-        // Add all powers of 'mult' in the range [lo+1, hi-1] (inclusive).
-        const auto lo_inner = static_cast<s64>(lo + 1);
-        const auto hi_inner = static_cast<s64>(hi - 1);
-
-        // Insert negative values
-        if (lo_inner < 0)
+        static void AddRange(s64 lo, s64 hi, int mult, Array<s64>& dst, Allocator* alloc)
         {
-            AddNegatedPowers(dst, lo_inner, min(hi_inner, s64{-1}), mult);
+            BM_CHECK_GE(hi, lo);
+            BM_CHECK_GE(mult, 2);
+
+            dst.PushBack(lo);
+
+            // Handle lo == hi as a special case, so we then know
+            // lo < hi and so it is safe to add 1 to lo and subtract 1
+            // from hi without falling outside of the range of s64.
+            if (lo == hi)
+                return;
+
+            // Ensure that lo_inner <= hi_inner below.
+            if (lo + 1 == hi)
+            {
+                dst.PushBack(hi);
+                return;
+            }
+
+            // Add all powers of 'mult' in the range [lo+1, hi-1] (inclusive).
+            const auto lo_inner = static_cast<s64>(lo + 1);
+            const auto hi_inner = static_cast<s64>(hi - 1);
+
+            // Insert negative values
+            if (lo_inner < 0)
+            {
+                AddNegatedPowers(dst, lo_inner, min(hi_inner, s64{-1}), mult);
+            }
+
+            // Treat 0 as a special case
+            if (lo < 0 && hi >= 0)
+            {
+                dst.PushBack(0);
+            }
+
+            // Insert positive values
+            if (hi_inner > 0)
+            {
+                AddPowers(dst, max(lo_inner, s64{1}), hi_inner, mult);
+            }
+
+            // Add "hi" (if different from last value).
+            if (hi != dst.Back())
+            {
+                dst.PushBack(hi);
+            }
         }
 
-        // Treat 0 as a special case
-        if (lo < 0 && hi >= 0)
+        static s32 AddedPowersSize(s64 lo, s64 hi, int mult)
         {
-            dst.PushBack(0);
+            BM_CHECK_GE(lo, 0);
+            BM_CHECK_GE(hi, lo);
+            BM_CHECK_GE(mult, 2);
+
+            static const s64 kmax = std::numeric_limits<s64>::max();
+
+            // Space out the values in multiples of "mult"
+            s32 size = 0;
+            for (s64 i = static_cast<s64>(1); i <= hi; i *= static_cast<s64>(mult))
+            {
+                if (i >= lo)
+                {
+                    size += 1;
+                }
+                // Break the loop here since multiplying by
+                // 'mult' would move outside of the range of s64
+                if (i > kmax / mult)
+                    break;
+            }
+            return size;
         }
 
-        // Insert positive values
-        if (hi_inner > 0)
+        static s32 AddedNegatedPowersSize(s64 lo, s64 hi, int mult)
         {
-            AddPowers(dst, max(lo_inner, s64{1}), hi_inner, mult);
+            // We negate lo and hi so we require that they cannot be equal to 'min'.
+            BM_CHECK_GT(lo, std::numeric_limits<s64>::min());
+            BM_CHECK_GT(hi, std::numeric_limits<s64>::min());
+            BM_CHECK_GE(hi, lo);
+            BM_CHECK_LE(hi, 0);
+
+            // Add positive powers, then negate and reverse.
+            // Casts necessary since small integers get promoted
+            // to 'int' when negating.
+            const auto lo_complement = static_cast<s64>(-lo);
+            const auto hi_complement = static_cast<s64>(-hi);
+
+            return AddedPowersSize(hi_complement, lo_complement, mult);
         }
 
-        // Add "hi" (if different from last value).
-        if (hi != dst.Back())
+        static s32 ComputeAddRangeSize(s64 lo, s64 hi, int mult)
         {
-            dst.PushBack(hi);
-        }
-    }
+            BM_CHECK_GE(hi, lo);
+            BM_CHECK_GE(mult, 2);
 
-    static s32 AddedPowersSize(s64 lo, s64 hi, int mult)
-    {
-        BM_CHECK_GE(lo, 0);
-        BM_CHECK_GE(hi, lo);
-        BM_CHECK_GE(mult, 2);
+            s32 size = 1;
 
-        static const s64 kmax = std::numeric_limits<s64>::max();
+            // Handle lo == hi as a special case, so we then know
+            // lo < hi and so it is safe to add 1 to lo and subtract 1
+            // from hi without falling outside of the range of s64.
+            if (lo == hi)
+                return size;
 
-        // Space out the values in multiples of "mult"
-        s32 size = 0;
-        for (s64 i = static_cast<s64>(1); i <= hi; i *= static_cast<s64>(mult))
-        {
-            if (i >= lo)
+            // Ensure that lo_inner <= hi_inner below.
+            if (lo + 1 == hi)
+            {
+                size += 1;
+                return size;
+            }
+
+            // Add all powers of 'mult' in the range [lo+1, hi-1] (inclusive).
+            const auto lo_inner = static_cast<s64>(lo + 1);
+            const auto hi_inner = static_cast<s64>(hi - 1);
+
+            // Insert negative values
+            if (lo_inner < 0)
+            {
+                size += AddedNegatedPowersSize(lo_inner, min(hi_inner, s64{-1}), mult);
+            }
+
+            // Treat 0 as a special case
+            if (lo < 0 && hi >= 0)
             {
                 size += 1;
             }
-            // Break the loop here since multiplying by
-            // 'mult' would move outside of the range of s64
-            if (i > kmax / mult)
-                break;
-        }
-        return size;
-    }
 
-    static s32 AddedNegatedPowersSize(s64 lo, s64 hi, int mult)
-    {
-        // We negate lo and hi so we require that they cannot be equal to 'min'.
-        BM_CHECK_GT(lo, std::numeric_limits<s64>::min());
-        BM_CHECK_GT(hi, std::numeric_limits<s64>::min());
-        BM_CHECK_GE(hi, lo);
-        BM_CHECK_LE(hi, 0);
+            // Insert positive values
+            if (hi_inner > 0)
+            {
+                size += AddedPowersSize(max(lo_inner, s64{1}), hi_inner, mult);
+            }
 
-        // Add positive powers, then negate and reverse.
-        // Casts necessary since small integers get promoted
-        // to 'int' when negating.
-        const auto lo_complement = static_cast<s64>(-lo);
-        const auto hi_complement = static_cast<s64>(-hi);
-
-        return AddedPowersSize(hi_complement, lo_complement, mult);
-    }
-
-    static s32 ComputeAddRangeSize(s64 lo, s64 hi, int mult)
-    {
-        BM_CHECK_GE(hi, lo);
-        BM_CHECK_GE(mult, 2);
-
-        s32 size = 1;
-
-        // Handle lo == hi as a special case, so we then know
-        // lo < hi and so it is safe to add 1 to lo and subtract 1
-        // from hi without falling outside of the range of s64.
-        if (lo == hi)
-            return size;
-
-        // Ensure that lo_inner <= hi_inner below.
-        if (lo + 1 == hi)
-        {
             size += 1;
             return size;
         }
-
-        // Add all powers of 'mult' in the range [lo+1, hi-1] (inclusive).
-        const auto lo_inner = static_cast<s64>(lo + 1);
-        const auto hi_inner = static_cast<s64>(hi - 1);
-
-        // Insert negative values
-        if (lo_inner < 0)
-        {
-            size += AddedNegatedPowersSize(lo_inner, min(hi_inner, s64{-1}), mult);
-        }
-
-        // Treat 0 as a special case
-        if (lo < 0 && hi >= 0)
-        {
-            size += 1;
-        }
-
-        // Insert positive values
-        if (hi_inner > 0)
-        {
-            size += AddedPowersSize(max(lo_inner, s64{1}), hi_inner, mult);
-        }
-
-        size += 1;
-        return size;
-    }
+    } // namespace internal
 
     void BenchMarkUnit::CreateRange(s32 start, s32 limit, s32 mult, Array<s64>& out, Allocator* alloc)
     {
         // Compute the number of elements in the range.
-        const s32 size = ComputeAddRangeSize(start, limit, mult);
+        const s32 size = internal::ComputeAddRangeSize(start, limit, mult);
         out.Init(alloc, 0, size);
-        AddRange(start, limit, mult, out, alloc);
+        internal::AddRange(start, limit, mult, out, alloc);
     }
 
     void BenchMarkUnit::CreateDenseRange(s32 start, s32 limit, s32 step, Array<s64>& out, Allocator* alloc)
