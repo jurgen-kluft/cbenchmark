@@ -241,7 +241,7 @@ namespace BenchMark
         results.Init(temp_, 0, thread_pool.Capacity());
 
         // Run all but one thread in separate threads
-        for (u64 ti = 0; ti < thread_pool.Capacity(); ++ti)
+        for (s32 ti = 0; ti < thread_pool.Capacity(); ++ti)
         {
             BenchMarkRunResult*& result = results.Alloc();
             result                      = temp_->Construct<BenchMarkRunResult>();

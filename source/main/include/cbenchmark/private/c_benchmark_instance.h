@@ -88,7 +88,7 @@ namespace BenchMark
         BenchMarkEntity*      benchmark_;
         int                   per_family_instance_index_;
         AggregationReportMode aggregation_report_mode_;
-        Array<s64>            args_;
+        Array<s32>            args_;
         TimeUnit              time_unit_;
         TimeSettings          time_settings_;
         BigO                  complexity_;

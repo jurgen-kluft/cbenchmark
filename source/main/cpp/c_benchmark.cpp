@@ -263,7 +263,7 @@ namespace BenchMark
         const int one_thread[] = {1};
 
         const int* thread_counts     = (benchmark->thread_counts_ == nullptr ? one_thread : benchmark->thread_counts_);
-        const int  num_thread_counts = (benchmark->thread_counts_ == nullptr ? 1 : benchmark->num_thread_counts_);
+        const int  num_thread_counts = (benchmark->thread_counts_ == nullptr ? 1 : benchmark->thread_counts_size_);
 
         // Have BenchMarkEntity create the arguments for this benchmark
 

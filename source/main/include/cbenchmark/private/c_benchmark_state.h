@@ -170,7 +170,7 @@ namespace BenchMark
         void SetLabel(const char* format, double value);
 
         // Range arguments for this run. CHECKs if the argument has been set.
-        inline s64 Range(s32 pos = 0) const { return (*range_)[pos & 0x3]; }
+        inline s32 Range(s32 pos = 0) const { return (*range_)[pos & 0x3]; }
 
         // Number of threads concurrently executing the benchmark.
         inline int Threads() const { return threads_; }
@@ -210,7 +210,7 @@ namespace BenchMark
         Skipped skipped_;
 
         // items we don't need on the first cache line
-        Array<s64> const* range_;
+        Array<s32> const* range_;
         s64 complexity_n_;
 
     public:
@@ -218,7 +218,7 @@ namespace BenchMark
         Counters counters_;
 
     private:
-        BenchMarkState(const char* name, IterationCount max_iters, Array<s64> const* range, int thread_index, int threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
+        BenchMarkState(const char* name, IterationCount max_iters, Array<s32> const* range, int thread_index, int threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
 
         void StartKeepRunning();
         // Implementation of KeepRunning() and KeepRunningBatch().

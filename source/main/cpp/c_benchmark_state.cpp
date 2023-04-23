@@ -15,7 +15,7 @@
 
 namespace BenchMark
 {
-    BenchMarkState::BenchMarkState(const char* name, IterationCount max_iters, Array<s64> const* range, int thread_index, int threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results)
+    BenchMarkState::BenchMarkState(const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results)
         : name_(name)
         , max_iterations(max_iters)
         , range_(range)
