@@ -9,11 +9,6 @@ namespace BenchMark
 {
     typedef s64 IterationCount;
 
-    struct Arg
-    {
-        s32 argv[4];
-    };
-
     struct ArgRange
     {
         ArgRange() {}

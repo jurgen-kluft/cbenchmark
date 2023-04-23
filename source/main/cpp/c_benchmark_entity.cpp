@@ -43,6 +43,7 @@ namespace BenchMark
         arg_names_[1] = "y";
         arg_names_[2] = "z";
     }
+
     void BenchMarkEntity::SetNamedArg(int i, const char* name, const s32* args, int argc)
     {
         if (i >= sizeof(arg_names_) / sizeof(arg_names_[0]))
@@ -51,49 +52,10 @@ namespace BenchMark
         arg_arrays_[i]      = args;
         arg_array_sizes_[i] = argc;
     }
-    void BenchMarkEntity::SetArgRange(int idx, s32 lo, s32 hi, int multiplier)
-    {
-        arg_names_[idx]  = nullptr;
-        arg_ranges_[idx] = ArgRange(lo, hi, multiplier, 1);
-    }
-    void BenchMarkEntity::SetNamedArgRange(int idx, const char* name, s32 lo, s32 hi, int multiplier)
+    void BenchMarkEntity::SetNamedArgRange(int idx, const char* name, s32 lo, s32 hi, int multiplier, s32 mode)
     {
         arg_names_[idx]  = name;
-        arg_ranges_[idx] = ArgRange(lo, hi, multiplier, 1);
-    }
-
-    void BenchMarkEntity::SetNamedArgProduct(const char* aname, std::initializer_list<s64> a, const char* bname, std::initializer_list<s64> b, const char* cname, std::initializer_list<s64> c)
-    {
-        arg_names_[0] = aname;
-        arg_names_[1] = bname;
-        arg_names_[2] = cname;
-        SetArgProduct(a, b, c);
-    }
-
-    void BenchMarkEntity::SetArgProduct(std::initializer_list<s64> a, std::initializer_list<s64> b, std::initializer_list<s64> c)
-    {
-        arg_product_[0] = Array<s64>();
-        arg_product_[1] = Array<s64>();
-        arg_product_[2] = Array<s64>();
-
-        if (a.size() > 0)
-        {
-            arg_product_[0].Init(allocator, (s32)a.size(), (s32)a.size());
-            for (auto& i : a)
-                arg_product_[0].PushBack(i);
-        }
-        if (b.size() > 0)
-        {
-            arg_product_[1].Init(allocator, (s32)b.size(), (s32)b.size());
-            for (auto& i : b)
-                arg_product_[1].PushBack(i);
-        }
-        if (c.size() > 0)
-        {
-            arg_product_[2].Init(allocator, (s32)c.size(), (s32)c.size());
-            for (auto& i : c)
-                arg_product_[2].PushBack(i);
-        }
+        arg_ranges_[idx] = ArgRange(lo, hi, multiplier, mode);
     }
 
     void BenchMarkEntity::SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size)

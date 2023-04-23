@@ -43,6 +43,11 @@ namespace BenchMark
         u32 flags;
     };
 
+    struct Args
+    {
+        s32 a[8];
+    };
+
     // -----------------------------------------------------------------
     // BenchMarkEntity registration object. The BM_TEST() macro expands
     // into an BenchMarkEntity* object. Various properties can be set on
@@ -56,19 +61,24 @@ namespace BenchMark
     class BenchMarkEntity
     {
     public:
+        enum ESettings
+        {
+            MaxArg = 8,
+
+        };
         Allocator*            allocator;
         bool                  enabled_;
         char*                 name_;
         TimeUnit              time_unit_;
         TimeSettings          time_settings_;
         AggregationReportMode aggregation_report_mode_;
+        const char*           arg_names_[MaxArg]; // Arg names (default = x,y,z,w)
+        Array<Array<s64>>     final_args_;        // {...}[]
+        const s32**           args_;
         int                   argc_;
-        const char*           arg_names_[4];       // Arg names (default = x,y,z,w)
-        Array<Array<s64>>     args_;               // {x,y,z,w}[]
-        const s32*            arg_arrays_[4];      // x[], y[], z[], w[]
-        int                   arg_array_sizes_[4]; // x[], y[], z[], w[]
-        ArgRange              arg_ranges_[4];      // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
-        Array<s64>            arg_product_[4];     // x:{...} * y:{...} * z:{...} * w:{...} permutations
+        const s32*            arg_arrays_[MaxArg];      // x[], y[], z[], w[]
+        int                   arg_array_sizes_[MaxArg]; // x[], y[], z[], w[]
+        ArgRange              arg_ranges_[MaxArg];      // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
         s32 const*            thread_counts_;
         int                   thread_counts_size_;
         int                   range_multiplier_;
@@ -95,13 +105,9 @@ namespace BenchMark
         void SetDefaults();
         void SetEnabled(bool enabled);
         void SetDefaultArgNames();
-        void SetArgs(const Arg* args, s32 argc);
+        void SetArgs(Args const* args, s32 argc);
         void SetNamedArg(s32 i, const char* name, const s32* args, s32 argc);
-        void SetArgRange(s32 i, s32 lo, s32 hi, s32 multiplier = 8);
-        void SetArgDenseRange(s32 i, s32 start, s32 limit, s32 step);
-        void SetArgProduct(std::initializer_list<s64> a, std::initializer_list<s64> b, std::initializer_list<s64> c = std::initializer_list<s64>());
-        void SetNamedArgRange(s32 i, const char* aname, s32 lo, s32 hi, s32 multiplier = 8);
-        void SetNamedArgProduct(const char* aname, std::initializer_list<s64> a, const char* bname, std::initializer_list<s64> b, const char* cname = nullptr, std::initializer_list<s64> c = std::initializer_list<s64>());
+        void SetNamedArgRange(s32 i, const char* aname, s32 lo, s32 hi, s32 multiplier = 8, s32 mode = 1);
         void SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size);
         void SetComplexity(BigO complexity);
         void SetComplexity(BigO::Func* complexity_lambda_);

@@ -256,13 +256,13 @@ namespace BenchMark
 
         // The main thread has finished. Now let's wait for the other threads.
         manager->WaitForAllThreads();
-        for (u64 ti = 0; ti < thread_pool.Size(); ++ti)
+        for (s32 ti = 0; ti < thread_pool.Size(); ++ti)
         {
             thread_pool[ti].join();
         }
 
         // Merge all the results together.
-        for (u64 ti = 0; ti < results.Size(); ++ti)
+        for (s32 ti = 0; ti < results.Size(); ++ti)
         {
             BenchMarkRunResult* rr = results[ti];
             iteration_results.results.Merge(*rr);

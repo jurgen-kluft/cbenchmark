@@ -15,12 +15,10 @@ namespace BenchMark
     class BenchMarkReporter;
     class BenchMarkState;
 
-#define BM_ARGS(...) const Arg argvector[] = { __VA_ARGS__ }; settings->SetArgs(argvector, sizeof(argvector) / sizeof(argvector[0]))
-#define BM_ARGRANGE(idx, lo, hi, multi) settings->SetArgRange(idx, lo, hi, multi)
-#define BM_ARGPRODUCT settings->SetArgProduct
-#define BM_NAMED_ARGPRODUCT settings->SetNamedArgProduct
+#define BM_ARGS(...) const Args argvector[] = { __VA_ARGS__ }; settings->SetArgs(argvector, sizeof(argvector) / sizeof(argvector[0]))
+#define BM_ARGRANGE(idx, lo, hi, multi) settings->SetNamedArgRange(idx, nullptr, lo, hi, multi)
+#define BM_NAMED_ARGRANGE(idx, name, lo, hi, multi) settings->SetNamedArgRange(idx, #name, lo, hi, multi)
 #define BM_NAMED_ARG(idx, tag, ...) const s32 argnamed##tag[] = { __VA_ARGS__ }; settings->SetNamedArg(idx, #tag, argnamed##tag, sizeof(argnamed##tag) / sizeof(argnamed##tag[0]));
-#define BM_NAMED_ARGRANGE settings->SetNamedArgRange
 #define BM_THREAD_COUNTS(...) const s32 tcvector[] = { __VA_ARGS__ }; settings->SetThreadCounts(tcvector, (s32)(sizeof(tcvector) / sizeof(tcvector[0])))
 
 #define BM_COUNTER settings->AddCounter

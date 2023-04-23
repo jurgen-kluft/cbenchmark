@@ -36,10 +36,7 @@ namespace BenchMark
 
                 // This will have the same result
                 BM_ARGRANGE(0, 8, 128, 8);
-                BM_NAMED_ARGRANGE(0, "x", 8, 512, 32);
-
-                BM_ARGPRODUCT({8, 16, 32, 64, 128}, {1, 2, 3, 4});
-                BM_NAMED_ARGPRODUCT("x", {8, 16, 32, 64, 128}, "y", {1, 2, 3, 4});
+                BM_NAMED_ARGRANGE(0, x, 8, 512, 32);
 
                 BM_THREAD_COUNTS(1, 2, 4, 8, 16);
 
