@@ -15,7 +15,7 @@ func GetPackage() *denv.Package {
 	cbasepkg := cbase.GetPackage()
 
 	// The main (cbenchmark) package
-	mainpkg := denv.NewPackage("c")
+	mainpkg := denv.NewPackage("cbenchmark")
 	mainpkg.AddPackage(cunittestpkg)
 	mainpkg.AddPackage(centrypkg)
 	mainpkg.AddPackage(cbasepkg)
