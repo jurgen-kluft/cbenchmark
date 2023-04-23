@@ -96,6 +96,12 @@ namespace BenchMark
         }
     }
 
+    void BenchMarkEntity::SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size)
+    {
+        thread_counts_ = thread_counts;
+        thread_counts_size_ = thread_counts_size;
+    }
+
     void BenchMarkEntity::SetComplexity(BigO complexity) { complexity_ = complexity; }
     void BenchMarkEntity::SetComplexity(BigO::Func* complexity_lambda) { complexity_lambda_ = complexity_lambda; }
     void BenchMarkEntity::AddCounter(const char* name, CounterFlags flags, double value) {}

@@ -21,6 +21,7 @@ namespace BenchMark
 #define BM_NAMED_ARGPRODUCT settings->SetNamedArgProduct
 #define BM_NAMED_ARG(idx, tag, ...) const s32 argnamed##tag[] = { __VA_ARGS__ }; settings->SetNamedArg(idx, #tag, argnamed##tag, sizeof(argnamed##tag) / sizeof(argnamed##tag[0]));
 #define BM_NAMED_ARGRANGE settings->SetNamedArgRange
+#define BM_THREAD_COUNTS(...) const s32 tcvector[] = { __VA_ARGS__ }; settings->SetThreadCounts(tcvector, (s32)(sizeof(tcvector) / sizeof(tcvector[0])))
 
 #define BM_COUNTER settings->AddCounter
 #define BM_TIMEUNIT settings->SetTimeUnit

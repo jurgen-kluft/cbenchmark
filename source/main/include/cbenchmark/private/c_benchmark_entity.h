@@ -69,8 +69,8 @@ namespace BenchMark
         int                   arg_array_sizes_[4]; // x[], y[], z[], w[]
         ArgRange              arg_ranges_[4];      // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
         Array<s64>            arg_product_[4];     // x:{...} * y:{...} * z:{...} * w:{...} permutations
-        int const*            thread_counts_;
-        int                   num_thread_counts_;
+        s32 const*            thread_counts_;
+        int                   thread_counts_size_;
         int                   range_multiplier_;
         int                   repetitions_;
         double                min_time_;
@@ -102,6 +102,7 @@ namespace BenchMark
         void SetArgProduct(std::initializer_list<s64> a, std::initializer_list<s64> b, std::initializer_list<s64> c = std::initializer_list<s64>());
         void SetNamedArgRange(s32 i, const char* aname, s32 lo, s32 hi, s32 multiplier = 8);
         void SetNamedArgProduct(const char* aname, std::initializer_list<s64> a, const char* bname, std::initializer_list<s64> b, const char* cname = nullptr, std::initializer_list<s64> c = std::initializer_list<s64>());
+        void SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size);
         void SetComplexity(BigO complexity);
         void SetComplexity(BigO::Func* complexity_lambda_);
         void AddCounter(const char* name, CounterFlags flags, double value = 0.0);

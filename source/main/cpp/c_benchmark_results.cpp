@@ -41,6 +41,8 @@ namespace BenchMark
                 BM_ARGPRODUCT({8, 16, 32, 64, 128}, {1, 2, 3, 4});
                 BM_NAMED_ARGPRODUCT("x", {8, 16, 32, 64, 128}, "y", {1, 2, 3, 4});
 
+                BM_THREAD_COUNTS(1, 2, 4, 8, 16);
+
                 BM_COUNTER("test", CounterFlags::IsRate);
                 BM_COUNTER("test2", CounterFlags::IsRate);
                 BM_COUNTER("test3", CounterFlags::IsRate);
