@@ -53,6 +53,11 @@ namespace BenchMark
 
     struct Args
     {
+        inline Args(s32 const* _args, s32 _argc)
+            : args(_args)
+            , argc(_argc)
+        {
+        }
         s32 const* args;
         s32        argc;
     };
@@ -61,16 +66,22 @@ namespace BenchMark
     {
     public:
         Allocator*            allocator;
+        Array<Args>           final_args_; // {...}[]
         bool                  enabled_;
         TimeUnit              time_unit_;
         TimeSettings          time_settings_;
         AggregationReportMode aggregation_report_mode_;
-        Array<const char*>    arg_names_;  // Arg names (default = x,y,z,w)
-        Array<Args>           final_args_; // {...}[]
-        Array<Args>           args_;       // x[], y[], z[], w[]
-        Array<ArgRange>       arg_ranges_; // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
-        s32 const*            thread_counts_;
+        bool                  count_only_;       // Settings are applied in two passes
+        s32                   arg_names_count_;  //
+        Array<const char*>    arg_names_;        // Arg names (default = x,y,z,w)
+        s32                   args_count_;       //
+        Array<Args>           args_;             // {x,y,z,w}[]
+        s32                   arg_count_;        //
+        Array<Args>           arg_;              // x[], y[], z[], w[]
+        s32                   arg_ranges_count_; //
+        Array<ArgRange>       arg_ranges_;       // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
         int                   thread_counts_size_;
+        Array<s32>            thread_counts_;
         int                   range_multiplier_;
         int                   repetitions_;
         double                min_time_;
@@ -79,7 +90,8 @@ namespace BenchMark
         Counters              counters_;
         BigO                  complexity_;
         BigO::Func*           complexity_lambda_;
-        Statistics            statistics_;
+        s32                   statistics_count_;
+        Array<Statistic>      statistics_;
         setup_function        setup_;
         teardown_function     teardown_;
         run_function          run;
@@ -91,11 +103,11 @@ namespace BenchMark
         int                   disabled;
         int                   lineNumber;
 
-        s32  BuildArgs();
+        s32 BuildArgs();
 
+        void PrepareSettings(bool count_only);
         void SetDefaults();
         void SetEnabled(bool enabled);
-        void SetDefaultArgNames();
         void AddArgs(s32 const* args, s32 argc);
         void AddArg(const s32* args, s32 argc);
         void AddRange(s32 lo, s32 hi, s32 multiplier, s32 mode);

@@ -36,30 +36,6 @@ namespace BenchMark
         StatisticUnit unit_;
     };
 
-    struct Statistics
-    {
-        static const s32 MaxStatistics = 10;
-
-        Statistics()
-            : count_(0)
-        {
-        }
-
-        void Add(const Statistic& statistic)
-        {
-            if (count_ < MaxStatistics)
-            {
-                statistics_[count_++] = statistic;
-            }
-        }
-
-        const Statistic& operator[](s32 index) const { return statistics_[index]; }
-        s32              Size() const { return count_; }
-
-        s32       count_;
-        Statistic statistics_[MaxStatistics];
-    };
-
     struct AggregationReportMode
     {
         enum
