@@ -10,6 +10,7 @@
 
 namespace BenchMark
 {
+    class BenchMarkEntity;
     class BenchMarkState;
     class BenchMarkInstance;
 
@@ -62,11 +63,12 @@ namespace BenchMark
         TimeSettings          time_settings_;
         AggregationReportMode aggregation_report_mode_;
         int                   argc_;
-        const char*           arg_names_[4];        // Arg names (default = x,y,z,w)
-        Array<Array<s64>>     args_;                // {x,y,z,w}[]
-        ArgRange              arg_ranges_[4];       // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
-        ArgDenseRange         arg_dense_ranges_[4]; // x:{start,limit,step} * y:{start,limit,step} * z:{start,limit,step} * w:{start,limit,step} permutations
-        Array<s64>            arg_product_[4];      // x:{...} * y:{...} * z:{...} * w:{...} permutations
+        const char*           arg_names_[4];       // Arg names (default = x,y,z,w)
+        Array<Array<s64>>     args_;               // {x,y,z,w}[]
+        const s32*            arg_arrays_[4];      // x[], y[], z[], w[]
+        int                   arg_array_sizes_[4]; // x[], y[], z[], w[]
+        ArgRange              arg_ranges_[4];      // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
+        Array<s64>            arg_product_[4];     // x:{...} * y:{...} * z:{...} * w:{...} permutations
         int const*            thread_counts_;
         int                   num_thread_counts_;
         int                   range_multiplier_;
@@ -80,19 +82,26 @@ namespace BenchMark
         Statistics            statistics_;
         setup_function        setup_;
         teardown_function     teardown_;
-        run_function          run_;
-        settings_function     settings_;
+        run_function          run;
+        settings_function     settings;
+        BenchMarkEntity*      next;
+        BenchMarkEntity*      entity;
+        const char*           name;
+        const char*           filename;
+        int                   disabled;
+        int                   lineNumber;
 
         s32  BuildArgs();
         void SetDefaults();
         void SetEnabled(bool enabled);
         void SetDefaultArgNames();
-        void AddArg(Arg a);
-        void SetNamedArg(const char* name, std::initializer_list<s64> values);
-        void SetArgRange(ArgRange a, ArgRange b, ArgRange c = ArgRange::empty);
-        void SetNamedArgRange(const char* aname, ArgRange a, const char* bname, ArgRange b = ArgRange::empty, const char* cname = nullptr, ArgRange c = ArgRange::empty);
+        void SetArgs(const Arg* args, s32 argc);
+        void SetNamedArg(s32 i, const char* name, const s32* args, s32 argc);
+        void SetArgRange(s32 i, s32 lo, s32 hi, s32 multiplier = 8);
+        void SetArgDenseRange(s32 i, s32 start, s32 limit, s32 step);
         void SetArgProduct(std::initializer_list<s64> a, std::initializer_list<s64> b, std::initializer_list<s64> c = std::initializer_list<s64>());
-        void SetRangeMultiplier(int multiplier);
+        void SetNamedArgRange(s32 i, const char* aname, s32 lo, s32 hi, s32 multiplier = 8);
+        void SetNamedArgProduct(const char* aname, std::initializer_list<s64> a, const char* bname, std::initializer_list<s64> b, const char* cname = nullptr, std::initializer_list<s64> c = std::initializer_list<s64>());
         void SetComplexity(BigO complexity);
         void SetComplexity(BigO::Func* complexity_lambda_);
         void AddCounter(const char* name, CounterFlags flags, double value = 0.0);
@@ -110,9 +119,9 @@ namespace BenchMark
         // Creates a list of integer values for the given range and multiplier.
         // This can be used together with ArgsProduct() to allow multiple ranges
         // with different multipliers.
-        static void CreateRange(s64 lo, s64 hi, int multi, Array<s64>& out, Allocator* alloc);
+        static void CreateRange(s32 lo, s32 hi, s32 multi, Array<s64>& out, Allocator* alloc);
         // Creates a list of integer values for the given range and step.
-        static void CreateDenseRange(s64 start, s64 limit, int step, Array<s64>& out, Allocator* alloc);
+        static void CreateDenseRange(s32 start, s32 limit, s32 step, Array<s64>& out, Allocator* alloc);
 
     }; // namespace BenchMark
 } // namespace BenchMark

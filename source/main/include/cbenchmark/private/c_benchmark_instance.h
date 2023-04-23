@@ -23,7 +23,6 @@ namespace BenchMark
         double FLAGS_benchmark_min_warmup_time;
         bool   FLAGS_benchmark_report_aggregates_only;
         bool   FLAGS_benchmark_display_aggregates_only;
-        bool   FLAGS_benchmark_repetitions;
         s32    FLAGS_benchmark_repetitions;
         bool   FLAGS_benchmark_enable_random_interleaving;
     };

@@ -13,12 +13,13 @@ namespace BenchMark
 #define BENCHMARK_BUILTIN_EXPECT(x, y) x
 
     class BenchMarkReporter;
-    struct BenchMarkState;
+    class BenchMarkState;
 
-#define BM_ARG(...) settings->AddArg({__VA_ARGS__});
-#define BM_ARGRANGE settings->SetArgRange
+#define BM_ARGS(...) const Arg argvector[] = { __VA_ARGS__ }; settings->SetArgs(argvector, sizeof(argvector) / sizeof(argvector[0]))
+#define BM_ARGRANGE(idx, lo, hi, multi) settings->SetArgRange(idx, lo, hi, multi)
 #define BM_ARGPRODUCT settings->SetArgProduct
-#define BM_NAMED_ARG(tag, ...) settings->SetNamedArg(#tag, {__VA_ARGS__});
+#define BM_NAMED_ARGPRODUCT settings->SetNamedArgProduct
+#define BM_NAMED_ARG(idx, tag, ...) const s32 argnamed##tag[] = { __VA_ARGS__ }; settings->SetNamedArg(idx, #tag, argnamed##tag, sizeof(argnamed##tag) / sizeof(argnamed##tag[0]));
 #define BM_NAMED_ARGRANGE settings->SetNamedArgRange
 
 #define BM_COUNTER settings->AddCounter
@@ -30,23 +31,10 @@ namespace BenchMark
 
 #define BM_ITERATE while (state.KeepRunning())
 
-    class BenchMarkUnit
-    {
-    public:
-        BenchMarkUnit*    next;
-        BenchMarkEntity*  entity;
-        run_function      run;
-        settings_function settings;
-        const char*       name;
-        const char*       filename;
-        int               disabled;
-        int               lineNumber;
-    };
-
     class BenchMarkFixture
     {
     public:
-        void AddUnit(BenchMarkUnit* bmu)
+        void AddUnit(BenchMarkEntity* bmu)
         {
             if (head == nullptr)
                 head = bmu;
@@ -54,8 +42,8 @@ namespace BenchMark
                 tail->next = bmu;
             tail = bmu;
         }
-        BenchMarkUnit*    head;
-        BenchMarkUnit*    tail;
+        BenchMarkEntity*  head;
+        BenchMarkEntity*  tail;
         BenchMarkFixture* next;
         settings_function settings;
         setup_function    setup;
@@ -92,7 +80,7 @@ namespace BenchMark
 #define BM_TEST_DISABLE(name)                    \
     namespace nsBMU##name                        \
     {                                            \
-        extern BenchMarkUnit __unit;             \
+        extern BenchMarkEntity __unit;             \
     }                                            \
     class SetBMUnitDisable##name                 \
     {                                            \
@@ -107,14 +95,12 @@ namespace BenchMark
     void BM_Run_##bmname(BenchMarkState& state, Allocator* allocator);                       \
     namespace nsBMU##bmname                                                                  \
     {                                                                                        \
-        static BenchMarkEntity __entity;                                                     \
-        static BenchMarkUnit   __unit;                                                       \
+        static BenchMarkEntity __unit;                                                       \
         class BMRegisterUnit                                                                 \
         {                                                                                    \
         public:                                                                              \
             inline BMRegisterUnit(const char* _name, const char* _filename, int _lineNumber) \
             {                                                                                \
-                __unit.entity     = &__entity;                                               \
                 __unit.run        = BM_Run_##bmname;                                         \
                 __unit.name       = _name;                                                   \
                 __unit.filename   = _filename;                                               \
@@ -130,7 +116,7 @@ namespace BenchMark
     void BMUnitSettings##name(Allocator* alloc, BenchMarkEntity* settings); \
     namespace nsBMU##name                                                   \
     {                                                                       \
-        extern BenchMarkUnit __unit;                                        \
+        extern BenchMarkEntity __unit;                                        \
         class SetBMUnitSettings                                             \
         {                                                                   \
         public:                                                             \

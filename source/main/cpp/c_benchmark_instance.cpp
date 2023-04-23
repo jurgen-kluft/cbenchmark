@@ -22,7 +22,6 @@ namespace BenchMark
         FLAGS_benchmark_report_aggregates_only     = true;
         FLAGS_benchmark_display_aggregates_only    = false;
         FLAGS_benchmark_repetitions                = 1;
-        FLAGS_benchmark_repetitions                = 1;
         FLAGS_benchmark_enable_random_interleaving = false;
     }
 
@@ -87,9 +86,11 @@ namespace BenchMark
 
     BenchMarkState BenchMarkInstance::Run(IterationCount iters, int thread_id, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results) const
     {
-        // TODO Allocator, needs to be thread-safe!
+        // TODO Allocator, needs to be thread-safe or one per thread
+        Allocator* allocator;
+
         BenchMarkState state(name_.function_name, iters, &args_, thread_id, threads_, timer, manager, results);
-        benchmark_->run_(state, allocator);
+        benchmark_->run(state, allocator);
         return state;
     }
 

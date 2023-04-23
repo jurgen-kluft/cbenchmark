@@ -34,6 +34,7 @@ namespace BenchMark
             gStringAppend(str, nameEnd, "_");
             gStringAppend(str, nameEnd, aggregate_name);
         }
+        return name;
     }
 
     double BenchMarkRun::GetAdjustedRealTime() const

@@ -36,6 +36,8 @@ namespace BenchMark
         virtual void PrintRunData(const BenchMarkRun& report);
         virtual void PrintHeader(const BenchMarkRun& report);
 
+        virtual void Flush();
+
         OutputOptions output_options_;
         Counters      prev_counters_;
         s32           name_field_width_;

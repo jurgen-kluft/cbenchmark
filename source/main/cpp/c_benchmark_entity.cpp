@@ -10,7 +10,8 @@
 
 namespace BenchMark
 {
-    s32 BenchMarkEntity::BuildArgs() {}
+    s32 BenchMarkEntity::BuildArgs() { return 0; 
+    }
 
     void BenchMarkEntity::SetDefaults()
     {
@@ -42,40 +43,34 @@ namespace BenchMark
         arg_names_[1] = "y";
         arg_names_[2] = "z";
     }
-    void BenchMarkEntity::AddArg(Arg a)
+    void BenchMarkEntity::SetNamedArg(int i, const char* name, const s32* args, int argc)
     {
-        if (argc_ == 0)
-            SetDefaultArgNames();
-        if (argc_ >= 3)
+        if (i >= sizeof(arg_names_) / sizeof(arg_names_[0]))
             return;
-        arg_ranges_[argc_] = a;
-        argc_++;
+        arg_names_[i]       = name;
+        arg_arrays_[i]      = args;
+        arg_array_sizes_[i] = argc;
     }
-    void BenchMarkEntity::SetNamedArg(const char* aname, std::initializer_list<s64> values)
+    void BenchMarkEntity::SetArgRange(int idx, s32 lo, s32 hi, int multiplier)
     {
-        if (argc_ >= 3)
-            return;
-        arg_names_[argc_]  = aname;
-        arg_ranges_[argc_] = a;
-        argc_++;
+        arg_names_[idx]  = nullptr;
+        arg_ranges_[idx] = ArgRange(lo, hi, multiplier, 1);
     }
-    void BenchMarkEntity::SetArgRange(ArgRange a, ArgRange b, ArgRange c)
+    void BenchMarkEntity::SetNamedArgRange(int idx, const char* name, s32 lo, s32 hi, int multiplier)
     {
-        SetDefaultArgNames();
-        arg_ranges_[0] = a;
-        arg_ranges_[1] = b;
-        arg_ranges_[2] = c;
+        arg_names_[idx]  = name;
+        arg_ranges_[idx] = ArgRange(lo, hi, multiplier, 1);
     }
-    void BenchMarkEntity::SetNamedArgRange(const char* aname, ArgRange a, const char* bname, ArgRange b, const char* cname = nullptr, ArgRange c)
+
+    void BenchMarkEntity::SetNamedArgProduct(const char* aname, std::initializer_list<s64> a, const char* bname, std::initializer_list<s64> b, const char* cname, std::initializer_list<s64> c)
     {
-        arg_names_[0]  = aname;
-        arg_names_[1]  = bname;
-        arg_names_[2]  = cname;
-        arg_ranges_[0] = a;
-        arg_ranges_[1] = b;
-        arg_ranges_[2] = c;
+        arg_names_[0] = aname;
+        arg_names_[1] = bname;
+        arg_names_[2] = cname;
+        SetArgProduct(a, b, c);
     }
-    void BenchMarkEntity::SetArgProduct(std::initializer_list<s64> a, std::initializer_list<s64> b, std::initializer_list<s64> c = std::initializer_list<s64>())
+
+    void BenchMarkEntity::SetArgProduct(std::initializer_list<s64> a, std::initializer_list<s64> b, std::initializer_list<s64> c)
     {
         arg_product_[0] = Array<s64>();
         arg_product_[1] = Array<s64>();
@@ -83,34 +78,34 @@ namespace BenchMark
 
         if (a.size() > 0)
         {
-            arg_product_[0].Init(allocator, a.size(), a.size());
+            arg_product_[0].Init(allocator, (s32)a.size(), (s32)a.size());
             for (auto& i : a)
                 arg_product_[0].PushBack(i);
         }
         if (b.size() > 0)
         {
-            arg_product_[1].Init(allocator, b.size(), b.size());
+            arg_product_[1].Init(allocator, (s32)b.size(), (s32)b.size());
             for (auto& i : b)
                 arg_product_[1].PushBack(i);
         }
         if (c.size() > 0)
         {
-            arg_product_[2].Init(allocator, c.size(), c.size());
+            arg_product_[2].Init(allocator, (s32)c.size(), (s32)c.size());
             for (auto& i : c)
                 arg_product_[2].PushBack(i);
         }
     }
-    void BenchMarkEntity::SetRangeMultiplier(int multiplier) { range_multiplier_ = multiplier; }
+
     void BenchMarkEntity::SetComplexity(BigO complexity) { complexity_ = complexity; }
     void BenchMarkEntity::SetComplexity(BigO::Func* complexity_lambda) { complexity_lambda_ = complexity_lambda; }
-    void BenchMarkEntity::AddCounter(const char* name, CounterFlags flags, double value = 0.0) {}
+    void BenchMarkEntity::AddCounter(const char* name, CounterFlags flags, double value) {}
     void BenchMarkEntity::SetTimeUnit(TimeUnit tu) { time_unit_ = tu; }
     void BenchMarkEntity::SetMinTime(double min_time) { min_time_ = min_time; }
     void BenchMarkEntity::SetMinWarmupTime(double min_warmup_time) { min_warmup_time_ = min_warmup_time; }
     void BenchMarkEntity::SetIterations(IterationCount iters) { iterations_ = iters; }
     void BenchMarkEntity::SetRepetitions(int repetitions) { repetitions_ = repetitions; }
-    void BenchMarkEntity::SetFuncRun(run_function func) { run_ = func; }
-    void BenchMarkEntity::SetFuncSettings(settings_function func) { settings_ = func; }
+    void BenchMarkEntity::SetFuncRun(run_function func) { run = func; }
+    void BenchMarkEntity::SetFuncSettings(settings_function func) { settings = func; }
 
     // Append the powers of 'mult' in the closed interval [lo, hi].
     // Returns iterator to the start of the inserted range.
@@ -163,7 +158,11 @@ namespace BenchMark
         for (int i = it; i < dst.Size(); i++)
             dst[i] *= -1;
         for (int i = it, j = dst.Size() - 1; i < j; i++, j--)
-            std::swap(dst[i], dst[j]);
+        {
+            const s64 tmp = dst[i];
+            dst[i]        = dst[j];
+            dst[j]        = tmp;
+        }
     }
 
     static void AddRange(s64 lo, s64 hi, int mult, Array<s64>& dst, Allocator* alloc)
@@ -215,7 +214,7 @@ namespace BenchMark
         }
     }
 
-    static s64 AddedPowersSize(s64 lo, s64 hi, int mult)
+    static s32 AddedPowersSize(s64 lo, s64 hi, int mult)
     {
         BM_CHECK_GE(lo, 0);
         BM_CHECK_GE(hi, lo);
@@ -224,7 +223,7 @@ namespace BenchMark
         static const s64 kmax = std::numeric_limits<s64>::max();
 
         // Space out the values in multiples of "mult"
-        s64 size = 0;
+        s32 size = 0;
         for (s64 i = static_cast<s64>(1); i <= hi; i *= static_cast<s64>(mult))
         {
             if (i >= lo)
@@ -239,7 +238,7 @@ namespace BenchMark
         return size;
     }
 
-    static s64 AddedNegatedPowersSize(s64 lo, s64 hi, int mult)
+    static s32 AddedNegatedPowersSize(s64 lo, s64 hi, int mult)
     {
         // We negate lo and hi so we require that they cannot be equal to 'min'.
         BM_CHECK_GT(lo, std::numeric_limits<s64>::min());
@@ -256,12 +255,12 @@ namespace BenchMark
         return AddedPowersSize(hi_complement, lo_complement, mult);
     }
 
-    static s64 ComputeAddRangeSize(s64 lo, s64 hi, int mult)
+    static s32 ComputeAddRangeSize(s64 lo, s64 hi, int mult)
     {
         BM_CHECK_GE(hi, lo);
         BM_CHECK_GE(mult, 2);
 
-        s64 size = 1;
+        s32 size = 1;
 
         // Handle lo == hi as a special case, so we then know
         // lo < hi and so it is safe to add 1 to lo and subtract 1
@@ -299,20 +298,21 @@ namespace BenchMark
         }
 
         size += 1;
+        return size;
     }
 
-    void BenchMarkEntity::CreateRange(s64 start, s64 limit, int mult, Array<s64>& out, Allocator* alloc)
+    void BenchMarkEntity::CreateRange(s32 start, s32 limit, s32 mult, Array<s64>& out, Allocator* alloc)
     {
         // Compute the number of elements in the range.
-        const s64 size = ComputeAddRangeSize(start, limit, mult);
+        const s32 size = ComputeAddRangeSize(start, limit, mult);
         out.Init(alloc, 0, size);
         AddRange(start, limit, mult, out, alloc);
     }
 
-    void BenchMarkEntity::CreateDenseRange(s64 start, s64 limit, int step, Array<s64>& out, Allocator* alloc)
+    void BenchMarkEntity::CreateDenseRange(s32 start, s32 limit, s32 step, Array<s64>& out, Allocator* alloc)
     {
         out.Init(alloc, 0, (limit - start) / step + 1);
-        for (s64 arg = start; arg <= limit; arg += step)
+        for (s32 arg = start; arg <= limit; arg += step)
         {
             out.PushBack(arg);
         }

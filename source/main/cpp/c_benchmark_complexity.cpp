@@ -50,8 +50,8 @@ namespace BenchMark
         switch (complexity.bigo)
         {
             case BigO::O_N: return [](IterationCount n) -> double { return static_cast<double>(n); };
-            case BigO::O_N_Squared: return [](IterationCount n) -> double { return ipow(n, 2); };
-            case BigO::O_N_Cubed: return [](IterationCount n) -> double { return ipow(n, 3); };
+            case BigO::O_N_Squared: return [](IterationCount n) -> double { return (double)ipow(n, 2); };
+            case BigO::O_N_Cubed: return [](IterationCount n) -> double { return (double)ipow(n, 3); };
             case BigO::O_Log_N: return [](IterationCount n) { return kLog2E * log(static_cast<double>(n)); };
             case BigO::O_N_Log_N: return [](IterationCount n) { return kLog2E * n * log(static_cast<double>(n)); };
             case BigO::O_1:
@@ -217,7 +217,6 @@ namespace BenchMark
         Run*& big_o                      = bigo.Alloc();
         big_o                            = alloc->Construct<Run>();
         big_o->run_name                  = run_name;
-        big_o->family_index              = run0->family_index;
         big_o->per_family_instance_index = run0->per_family_instance_index;
         big_o->run_type                  = Run::RT_Aggregate;
         big_o->repetitions               = run0->repetitions;
@@ -243,7 +242,6 @@ namespace BenchMark
         Run*& rms                      = bigo.Alloc();
         rms                            = alloc->Construct<Run>();
         rms->run_name                  = run_name;
-        rms->family_index              = run0->family_index;
         rms->per_family_instance_index = run0->per_family_instance_index;
         rms->run_type                  = Run::RT_Aggregate;
         rms->aggregate_name            = "RMS";

@@ -13,9 +13,6 @@ namespace BenchMark
 
     BenchMarkReporter::~BenchMarkReporter() {}
 
-    void BenchMarkReporter::SetOutputStream(TextStream* out) { output_stream_ = out; }
-    void BenchMarkReporter::SetErrorStream(TextStream* err) { error_stream_ = err; }
-
     void BenchMarkReporter::PrintBasicContext(TextStreamWriter& out, Context const& context)
     {
         // BM_CHECK(out) << "cannot be null";

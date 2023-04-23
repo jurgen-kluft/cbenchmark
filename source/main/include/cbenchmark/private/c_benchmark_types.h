@@ -11,37 +11,23 @@ namespace BenchMark
 
     struct Arg
     {
-        s64 x,y,w,z;
+        s32 argv[4];
     };
 
     struct ArgRange
     {
         ArgRange() {}
-        ArgRange(s64 _lo, s64 _hi, s64 _multi)
-            : lo(_lo)
-            , hi(_hi)
-            , multi(_multi)
+        ArgRange(s32 _a, s32 _b, s32 _c, s32 _mode)
+            : a(_a)
+            , b(_b)
+            , c(_c)
+            , mode(_mode)
         {
         }
 
-        s64 lo, hi;
-        s64 multi;
+        s32             a, b, c;
+        s32             mode; // 0 = un-initialized, 1 = multiplier, 2 = step
         static ArgRange empty;
-    };
-
-    struct ArgDenseRange
-    {
-        ArgDenseRange() {}
-        ArgDenseRange(s64 _start, s64 _limit, s64 _step)
-            : start(_start)
-            , limit(_limit)
-            , step(_step)
-        {
-        }
-
-        s64 start;
-        s64 limit;
-        s64 step;
     };
 
     struct Counter

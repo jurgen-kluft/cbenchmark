@@ -76,12 +76,12 @@ namespace BenchMark
         }
     };
 
-    static void RandomShuffle(Array<s64>& indices)
+    static void RandomShuffle(Array<s32>& indices)
     {
         XorRandom rng(0xdeadbeef);
         for (int i = 0; i < indices.Size(); ++i)
         {
-            s64 j = i + (rng.next() % (indices.Size() - i));
+            s32 j = i + ((s32)rng.next() % (indices.Size() - i));
             std::swap(indices[i], indices[j]);
         }
     }
@@ -93,19 +93,19 @@ namespace BenchMark
 
         // Determine the width of the name field using a minimum width of 10.
         bool might_have_aggregates = globals->FLAGS_benchmark_repetitions > 1;
-        s64  name_field_width      = 10;
-        s64  stat_field_width      = 0;
+        s32  name_field_width      = 10;
+        s32  stat_field_width      = 0;
         for (int i = 0; i < benchmark_instances.Size(); ++i)
         {
             const BenchMarkInstance* benchmark = benchmark_instances[i];
-            name_field_width                   = max<s64>(name_field_width, benchmark->name().FullNameLen());
+            name_field_width                   = max<s32>(name_field_width, benchmark->name().FullNameLen());
             might_have_aggregates |= benchmark->repetitions() > 1;
 
             Statistics const& stats = benchmark->statistics();
             for (int j = 0; j < stats.Size(); ++j)
             {
                 Statistic const& Stat = stats[j];
-                stat_field_width      = max<s64>(stat_field_width, gStringLength(Stat.name_));
+                stat_field_width      = max<s32>(stat_field_width, gStringLength(Stat.name_));
             }
         }
         if (might_have_aggregates)
@@ -163,7 +163,7 @@ namespace BenchMark
             }
             BM_CHECK(runners.Size() == benchmark_instances.Size() && "Unexpected runner count.");
 
-            Array<s64> repetition_indices;
+            Array<s32> repetition_indices;
             repetition_indices.Init(temp, 0, num_repetitions_total);
 
             for (s32 runner_index = 0, num_runners = runners.Size(); runner_index != num_runners; ++runner_index)
@@ -182,7 +182,7 @@ namespace BenchMark
 
             for (int i = 0; i < repetition_indices.Size(); ++i)
             {
-                const s64        repetition_index = repetition_indices[i];
+                const s32        repetition_index = repetition_indices[i];
                 BenchMarkRunner* runner           = runners[repetition_index];
                 RunResults*      results          = run_results[repetition_index];
 
@@ -238,7 +238,7 @@ namespace BenchMark
             // Destroy all runners
             for (int i = 0; i < runners.Size(); ++i)
             {
-                temp->Destruct(runners[i]);
+                DestroyRunner(runners[i], temp);
             }
         }
 
@@ -335,13 +335,12 @@ namespace BenchMark
             // - name / filename / line number
             // - num units
 
-            BenchMarkUnit* unit = fixture->head;
+            BenchMarkEntity* unit = fixture->head;
             while (unit != nullptr)
             {
-                BenchMarkEntity* entity = unit->entity;
                 {
                     Array<BenchMarkInstance*> benchmark_instances;
-                    if (CreateBenchMarkInstances(allocator, entity, benchmark_instances))
+                    if (CreateBenchMarkInstances(allocator, unit, benchmark_instances))
                     {
                         // Report the details of this benchmark unit ?
                         // - name / filename / line number

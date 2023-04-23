@@ -17,13 +17,29 @@ namespace BenchMark
 
             BM_FIXTURE_SETTINGS
             {
-                BM_ARG(8, 32, 128);
-                BM_NAMED_ARG(x, 8, 16, 32, 64, 128);
+                // {x,y,z}, {x,y,z}, {x,y,z}
+                BM_ARGS({1, 2, 3}, {4, 5, 6}, {7, 8, 9});
 
-                BM_ARGRANGE({8, 512, 32}, {128, 512, 128});
-                BM_NAMED_ARGRANGE("x", {8, 512, 32}, "y", {128, 512, 128}, "z", {4, 32, 8});
+                // These 2 named arguments will be permuted together, and will result in:
+                // { x: 8, y: 64 }
+                // { x: 8, y: 128 }
+                // { x: 16, y: 64 }
+                // { x: 16, y: 128 }
+                // { x: 32, y: 64 }
+                // { x: 32, y: 128 }
+                // { x: 64, y: 64 }
+                // { x: 64, y: 128 }
+                // { x: 128, y: 64 }
+                // { x: 128, y: 128 }
+                BM_NAMED_ARG(0, x, 8, 16, 32, 64, 128);
+                BM_NAMED_ARG(1, y, 64, 128);
+
+                // This will have the same result
+                BM_ARGRANGE(0, 8, 128, 8);
+                BM_NAMED_ARGRANGE(0, "x", 8, 512, 32);
 
                 BM_ARGPRODUCT({8, 16, 32, 64, 128}, {1, 2, 3, 4});
+                BM_NAMED_ARGPRODUCT("x", {8, 16, 32, 64, 128}, "y", {1, 2, 3, 4});
 
                 BM_COUNTER("test", CounterFlags::IsRate);
                 BM_COUNTER("test2", CounterFlags::IsRate);
@@ -44,13 +60,13 @@ namespace BenchMark
 
             // BM_TEST_DISABLE(test);
 
-            BM_TEST(test)
+            BM_TEST(memcpy)
             {
                 // here we have our benchmark code, for example
                 // to benchmark memcpy we can do something like this:
-                char* src = allocator->Malloc<char>(state.Range(0));
-                char* dst = allocator->Malloc<char>(state.Range(0));
-                
+                char* src = allocator->Alloc<char>(state.Range(0));
+                char* dst = allocator->Alloc<char>(state.Range(0));
+
                 memset(src, 'x', state.Range(0));
 
                 // timing starts after 'BM_ITERATE'
@@ -65,8 +81,8 @@ namespace BenchMark
 
                 state.SetBytesProcessed(s64(state.Iterations()) * s64(state.Range(0)));
 
-                allocator->Free(src);
-                allocator->Free(dst);
+                allocator->Dealloc(src);
+                allocator->Dealloc(dst);
             }
         }
     }
