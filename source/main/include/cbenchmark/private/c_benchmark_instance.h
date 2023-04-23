@@ -5,7 +5,7 @@
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_name.h"
-#include "cbenchmark/private/c_benchmark_entity.h"
+#include "cbenchmark/private/c_benchmark_unit.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
 
 namespace BenchMark

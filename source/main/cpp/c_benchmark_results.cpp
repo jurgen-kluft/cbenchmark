@@ -1,6 +1,6 @@
 #include "cbenchmark/private/c_benchmark_results.h"
 #include "cbenchmark/private/c_benchmark_state.h"
-#include "cbenchmark/private/c_benchmark_entity.h"
+#include "cbenchmark/private/c_benchmark_unit.h"
 #include "cbenchmark/private/c_benchmark_reporter.h"
 #include "cbenchmark/private/c_benchmark_alloc.h"
 
@@ -17,27 +17,49 @@ namespace BenchMark
 
             BM_FIXTURE_SETTINGS
             {
-                // {x,y,z}, {x,y,z}, {x,y,z}
-                BM_ARGS({1, 2, 3}, {4, 5, 6}, {7, 8, 9});
+                { // (1) either this
+                    // {x,y,z}
+                    // {x,y,z}
+                    // {x,y,z}
+                    // ...
+                    BM_ARGS(8, 64 );
+                    BM_ARGS(8, 128 );
+                    BM_ARGS(16, 64 );
+                    BM_ARGS(16, 128 );
+                    BM_ARGS(32, 64 );
+                    BM_ARGS(32, 128 );
+                    BM_ARGS(64, 64 );
+                    BM_ARGS(64, 128 );
+                    BM_ARGS(128, 64 );
+                    BM_ARGS(128, 128 );
+                }
 
-                // These 2 named arguments will be permuted together, and will result in:
-                // { x: 8, y: 64 }
-                // { x: 8, y: 128 }
-                // { x: 16, y: 64 }
-                // { x: 16, y: 128 }
-                // { x: 32, y: 64 }
-                // { x: 32, y: 128 }
-                // { x: 64, y: 64 }
-                // { x: 64, y: 128 }
-                // { x: 128, y: 64 }
-                // { x: 128, y: 128 }
-                BM_NAMED_ARG(0, x, 8, 16, 32, 64, 128);
-                BM_NAMED_ARG(1, y, 64, 128);
+                { // (2) or this 
+                    // These 2 named arguments will be permuted together, and will result in:
+                    // { x: 8, y: 64 }
+                    // { x: 8, y: 128 }
+                    // { x: 16, y: 64 }
+                    // { x: 16, y: 128 }
+                    // { x: 32, y: 64 }
+                    // { x: 32, y: 128 }
+                    // { x: 64, y: 64 }
+                    // { x: 64, y: 128 }
+                    // { x: 128, y: 64 }
+                    // { x: 128, y: 128 }
+                    BM_ADD_ARG(8, 16, 32, 64, 128);
+                    BM_ADD_ARG(64, 128);
+                }
 
-                // This will have the same result
-                BM_ARGRANGE(0, 8, 128, 8);
-                BM_NAMED_ARGRANGE(0, x, 8, 512, 32);
+                { // (3) or this
+                    // This will have the same result as (2)
+                    BM_ADD_ARG_RANGE(8, 128, 8);
+                    BM_ADD_ARG_DENSE_RANGE(64, 128, 64);
+                }
 
+                // The above 3 examples emit arguments with 2 values each, let's say x and y.
+                BM_SET_ARG_NAMES("x", "y");
+
+                // Run the benchmark with 1, 2, 4, 8, 16 threads (increases the permutations)
                 BM_THREAD_COUNTS(1, 2, 4, 8, 16);
 
                 BM_COUNTER("test", CounterFlags::IsRate);

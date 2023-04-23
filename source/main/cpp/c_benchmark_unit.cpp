@@ -3,17 +3,17 @@
 #include "cbenchmark/private/c_benchmark_check.h"
 #include "cbenchmark/private/c_benchmark_run.h"
 #include "cbenchmark/private/c_benchmark_types.h"
-#include "cbenchmark/private/c_benchmark_entity.h"
+#include "cbenchmark/private/c_benchmark_unit.h"
 #include "cbenchmark/private/c_benchmark_instance.h"
 
 #include <limits>
 
 namespace BenchMark
 {
-    s32 BenchMarkEntity::BuildArgs() { return 0; 
+    s32 BenchMarkUnit::BuildArgs() { return 0; 
     }
 
-    void BenchMarkEntity::SetDefaults()
+    void BenchMarkUnit::SetDefaults()
     {
         // TODO set all members to sane defaults
         AddStatisticsComputer(Statistic("mean", StatisticsMean, {StatisticUnit::Time}));
@@ -22,9 +22,9 @@ namespace BenchMark
         AddStatisticsComputer(Statistic("cv", StatisticsCV, {StatisticUnit::Percentage}));
     }
 
-    void BenchMarkEntity::ReportAggregatesOnly(bool value) { aggregation_report_mode_ = value ? AggregationReportMode::ReportAggregatesOnly : AggregationReportMode::Default; }
+    void BenchMarkUnit::ReportAggregatesOnly(bool value) { aggregation_report_mode_ = value ? AggregationReportMode::ReportAggregatesOnly : AggregationReportMode::Default; }
 
-    void BenchMarkEntity::DisplayAggregatesOnly(bool value)
+    void BenchMarkUnit::DisplayAggregatesOnly(bool value)
     {
         // If we were called, the report mode is no longer 'unspecified', in any case.
         aggregation_report_mode_.mode = static_cast<u32>(aggregation_report_mode_.mode | AggregationReportMode::Default);
@@ -33,47 +33,43 @@ namespace BenchMark
             aggregation_report_mode_.mode = static_cast<u32>(aggregation_report_mode_.mode | AggregationReportMode::DisplayReportAggregatesOnly);
     }
 
-    void BenchMarkEntity::AddStatisticsComputer(Statistic stat) {}
+    void BenchMarkUnit::AddStatisticsComputer(Statistic stat) {}
 
-    void BenchMarkEntity::SetEnabled(bool enabled) { enabled_ = enabled; }
+    void BenchMarkUnit::SetEnabled(bool enabled) { enabled_ = enabled; }
 
-    void BenchMarkEntity::SetDefaultArgNames()
+    void BenchMarkUnit::SetDefaultArgNames()
     {
         arg_names_[0] = "x";
         arg_names_[1] = "y";
         arg_names_[2] = "z";
     }
 
-    void BenchMarkEntity::SetNamedArg(int i, const char* name, const s32* args, int argc)
+    void BenchMarkUnit::SetNamedArg(int i, const char* name, const s32* args, int argc)
     {
-        if (i >= sizeof(arg_names_) / sizeof(arg_names_[0]))
-            return;
-        arg_names_[i]       = name;
-        arg_arrays_[i]      = args;
-        arg_array_sizes_[i] = argc;
+        arg_names_.PushBack(name);
     }
-    void BenchMarkEntity::SetNamedArgRange(int idx, const char* name, s32 lo, s32 hi, int multiplier, s32 mode)
+    void BenchMarkUnit::SetNamedArgRange(int idx, const char* name, s32 lo, s32 hi, int multiplier, s32 mode)
     {
         arg_names_[idx]  = name;
         arg_ranges_[idx] = ArgRange(lo, hi, multiplier, mode);
     }
 
-    void BenchMarkEntity::SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size)
+    void BenchMarkUnit::SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size)
     {
         thread_counts_ = thread_counts;
         thread_counts_size_ = thread_counts_size;
     }
 
-    void BenchMarkEntity::SetComplexity(BigO complexity) { complexity_ = complexity; }
-    void BenchMarkEntity::SetComplexity(BigO::Func* complexity_lambda) { complexity_lambda_ = complexity_lambda; }
-    void BenchMarkEntity::AddCounter(const char* name, CounterFlags flags, double value) {}
-    void BenchMarkEntity::SetTimeUnit(TimeUnit tu) { time_unit_ = tu; }
-    void BenchMarkEntity::SetMinTime(double min_time) { min_time_ = min_time; }
-    void BenchMarkEntity::SetMinWarmupTime(double min_warmup_time) { min_warmup_time_ = min_warmup_time; }
-    void BenchMarkEntity::SetIterations(IterationCount iters) { iterations_ = iters; }
-    void BenchMarkEntity::SetRepetitions(int repetitions) { repetitions_ = repetitions; }
-    void BenchMarkEntity::SetFuncRun(run_function func) { run = func; }
-    void BenchMarkEntity::SetFuncSettings(settings_function func) { settings = func; }
+    void BenchMarkUnit::SetComplexity(BigO complexity) { complexity_ = complexity; }
+    void BenchMarkUnit::SetComplexity(BigO::Func* complexity_lambda) { complexity_lambda_ = complexity_lambda; }
+    void BenchMarkUnit::AddCounter(const char* name, CounterFlags flags, double value) {}
+    void BenchMarkUnit::SetTimeUnit(TimeUnit tu) { time_unit_ = tu; }
+    void BenchMarkUnit::SetMinTime(double min_time) { min_time_ = min_time; }
+    void BenchMarkUnit::SetMinWarmupTime(double min_warmup_time) { min_warmup_time_ = min_warmup_time; }
+    void BenchMarkUnit::SetIterations(IterationCount iters) { iterations_ = iters; }
+    void BenchMarkUnit::SetRepetitions(int repetitions) { repetitions_ = repetitions; }
+    void BenchMarkUnit::SetFuncRun(run_function func) { run = func; }
+    void BenchMarkUnit::SetFuncSettings(settings_function func) { settings = func; }
 
     // Append the powers of 'mult' in the closed interval [lo, hi].
     // Returns iterator to the start of the inserted range.
@@ -269,7 +265,7 @@ namespace BenchMark
         return size;
     }
 
-    void BenchMarkEntity::CreateRange(s32 start, s32 limit, s32 mult, Array<s64>& out, Allocator* alloc)
+    void BenchMarkUnit::CreateRange(s32 start, s32 limit, s32 mult, Array<s64>& out, Allocator* alloc)
     {
         // Compute the number of elements in the range.
         const s32 size = ComputeAddRangeSize(start, limit, mult);
@@ -277,7 +273,7 @@ namespace BenchMark
         AddRange(start, limit, mult, out, alloc);
     }
 
-    void BenchMarkEntity::CreateDenseRange(s32 start, s32 limit, s32 step, Array<s64>& out, Allocator* alloc)
+    void BenchMarkUnit::CreateDenseRange(s32 start, s32 limit, s32 step, Array<s64>& out, Allocator* alloc)
     {
         out.Init(alloc, 0, (limit - start) / step + 1);
         for (s32 arg = start; arg <= limit; arg += step)

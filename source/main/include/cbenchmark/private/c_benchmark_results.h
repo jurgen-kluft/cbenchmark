@@ -4,22 +4,33 @@
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_types.h"
-#include "cbenchmark/private/c_benchmark_entity.h"
+#include "cbenchmark/private/c_benchmark_unit.h"
 
 namespace BenchMark
 {
+    class BenchMarkReporter;
+    class BenchMarkState;
     typedef s64 IterationCount;
 
 #define BENCHMARK_BUILTIN_EXPECT(x, y) x
 
-    class BenchMarkReporter;
-    class BenchMarkState;
+#define BM_ARGS(...)                                                    \
+    {                                                                   \
+        const s32 args[] = {__VA_ARGS__};                               \
+        settings->AddArgs(args, (s32)(sizeof(args) / sizeof(args[0]))); \
+    }
+#define BM_ADD_ARG(...)                                      \
+    {                                                        \
+        const s32 arg[] = {__VA_ARGS__};                     \
+        settings->AddArg(arg, sizeof(arg) / sizeof(arg[0])); \
+    }
 
-#define BM_ARGS(...) const Args argvector[] = { __VA_ARGS__ }; settings->SetArgs(argvector, sizeof(argvector) / sizeof(argvector[0]))
-#define BM_ARGRANGE(idx, lo, hi, multi) settings->SetNamedArgRange(idx, nullptr, lo, hi, multi)
-#define BM_NAMED_ARGRANGE(idx, name, lo, hi, multi) settings->SetNamedArgRange(idx, #name, lo, hi, multi)
-#define BM_NAMED_ARG(idx, tag, ...) const s32 argnamed##tag[] = { __VA_ARGS__ }; settings->SetNamedArg(idx, #tag, argnamed##tag, sizeof(argnamed##tag) / sizeof(argnamed##tag[0]));
-#define BM_THREAD_COUNTS(...) const s32 tcvector[] = { __VA_ARGS__ }; settings->SetThreadCounts(tcvector, (s32)(sizeof(tcvector) / sizeof(tcvector[0])))
+#define BM_ADD_ARG_RANGE(lo, hi, multi) settings->AddArgRange(lo, hi, multi)
+#define BM_ADD_ARG_DENSE_RANGE(start, limit, step) settings->AddArgDenseRange(start, limit, step)
+#define BM_SET_ARG_NAMES(...) { const char* names[] = {__VA_ARGS__}; settings->SetArgNames(names, sizeof(names) / sizeof(names[0])); }
+#define BM_THREAD_COUNTS(...)             \
+    const s32 tcvector[] = {__VA_ARGS__}; \
+    settings->SetThreadCounts(tcvector, (s32)(sizeof(tcvector) / sizeof(tcvector[0])))
 
 #define BM_COUNTER settings->AddCounter
 #define BM_TIMEUNIT settings->SetTimeUnit
@@ -33,7 +44,7 @@ namespace BenchMark
     class BenchMarkFixture
     {
     public:
-        void AddUnit(BenchMarkEntity* bmu)
+        void AddUnit(BenchMarkUnit* bmu)
         {
             if (head == nullptr)
                 head = bmu;
@@ -41,8 +52,8 @@ namespace BenchMark
                 tail->next = bmu;
             tail = bmu;
         }
-        BenchMarkEntity*  head;
-        BenchMarkEntity*  tail;
+        BenchMarkUnit*    head;
+        BenchMarkUnit*    tail;
         BenchMarkFixture* next;
         settings_function settings;
         setup_function    setup;
@@ -79,7 +90,7 @@ namespace BenchMark
 #define BM_TEST_DISABLE(name)                    \
     namespace nsBMU##name                        \
     {                                            \
-        extern BenchMarkEntity __unit;             \
+        extern BenchMarkUnit __unit;             \
     }                                            \
     class SetBMUnitDisable##name                 \
     {                                            \
@@ -94,7 +105,7 @@ namespace BenchMark
     void BM_Run_##bmname(BenchMarkState& state, Allocator* allocator);                       \
     namespace nsBMU##bmname                                                                  \
     {                                                                                        \
-        static BenchMarkEntity __unit;                                                       \
+        static BenchMarkUnit __unit;                                                         \
         class BMRegisterUnit                                                                 \
         {                                                                                    \
         public:                                                                              \
@@ -111,21 +122,21 @@ namespace BenchMark
     }                                                                                        \
     void BM_Run_##bmname(BenchMarkState& state, Allocator* allocator)
 
-#define BM_SETTINGS(name)                                                   \
-    void BMUnitSettings##name(Allocator* alloc, BenchMarkEntity* settings); \
-    namespace nsBMU##name                                                   \
-    {                                                                       \
-        extern BenchMarkEntity __unit;                                        \
-        class SetBMUnitSettings                                             \
-        {                                                                   \
-        public:                                                             \
-            inline SetBMUnitSettings()                                      \
-            {                                                               \
-                __unit.settings = BMUnitSettings##name;                     \
-            }                                                               \
-        };                                                                  \
-    }                                                                       \
-    void BMUnitSettings##name(Allocator* alloc, BenchMarkEntity* settings)
+#define BM_SETTINGS(name)                                                 \
+    void BMUnitSettings##name(Allocator* alloc, BenchMarkUnit* settings); \
+    namespace nsBMU##name                                                 \
+    {                                                                     \
+        extern BenchMarkUnit __unit;                                      \
+        class SetBMUnitSettings                                           \
+        {                                                                 \
+        public:                                                           \
+            inline SetBMUnitSettings()                                    \
+            {                                                             \
+                __unit.settings = BMUnitSettings##name;                   \
+            }                                                             \
+        };                                                                \
+    }                                                                     \
+    void BMUnitSettings##name(Allocator* alloc, BenchMarkUnit* settings)
 
 #define BM_FIXTURE(bmname)                                                                      \
     namespace nsBMF##bmname                                                                     \
@@ -170,17 +181,17 @@ namespace BenchMark
     };                                          \
     void BMFixtureSetup(const BenchMarkState&)
 
-#define BM_FIXTURE_SETTINGS                                              \
-    void BMFixtureSettings(Allocator* alloc, BenchMarkEntity* settings); \
-    class SetBMFixtureSettings                                           \
-    {                                                                    \
-    public:                                                              \
-        inline SetBMFixtureSettings()                                    \
-        {                                                                \
-            __fixture.settings = BMFixtureSettings;                      \
-        }                                                                \
-    };                                                                   \
-    void BMFixtureSettings(Allocator* alloc, BenchMarkEntity* settings)
+#define BM_FIXTURE_SETTINGS                                            \
+    void BMFixtureSettings(Allocator* alloc, BenchMarkUnit* settings); \
+    class SetBMFixtureSettings                                         \
+    {                                                                  \
+    public:                                                            \
+        inline SetBMFixtureSettings()                                  \
+        {                                                              \
+            __fixture.settings = BMFixtureSettings;                    \
+        }                                                              \
+    };                                                                 \
+    void BMFixtureSettings(Allocator* alloc, BenchMarkUnit* settings)
 
 #define BM_SUITE(bmname)                                                                  \
     extern void RegisterBenchMarkSuite(BenchMarkSuite*);                                  \
@@ -226,17 +237,17 @@ namespace BenchMark
     };                                        \
     void BMSuiteSetup(const BenchMarkState&)
 
-#define BM_SUITE_SETTINGS                                              \
-    void BMSuiteSettings(Allocator* alloc, BenchMarkEntity* settings); \
-    class SetBMSuiteSettings                                           \
-    {                                                                  \
-    public:                                                            \
-        inline SetBMSuiteSettings()                                    \
-        {                                                              \
-            __suite.settings = BMSuiteSettings;                        \
-        }                                                              \
-    };                                                                 \
-    void BMSuiteSettings(Allocator* alloc, BenchMarkEntity* settings)
+#define BM_SUITE_SETTINGS                                            \
+    void BMSuiteSettings(Allocator* alloc, BenchMarkUnit* settings); \
+    class SetBMSuiteSettings                                         \
+    {                                                                \
+    public:                                                          \
+        inline SetBMSuiteSettings()                                  \
+        {                                                            \
+            __suite.settings = BMSuiteSettings;                      \
+        }                                                            \
+    };                                                               \
+    void BMSuiteSettings(Allocator* alloc, BenchMarkUnit* settings)
 
 } // namespace BenchMark
 

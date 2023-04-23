@@ -1,16 +1,14 @@
-#ifndef __CBENCHMARK_BENCHMARK_ENTITY_H__
-#define __CBENCHMARK_BENCHMARK_ENTITY_H__
+#ifndef __CBENCHMARK_BENCHMARK_UNIT_H__
+#define __CBENCHMARK_BENCHMARK_UNIT_H__
 
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
 
-#include <initializer_list>
-
 namespace BenchMark
 {
-    class BenchMarkEntity;
+    class BenchMarkUnit;
     class BenchMarkState;
     class BenchMarkInstance;
 
@@ -43,42 +41,34 @@ namespace BenchMark
         u32 flags;
     };
 
-    struct Args
-    {
-        s32 a[8];
-    };
-
     // -----------------------------------------------------------------
-    // BenchMarkEntity registration object. The BM_TEST() macro expands
-    // into an BenchMarkEntity* object. Various properties can be set on
+    // BenchMarkUnit registration object. The BM_TEST() macro expands
+    // into an BenchMarkUnit* object. Various properties can be set on
     // this object to change the execution of the benchmark.
 
     typedef void (*setup_function)(const BenchMarkState&);
     typedef void (*teardown_function)(const BenchMarkState&);
     typedef void (*run_function)(BenchMarkState&, Allocator* alloc);
-    typedef void (*settings_function)(Allocator* alloc, BenchMarkEntity* settings);
+    typedef void (*settings_function)(Allocator* alloc, BenchMarkUnit* settings);
 
-    class BenchMarkEntity
+    struct Args
+    {
+        s32 const* args;
+        s32        argc;
+    };
+
+    class BenchMarkUnit
     {
     public:
-        enum ESettings
-        {
-            MaxArg = 8,
-
-        };
         Allocator*            allocator;
         bool                  enabled_;
-        char*                 name_;
         TimeUnit              time_unit_;
         TimeSettings          time_settings_;
         AggregationReportMode aggregation_report_mode_;
-        const char*           arg_names_[MaxArg]; // Arg names (default = x,y,z,w)
-        Array<Array<s64>>     final_args_;        // {...}[]
-        const s32**           args_;
-        int                   argc_;
-        const s32*            arg_arrays_[MaxArg];      // x[], y[], z[], w[]
-        int                   arg_array_sizes_[MaxArg]; // x[], y[], z[], w[]
-        ArgRange              arg_ranges_[MaxArg];      // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
+        Array<const char*>    arg_names_;  // Arg names (default = x,y,z,w)
+        Array<Args>           final_args_; // {...}[]
+        Array<Args>           args_;       // x[], y[], z[], w[]
+        Array<ArgRange>       arg_ranges_; // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
         s32 const*            thread_counts_;
         int                   thread_counts_size_;
         int                   range_multiplier_;
@@ -94,20 +84,24 @@ namespace BenchMark
         teardown_function     teardown_;
         run_function          run;
         settings_function     settings;
-        BenchMarkEntity*      next;
-        BenchMarkEntity*      entity;
+        BenchMarkUnit*        next;
+        BenchMarkUnit*        entity;
         const char*           name;
         const char*           filename;
         int                   disabled;
         int                   lineNumber;
 
         s32  BuildArgs();
+
         void SetDefaults();
         void SetEnabled(bool enabled);
         void SetDefaultArgNames();
-        void SetArgs(Args const* args, s32 argc);
-        void SetNamedArg(s32 i, const char* name, const s32* args, s32 argc);
-        void SetNamedArgRange(s32 i, const char* aname, s32 lo, s32 hi, s32 multiplier = 8, s32 mode = 1);
+        void AddArgs(s32 const* args, s32 argc);
+        void AddArg(const s32* args, s32 argc);
+        void AddRange(s32 lo, s32 hi, s32 multiplier, s32 mode);
+        void AddArgRange(s32 lo, s32 hi, s32 multiplier = 8) { AddRange(lo, hi, multiplier, 1); }
+        void AddArgDenseRange(s32 start, s32 limit, s32 step = 32) { AddRange(start, limit, step, 2); }
+        void SetArgNames(const char** names, s32 names_size);
         void SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size);
         void SetComplexity(BigO complexity);
         void SetComplexity(BigO::Func* complexity_lambda_);
@@ -133,4 +127,4 @@ namespace BenchMark
     }; // namespace BenchMark
 } // namespace BenchMark
 
-#endif // __CBENCHMARK_BENCHMARK_ENTITY_H__
+#endif // __CBENCHMARK_BENCHMARK_UNIT_H__
