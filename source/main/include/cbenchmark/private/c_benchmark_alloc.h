@@ -101,6 +101,17 @@ namespace BenchMark
             m_capacity = cap;
         }
 
+        void Clear()
+        {
+            m_size = 0;
+            m_capacity = 0;
+            if (m_alloc != nullptr)
+            {
+                m_alloc->Deallocate(m_data);
+                m_data = nullptr;
+            }
+        }
+
         void Copy(const Array<T>& other)
         {
             if (m_data != nullptr)

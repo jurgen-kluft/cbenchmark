@@ -3,10 +3,14 @@
 
 namespace BenchMark
 {
-
     bool ConsoleReporter::ReportContext(const Context& context)
     {
         /* TO BE IMPLEMENTED */
+        name_field_width_ = context.name_field_width;
+        printed_header_ = false;
+        prev_counters_.Clear();
+
+        PrintBasicContext(*error_stream_, context);
         return false;
     }
     void ConsoleReporter::ReportRuns(Array<BenchMarkRun*> const& reports)

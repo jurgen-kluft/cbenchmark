@@ -73,9 +73,9 @@ namespace BenchMark
 
         // Write a human readable string to 'out' representing the specified 'context'.
         // REQUIRES: 'out' is non-null.
-        static void PrintBasicContext(TextStreamWriter& out, Context const& context);
+        static void PrintBasicContext(TextStream& out, Context const& context);
 
-    private:
+    protected:
         TextStream* output_stream_;
         TextStream* error_stream_;
     };

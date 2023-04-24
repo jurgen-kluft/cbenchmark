@@ -6,77 +6,77 @@
 
 namespace BenchMark
 {
-    TextStreamWriter& TextStreamWriter::operator<<(const char* txt)
+    TextStream& TextStream::operator<<(const char* txt)
     {
-        while (*txt && !mStream.isEof())
+        while (*txt && !isEof())
         {
-            *mStream.stream++ = *txt++;
+            *stream++ = *txt++;
         }
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(const void* p)
+    TextStream& TextStream::operator<<(const void* p)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%0X", (u64)p);
+        stream = gStringFormatAppend(stream, eos, "%0X", (u64)p);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(char const n)
+    TextStream& TextStream::operator<<(char const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(short const n)
+    TextStream& TextStream::operator<<(short const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(int const n)
+    TextStream& TextStream::operator<<(int const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(long long const n)
+    TextStream& TextStream::operator<<(long long const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(long const n)
+    TextStream& TextStream::operator<<(long const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(unsigned char const n)
+    TextStream& TextStream::operator<<(unsigned char const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(unsigned short const n)
+    TextStream& TextStream::operator<<(unsigned short const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(unsigned int const n)
+    TextStream& TextStream::operator<<(unsigned int const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(unsigned long long const n)
+    TextStream& TextStream::operator<<(unsigned long long const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(unsigned long const n)
+    TextStream& TextStream::operator<<(unsigned long const n)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%i", n);
+        stream = gStringFormatAppend(stream, eos, "%i", n);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(float const f)
+    TextStream& TextStream::operator<<(float const f)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%f", f);
+        stream = gStringFormatAppend(stream, eos, "%f", f);
         return *this;
     }
-    TextStreamWriter& TextStreamWriter::operator<<(double const d)
+    TextStream& TextStream::operator<<(double const d)
     {
-        mStream.stream = gStringFormatAppend(mStream.stream, mStream.eos, "%f", d);
+        stream = gStringFormatAppend(stream, eos, "%f", d);
         return *this;
     }
 
@@ -93,9 +93,9 @@ namespace BenchMark
 
     void StringBuilder::ensure(int bytesRequired)
     {
-        if ((mWriter.mStream.stream + bytesRequired + 1) >= mWriter.mStream.eos)
+        if ((mWriter.stream + bytesRequired + 1) >= mWriter.eos)
         {
-            int const requiredCapacity = bytesRequired + (mWriter.mStream.capacity()) + GROW_CHUNK_SIZE;
+            int const requiredCapacity = bytesRequired + (mWriter.capacity()) + GROW_CHUNK_SIZE;
             grow(requiredCapacity);
         }
     }
@@ -187,7 +187,7 @@ namespace BenchMark
         return *this;
     }
 
-    int StringBuilder::getCapacity() const { return mWriter.mStream.capacity(); }
+    int StringBuilder::getCapacity() const { return mWriter.capacity(); }
 
     void StringBuilder::grow(int desiredCapacity)
     {
@@ -196,7 +196,7 @@ namespace BenchMark
         char* buffer = nullptr;
         buffer       = (char*)mAllocator->Allocate(newCapacity, 4);
         if (mBuffer)
-            gStringCopy(buffer, mBuffer, mWriter.mStream.used() + 1);
+            gStringCopy(buffer, mBuffer, mWriter.used() + 1);
         else
             gStringCopy(buffer, "", 2);
 
@@ -207,9 +207,9 @@ namespace BenchMark
 
         mBuffer = buffer;
 
-        mWriter.mStream.sos    = mBuffer;
-        mWriter.mStream.eos    = mBuffer + newCapacity;
-        mWriter.mStream.stream = mBuffer + mWriter.mStream.used();
+        mWriter.sos    = mBuffer;
+        mWriter.eos    = mBuffer + newCapacity;
+        mWriter.stream = mBuffer + mWriter.used();
     }
 
 } // namespace BenchMark

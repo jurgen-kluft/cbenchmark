@@ -13,7 +13,7 @@ namespace BenchMark
 
     BenchMarkReporter::~BenchMarkReporter() {}
 
-    void BenchMarkReporter::PrintBasicContext(TextStreamWriter& out, Context const& context)
+    void BenchMarkReporter::PrintBasicContext(TextStream& out, Context const& context)
     {
         // BM_CHECK(out) << "cannot be null";
 
@@ -68,7 +68,7 @@ namespace BenchMark
             // }
 
 #ifndef NDEBUG
-        out << "***WARNING*** Library was built as DEBUG. Timings may be affected.\n";
+        out << "***WARNING*** DEBUG configuration, timings are affected.\n";
 #endif
     }
 

@@ -4,47 +4,55 @@
 namespace BenchMark
 {
     class Allocator;
+    class TextStream;
 
-    typedef void (*TextStreamFlush)(void* context, char const* text, int length);
-
-    struct TextStream
+    enum TextColor
     {
+        COLOR_DEFAULT,
+        COLOR_RED,
+        COLOR_GREEN,
+        COLOR_YELLOW,
+        COLOR_BLUE,
+        COLOR_MAGENTA,
+        COLOR_CYAN,
+        COLOR_WHITE
+    };
+
+    void FormatFloat(TextStream& stream, double value, int decimal_places, int prec);
+    void FormatTime(TextStream& stream, double time);
+    void FormatString(TextStream& stream, const char* text, int width=0);
+
+    class TextStream
+    {
+    public:
         inline bool isEof() const { return stream >= eos; }
         inline int  getN() const { return (int)(eos - stream); }
         inline int  used() const { return (int)(stream - sos); }
         inline int  capacity() const { return (int)(eos - sos); }
-        inline void flush(void* context = nullptr)
-        {
-            if (func_flush != nullptr)
-                func_flush(context, sos, used());
-            stream = sos;
-        }
 
-        char*           stream; // stream cursor
-        char*           sos;    // start of stream
-        const char*     eos;    // end of stream
-        TextStreamFlush func_flush;
-    };
+        TextStream& operator<<(const char* txt);
+        TextStream& operator<<(const void* p);
+        TextStream& operator<<(char const n);
+        TextStream& operator<<(short const n);
+        TextStream& operator<<(int const n);
+        TextStream& operator<<(long long const n);
+        TextStream& operator<<(long const n);
+        TextStream& operator<<(unsigned char const n);
+        TextStream& operator<<(unsigned short const n);
+        TextStream& operator<<(unsigned int const n);
+        TextStream& operator<<(unsigned long long const n);
+        TextStream& operator<<(unsigned long const n);
+        TextStream& operator<<(float const f);
+        TextStream& operator<<(double const f);
+        TextStream& operator<<(TextColor const color);
 
-    class TextStreamWriter
-    {
-    public:
-        TextStream mStream;
 
-        TextStreamWriter& operator<<(const char* txt);
-        TextStreamWriter& operator<<(const void* p);
-        TextStreamWriter& operator<<(char const n);
-        TextStreamWriter& operator<<(short const n);
-        TextStreamWriter& operator<<(int const n);
-        TextStreamWriter& operator<<(long long const n);
-        TextStreamWriter& operator<<(long const n);
-        TextStreamWriter& operator<<(unsigned char const n);
-        TextStreamWriter& operator<<(unsigned short const n);
-        TextStreamWriter& operator<<(unsigned int const n);
-        TextStreamWriter& operator<<(unsigned long long const n);
-        TextStreamWriter& operator<<(unsigned long const n);
-        TextStreamWriter& operator<<(float const f);
-        TextStreamWriter& operator<<(double const f);
+        virtual void flush() = 0;
+
+        char*       stream; // stream cursor
+        char*       sos;    // start of stream
+        const char* eos;    // end of stream
+        u64         attrs;  // stream attributes
     };
 
     class StringBuilder
@@ -81,9 +89,9 @@ namespace BenchMark
         void ensure(int required);
         void grow(int capacity);
 
-        Allocator*       mAllocator;
-        char*            mBuffer;
-        TextStreamWriter mWriter;
+        Allocator* mAllocator;
+        char*      mBuffer;
+        TextStream mWriter;
     };
 } // namespace BenchMark
 

@@ -2,6 +2,7 @@
 #define __CBENCHMARK_REPORTERSTDOUT_H__
 
 #include "cbenchmark/private/c_benchmark_reporter.h"
+#include "cbenchmark/private/c_benchmark_alloc.h"
 
 namespace BenchMark
 {
@@ -38,10 +39,10 @@ namespace BenchMark
 
         virtual void Flush();
 
-        OutputOptions output_options_;
-        Counters      prev_counters_;
-        s32           name_field_width_;
-        bool          printed_header_;
+        OutputOptions  output_options_;
+        Array<Counter> prev_counters_;
+        s32            name_field_width_;
+        bool           printed_header_;
     };
 
 } // namespace BenchMark
