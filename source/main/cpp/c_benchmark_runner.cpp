@@ -66,9 +66,14 @@ namespace BenchMark
     // Adds the stats collected for the thread into manager->results.
     void RunInThread(const BenchMarkInstance* bmi, IterationCount iters, int thread_id, ThreadManager* manager, BenchMarkRunResult* results)
     {
-        ThreadTimer timer(bmi->measure_process_cpu_time() ? ThreadTimer::CreateProcessCpuTime() : ThreadTimer::Create());
+        ThreadTimer timer(ThreadTimer::Create());
 
-        BenchMarkState st = bmi->Run(iters, thread_id, &timer, manager, results);
+        Allocator* allocator;
+
+        BenchMarkState st;
+        st.InitRun(allocator, bmi->name().function_name, iters, bmi->args(), thread_id, bmi->threads(), &timer, manager, results);
+
+        bmi->run(st, allocator);
         // BM_CHECK(st.skipped() || st.iterations() >= st.max_iterations) << "Benchmark returned before State::KeepRunning() returned false!";
         {
             results->iterations += st.Iterations();
@@ -187,10 +192,10 @@ namespace BenchMark
     bool           HasExplicitIters(const BenchMarkRunner* r) { return r->HasExplicitIters(); }
     IterationCount GetIters(const BenchMarkRunner* r) { return r->GetIters(); }
     void           StartStopBarrier(ThreadManager* tm) { tm->StartStopBarrier(); }
-    void           TimerStart(ThreadTimer* timer) { timer->StartTimer(); }
-    void           TimerStop(ThreadTimer* timer) { timer->StopTimer(); }
-    bool           TimerIsRunning(ThreadTimer* timer) { return timer->IsRunning(); }
-    void           TimerSetIterationTime(ThreadTimer* timer, double seconds) { timer->SetIterationTime(seconds); }
+    void           ThreadTimerStart(ThreadTimer* timer) { timer->StartTimer(); }
+    void           ThreadTimerStop(ThreadTimer* timer) { timer->StopTimer(); }
+    bool           ThreadTimerIsRunning(ThreadTimer* timer) { return timer->IsRunning(); }
+    void           ThreadTimerSetIterationTime(ThreadTimer* timer, double seconds) { timer->SetIterationTime(seconds); }
 
 
     BenchMarkRunner::BenchMarkRunner()
@@ -367,14 +372,15 @@ namespace BenchMark
         // because of caching effects).
         const IterationCount i_backup = iters;
 
+        BenchMarkState state;
+        state.Init(instance->name().function_name, /*iters*/ 1, instance->args(), /*thread_id*/ 0, instance->threads());
         for (;;)
         {
-            instance->Setup();
+            instance->setup()(state);
             i_warmup = DoNIterations();
-            instance->Teardown();
+            instance->teardown()(state);
 
             const bool finish = ShouldReportIterationResults(i_warmup);
-
             if (finish)
             {
                 FinishWarmUp(i_backup);
@@ -414,11 +420,13 @@ namespace BenchMark
         // Please do note that the if there are repetitions, the iteration count
         // is *only* calculated for the *first* repetition, and other repetitions
         // simply use that precomputed iteration count.
+        BenchMarkState state;
+        state.Init(instance->name().function_name, /*iters*/ 1, instance->args(), /*thread_id*/ 0, instance->threads());
         for (;;)
         {
-            instance->Setup();
+            instance->setup()(state);
             i = DoNIterations();
-            instance->Teardown();
+            instance->teardown()(state);
 
             // Do we consider the results to be significant?
             // If we are doing repetitions, and the first repetition was already done,

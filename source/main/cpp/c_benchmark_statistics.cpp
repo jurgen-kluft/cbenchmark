@@ -206,9 +206,9 @@ namespace BenchMark
         const double iteration_rescale_factor = double(reports.Size()) / double(run_iterations);
 
         // Reserve space for the results.
-        results.Init(alloc, 0, reports[0].statistics.count_);
+        results.Init(alloc, 0, reports[0].statistics.Size());
 
-        for (int i = 0; i < reports[0].statistics.count_; i++)
+        for (int i = 0; i < reports[0].statistics.Size(); i++)
         {
             const auto& Stat = reports[0].statistics[i];
 

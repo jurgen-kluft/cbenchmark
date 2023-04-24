@@ -1,6 +1,8 @@
 #ifndef __CBENCHMARK_STRINGBUILDER_H__
 #define __CBENCHMARK_STRINGBUILDER_H__
 
+#include "cbenchmark/private/c_types.h"
+
 namespace BenchMark
 {
     class Allocator;
@@ -22,6 +24,14 @@ namespace BenchMark
     void FormatTime(TextStream& stream, double time);
     void FormatString(TextStream& stream, const char* text, int width=0);
 
+    class TextOutput
+    {
+    public:
+        virtual void setColor(TextColor color) = 0;
+        virtual void resetColor()              = 0;
+        virtual void flush(const char* text) = 0;
+    };
+
     class TextStream
     {
     public:
@@ -29,7 +39,12 @@ namespace BenchMark
         inline int  getN() const { return (int)(eos - stream); }
         inline int  used() const { return (int)(stream - sos); }
         inline int  capacity() const { return (int)(eos - sos); }
-
+        inline void flush()
+        {
+            out->flush(stream);
+            stream = sos;
+        }
+        TextStream& endl();
         TextStream& operator<<(const char* txt);
         TextStream& operator<<(const void* p);
         TextStream& operator<<(char const n);
@@ -46,13 +61,10 @@ namespace BenchMark
         TextStream& operator<<(double const f);
         TextStream& operator<<(TextColor const color);
 
-
-        virtual void flush() = 0;
-
         char*       stream; // stream cursor
         char*       sos;    // start of stream
         const char* eos;    // end of stream
-        u64         attrs;  // stream attributes
+        TextOutput* out;    // the output stream
     };
 
     class StringBuilder

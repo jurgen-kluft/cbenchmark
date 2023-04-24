@@ -48,7 +48,7 @@ namespace BenchMark
             arg_ranges_.Init(allocator, 0, arg_ranges_count_);
             arg_names_.Init(allocator, 0, arg_names_count_);
             thread_counts_.Init(allocator, 0, thread_counts_size_);
-            counters_.Init(allocator, 0, counters_size_);
+            counters_.counters.Init(allocator, 0, counters_size_);
             statistics_.Init(allocator, 0, statistics_count_);
 
             AddStatisticsComputer(Statistic("mean", StatisticsMean, {StatisticUnit::Time}));
@@ -132,7 +132,12 @@ namespace BenchMark
             counters_size_ += 1;
             return;
         }
-        counters_.PushBack({name, flags, value});
+
+        // TODO Need to figure out the id of a counter, this should be done from a global
+        // registration box where names are registered. So here we could ask that box
+        // what the id is given a name.
+
+        counters_.counters.PushBack({name, 0, flags, value});
     }
 
     void BenchMarkUnit::SetComplexity(BigO complexity) { complexity_ = complexity; }
@@ -142,8 +147,8 @@ namespace BenchMark
     void BenchMarkUnit::SetMinWarmupTime(double min_warmup_time) { min_warmup_time_ = min_warmup_time; }
     void BenchMarkUnit::SetIterations(IterationCount iters) { iterations_ = iters; }
     void BenchMarkUnit::SetRepetitions(int repetitions) { repetitions_ = repetitions; }
-    void BenchMarkUnit::SetFuncRun(run_function func) { run = func; }
-    void BenchMarkUnit::SetFuncSettings(settings_function func) { settings = func; }
+    void BenchMarkUnit::SetFuncRun(run_function func) { run_ = func; }
+    void BenchMarkUnit::SetFuncSettings(settings_function func) { settings_ = func; }
 
     // Append the powers of 'mult' in the closed interval [lo, hi].
     // Returns iterator to the start of the inserted range.

@@ -38,10 +38,10 @@ namespace BenchMark
     bool             HasExplicitIters(const BenchMarkRunner* r);
     IterationCount   GetIters(const BenchMarkRunner* r);
     void             StartStopBarrier(ThreadManager* tm);
-    void             TimerStart(ThreadTimer* timer);
-    void             TimerStop(ThreadTimer* timer);
-    bool             TimerIsRunning(ThreadTimer* timer);
-    void             TimerSetIterationTime(ThreadTimer* timer, double seconds);
+    void             ThreadTimerStart(ThreadTimer* timer);
+    void             ThreadTimerStop(ThreadTimer* timer);
+    bool             ThreadTimerIsRunning(ThreadTimer* timer);
+    void             ThreadTimerSetIterationTime(ThreadTimer* timer, double seconds);
 
 } // namespace BenchMark
 

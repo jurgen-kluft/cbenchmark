@@ -82,7 +82,7 @@ namespace BenchMark
         s64         complexity_n;
 
         // what statistics to compute from the measurements
-        Statistics statistics;
+        Array<Statistic> statistics;
 
         // Inform print function whether the current run is a complexity report
         bool report_big_o;

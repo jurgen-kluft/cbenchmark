@@ -11,7 +11,7 @@
 #include "cbenchmark/private/c_benchmark_name.h"
 #include "cbenchmark/private/c_benchmark_instance.h"
 #include "cbenchmark/private/c_benchmark_state.h"
-#include "cbenchmark/private/c_benchmark_entity.h"
+#include "cbenchmark/private/c_benchmark_unit.h"
 
 namespace BenchMark
 {
@@ -51,13 +51,13 @@ namespace BenchMark
         , benchmark_(nullptr)
         , per_family_instance_index_(0)
         , aggregation_report_mode_(AggregationReportMode::Default)
-        , args_()
+        , args_(nullptr)
         , time_unit_(TimeUnit::Nanosecond)
         , time_settings_()
         , complexity_(BigO::O_None)
         , complexity_lambda_(nullptr)
-        , counters_()
-        , statistics_()
+        , counters_(nullptr)
+        , statistics_(nullptr)
         , repetitions_(1)
         , min_time_(0.0)
         , min_warmup_time_(0.0)
@@ -66,35 +66,12 @@ namespace BenchMark
     {
     }
 
-    void BenchMarkInstance::Setup() const
+    void BenchMarkInstance::run(BenchMarkState& state, Allocator* allocator) const
     {
-        if (setup_)
-        {
-            BenchMarkState st(name_.function_name, /*iters*/ 1, &args_, /*thread_id*/ 0, threads_, nullptr, nullptr, nullptr);
-            setup_(st);
-        }
+        benchmark_->run_(state, allocator);
     }
 
-    void BenchMarkInstance::Teardown() const
-    {
-        if (teardown_)
-        {
-            BenchMarkState st(name_.function_name, /*iters*/ 1, &args_, /*thread_id*/ 0, threads_, nullptr, nullptr, nullptr);
-            teardown_(st);
-        }
-    }
-
-    BenchMarkState BenchMarkInstance::Run(IterationCount iters, int thread_id, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results) const
-    {
-        // TODO Allocator, needs to be thread-safe or one per thread
-        Allocator* allocator;
-
-        BenchMarkState state(name_.function_name, iters, &args_, thread_id, threads_, timer, manager, results);
-        benchmark_->run(state, allocator);
-        return state;
-    }
-
-    void BenchMarkInstance::init(Allocator* allocator, BenchMarkEntity* benchmark, int per_family_instance_index, int thread_count)
+    void BenchMarkInstance::init(Allocator* allocator, BenchMarkUnit* benchmark, int per_family_instance_index, int thread_count)
     {
         benchmark_                 = benchmark;
         per_family_instance_index_ = (per_family_instance_index);
@@ -103,7 +80,7 @@ namespace BenchMark
         time_settings_             = (benchmark->time_settings_);
         complexity_                = (benchmark->complexity_);
         complexity_lambda_         = (benchmark->complexity_lambda_);
-        statistics_                = (benchmark->statistics_);
+        statistics_                = (&benchmark->statistics_);
         repetitions_               = (benchmark->repetitions_);
         min_time_                  = (benchmark->min_time_);
         min_warmup_time_           = (benchmark->min_warmup_time_);

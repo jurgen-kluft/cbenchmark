@@ -181,7 +181,8 @@ namespace BenchMark
         s32             Capacity() const { return m_capacity; }
         inline const T& Front() const { return m_data[0]; }
         inline T&       Back() { return m_data[m_size - 1]; }
-        inline void     Clear() { m_size = 0; }
+        inline T&       At(s32 i) { return m_data[i]; }
+        inline const T& At(s32 i) const { return m_data[i]; }
         inline T&       operator[](s32 i) { return m_data[i]; }
         inline const T& operator[](s32 i) const { return m_data[i]; }
 

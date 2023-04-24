@@ -87,7 +87,7 @@ namespace BenchMark
         double                min_warmup_time_;
         IterationCount        iterations_;
         s32                   counters_size_;
-        Array<Counter>        counters_;
+        Counters              counters_;
         BigO                  complexity_;
         BigO::Func*           complexity_lambda_;
         s32                   statistics_count_;

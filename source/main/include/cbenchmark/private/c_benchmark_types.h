@@ -29,11 +29,12 @@ namespace BenchMark
     struct Counter
     {
         const char*  name;
+        u32          id;
         CounterFlags flags;
         double       value;
     };
 
-    struct CounterType
+    struct CounterId
     {
         enum
         {

@@ -6,6 +6,9 @@
 
 namespace BenchMark
 {
+    // TODO Windows EOL, what about other platforms ?
+    TextStream& TextStream::endl() { *this << "\r\n"; return *this; }
+
     TextStream& TextStream::operator<<(const char* txt)
     {
         while (*txt && !isEof())
@@ -77,6 +80,16 @@ namespace BenchMark
     TextStream& TextStream::operator<<(double const d)
     {
         stream = gStringFormatAppend(stream, eos, "%f", d);
+        return *this;
+    }
+    TextStream& TextStream::operator<<(TextColor const color)
+    { 
+        if (color == COLOR_DEFAULT)
+        {
+            out->resetColor();
+            return *this;
+        }
+        out->setColor(color);
         return *this;
     }
 

@@ -3,6 +3,7 @@
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_check.h"
+#include "cbenchmark/private/c_time_helpers.h"
 
 #include <cmath>
 #include <thread>
@@ -42,7 +43,6 @@ namespace BenchMark
             end_condition_.wait(lock.native_handle(), [this]() { return alive_threads_ == 0; });
         }
 
-
     private:
         mutable Mutex    benchmark_mutex_;
         std::atomic<int> alive_threads_;
@@ -72,21 +72,19 @@ namespace BenchMark
 
     class ThreadTimer
     {
-        explicit ThreadTimer(bool measure_process_cpu_time_)
-            : measure_process_cpu_time(measure_process_cpu_time_)
+        explicit ThreadTimer()
         {
         }
 
     public:
-        static ThreadTimer Create() { return ThreadTimer(/*measure_process_cpu_time_=*/false); }
-        static ThreadTimer CreateProcessCpuTime() { return ThreadTimer(/*measure_process_cpu_time_=*/true); }
+        static ThreadTimer Create() { return ThreadTimer(); }
 
         // Called by each thread
         void StartTimer()
         {
             running_         = true;
             start_real_time_ = ChronoClockNow();
-            start_cpu_time_  = ReadCpuTimerOfChoice();
+            start_cpu_time_  = TimeStamp();
         }
 
         // Called by each thread
@@ -97,7 +95,7 @@ namespace BenchMark
             real_time_used_ += ChronoClockNow() - start_real_time_;
 
             // Floating point error may result in the subtraction producing a negative time.
-            const double cpu_time = ReadCpuTimerOfChoice() - start_cpu_time_;
+            const double cpu_time = TimeStamp() - start_cpu_time_;
             if (cpu_time > 0)
                 cpu_time_used_ += cpu_time;
         }
@@ -129,16 +127,6 @@ namespace BenchMark
         }
 
     private:
-        double ReadCpuTimerOfChoice() const
-        {
-            if (measure_process_cpu_time)
-                return ProcessCPUUsage();
-            return ThreadCPUUsage();
-        }
-
-        // should the thread, or the process, time be measured?
-        const bool measure_process_cpu_time;
-
         bool   running_         = false; // Is the timer running
         double start_real_time_ = 0;     // If running_
         double start_cpu_time_  = 0;     // If running_
@@ -146,6 +134,7 @@ namespace BenchMark
         // Accumulated time so far (does not contain current slice if running_)
         double real_time_used_ = 0;
         double cpu_time_used_  = 0;
+
         // Manually set iteration time. User sets this with SetIterationTime(seconds).
         double manual_time_used_ = 0;
     };

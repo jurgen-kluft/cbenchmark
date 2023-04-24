@@ -127,11 +127,11 @@ namespace BenchMark
         // REQUIRES: a benchmark has exited its benchmarking loop.
         inline void SetBytesProcessed(s64 bytes)
         {
-            counters_.counters[CounterType::BytesProcessed].value = static_cast<double>(bytes);
-            counters_.counters[CounterType::BytesProcessed].flags = {CounterFlags::IsRate | CounterFlags::Is1024};
+            counters_.counters[CounterId::BytesProcessed].value = static_cast<double>(bytes);
+            counters_.counters[CounterId::BytesProcessed].flags = {CounterFlags::IsRate | CounterFlags::Is1024};
         }
 
-        inline s64 GetBytesProcessed() const { return (s64)counters_.counters[CounterType::BytesProcessed].value; }
+        inline s64 GetBytesProcessed() const { return (s64)counters_.counters[CounterId::BytesProcessed].value; }
 
         // If this routine is called with complexity_n > 0 and complexity report is
         // requested for the
@@ -149,11 +149,11 @@ namespace BenchMark
         // REQUIRES: a benchmark has exited its benchmarking loop.
         inline void SetItemsProcessed(s64 items)
         {
-            counters_.counters[CounterType::ItemsProcessed].value = static_cast<double>(items);
-            counters_.counters[CounterType::ItemsProcessed].flags = CounterFlags::IsRate;
+            counters_.counters[CounterId::ItemsProcessed].value   = static_cast<double>(items);
+            counters_.counters[CounterId::ItemsProcessed].flags = CounterFlags::IsRate;
         }
 
-        inline s64 GetItemsProcessed() const { return (s64)counters_.counters[CounterType::ItemsProcessed].value; }
+        inline s64 GetItemsProcessed() const { return (s64)counters_.counters[CounterId::ItemsProcessed].value; }
 
         // If this routine is called, the specified label is printed at the
         // end of the benchmark report line for the currently executing
@@ -202,7 +202,8 @@ namespace BenchMark
         IterationCount batch_leftover_;
 
     public:
-        const IterationCount max_iterations;
+        IterationCount max_iterations;
+        Counters       counters_;
 
     private:
         bool    started_;
@@ -211,29 +212,28 @@ namespace BenchMark
 
         // items we don't need on the first cache line
         Array<s32> const* range_;
-        s64 complexity_n_;
+        s64               complexity_n_;
 
     public:
-        // Container for user-defined counters.
-        Counters counters_;
+        BenchMarkState();
+        void Init(const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads);
+        void InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
 
     private:
-        BenchMarkState(const char* name, IterationCount max_iters, Array<s32> const* range, int thread_index, int threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
-
         void StartKeepRunning();
+
         // Implementation of KeepRunning() and KeepRunningBatch().
-        // is_batch must be true unless n is 1.
-        bool KeepRunningInternal(IterationCount n, bool is_batch);
+        bool KeepRunningInternal(IterationCount n, bool is_batch); // is_batch must be true unless n is 1.
         void FinishKeepRunning();
 
-        const char* name_;
-
-        const int thread_index_;
-        const int threads_;
-
-        ThreadTimer* const   timer_;
-        ThreadManager* const manager_;
+        Allocator*          alloc_;
+        const char*         name_;
         BenchMarkRunResult* results_;
+
+        int            thread_index_;
+        int            threads_;
+        ThreadTimer*   timer_;
+        ThreadManager* manager_;
 
         friend class BenchMarkInstance;
     };
