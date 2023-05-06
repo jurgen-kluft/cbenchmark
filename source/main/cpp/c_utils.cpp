@@ -79,17 +79,19 @@ namespace BenchMark
             return -1;
         if (expected != nullptr && actual == nullptr)
             return 1;
-
-        char e, a;
         do
         {
-            e = *expected++;
-            a = *actual++;
+            const char e = *expected;
+            const char a = *actual;
             if (e < a)
                 return -1;
             else if (e > a)
                 return 1;
-        } while (e != '\0' && a != '\0');
+            else if (e == '\0')
+                break; // this also means that a == '\0'
+            expected++;
+            actual++;
+        } while (true);
         return 0;
     }
 

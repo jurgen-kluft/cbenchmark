@@ -73,28 +73,32 @@ namespace BenchMark
                 BM_REPETITIONS(0);
             }
 
-            BM_SETTINGS(test)
+            BM_SETTINGS(memcpy)
             {
                 // Settings are initialized top to bottom, Suite -> Fixture -> Test.
                 // Override any setting that was set in suite and fixture.
             }
 
-            // BM_TEST_DISABLE(test);
+            //BM_UNIT_DISABLE(memcpy);
 
-            BM_TEST(memcpy)
+            BM_UNIT(memcpy)
             {
                 // here we have our benchmark code, for example
                 // to benchmark memcpy we can do something like this:
                 char* src = allocator->Alloc<char>(state.Range(0));
                 char* dst = allocator->Alloc<char>(state.Range(0));
 
+                // 'allocator' is available in each benchmark (thread-safe)
+
                 memset(src, 'x', state.Range(0));
 
-                // timing starts after 'BM_ITERATE'
+                // timing starts here at 'BM_ITERATE'
                 BM_ITERATE
                 {
                     // state.PauseTiming();
-                    //    If you need to do any setup before each iteration, do it here.
+                    //    If you need to do any specific setup before each iteration, do it here.
+                    //    But this can impact timings since PauseTiming and ResumeTiming are costly
+                    //    and cause inaccuracy.
                     // state.ResumeTiming();
 
                     memcpy(dst, src, state.Range(0));

@@ -91,25 +91,11 @@ namespace BenchMark
         int               lineNumber;
     };
 
-#define BM_TEST_DISABLE(name)                    \
-    namespace nsBMU##name                        \
-    {                                            \
-        extern BenchMarkUnit __unit;             \
-    }                                            \
-    class SetBMUnitDisable##name                 \
-    {                                            \
-    public:                                      \
-        inline SetBMUnitDisable##name()          \
-        {                                        \
-            nsBMU##name::__unit.disabled = true; \
-        }                                        \
-    }
-
-#define BM_TEST(bmname)                                                                      \
+#define BM_UNIT(bmname)                                                                      \
     void BM_Run_##bmname(BenchMarkState& state, Allocator* allocator);                       \
     namespace nsBMU##bmname                                                                  \
     {                                                                                        \
-        static BenchMarkUnit __unit;                                                         \
+        BenchMarkUnit __unit;                                                                \
         class BMRegisterUnit                                                                 \
         {                                                                                    \
         public:                                                                              \
@@ -125,30 +111,36 @@ namespace BenchMark
                 __fixture.AddUnit(&__unit);                                                  \
             }                                                                                \
         };                                                                                   \
-        static BMRegisterUnit __register(#bmname, __FILE__, __LINE__ + 2);                   \
+        BMRegisterUnit __register(#bmname, __FILE__, __LINE__ + 2);                          \
     }                                                                                        \
     void BM_Run_##bmname(BenchMarkState& state, Allocator* allocator)
 
-#define BM_SETTINGS(name)                                                 \
-    void BMUnitSettings##name(Allocator* alloc, BenchMarkUnit* settings); \
-    namespace nsBMU##name                                                 \
-    {                                                                     \
-        extern BenchMarkUnit __unit;                                      \
-        class SetBMUnitSettings                                           \
-        {                                                                 \
-        public:                                                           \
-            inline SetBMUnitSettings()                                    \
-            {                                                             \
-                __unit.settings_ = BMUnitSettings##name;                  \
-            }                                                             \
-        };                                                                \
-    }                                                                     \
+#define BM_UNIT_DISABLE(name)                                                    \
+    namespace nsBMU##name { extern BenchMarkUnit __unit; }                       \
+    class SetBMUnitDisable##name                                                 \
+    {                                                                            \
+    public:                                                                      \
+        inline SetBMUnitDisable##name() { nsBMU##name::__unit.disabled = true; } \
+    }
+
+
+#define BM_SETTINGS(name)                                                           \
+    void BMUnitSettings##name(Allocator* alloc, BenchMarkUnit* settings);           \
+    namespace nsBMU##name                                                           \
+    {                                                                               \
+        extern BenchMarkUnit __unit;                                                \
+        class SetBMUnitSettings                                                     \
+        {                                                                           \
+        public:                                                                     \
+            inline SetBMUnitSettings() { __unit.settings_ = BMUnitSettings##name; } \
+        };                                                                          \
+    }                                                                               \
     void BMUnitSettings##name(Allocator* alloc, BenchMarkUnit* settings)
 
 #define BM_FIXTURE(bmname)                                                                      \
     namespace nsBMF##bmname                                                                     \
     {                                                                                           \
-        static BenchMarkFixture __fixture;                                                      \
+        BenchMarkFixture __fixture;                                                             \
         class BMRegisterFixture                                                                 \
         {                                                                                       \
         public:                                                                                 \
@@ -163,60 +155,53 @@ namespace BenchMark
                 __suite.AddFixture(&__fixture);                                                 \
             }                                                                                   \
         };                                                                                      \
-        static BMRegisterFixture __register(#bmname, __FILE__, __LINE__ + 2);                   \
+        BMRegisterFixture __register(#bmname, __FILE__, __LINE__ + 2);                          \
     }                                                                                           \
     namespace nsBMF##bmname
 
-#define BM_FIXTURE_TEARDOWN                         \
-    void BMFixtureTeardown(const BenchMarkState&);  \
-    class SetBMFixtureTeardown                      \
-    {                                               \
-    public:                                         \
-        inline SetBMFixtureTeardown()               \
-        {                                           \
-            __fixture.teardown = BMFixtureTeardown; \
-        }                                           \
-    };                                              \
+#define BM_FIXTURE_DISABLE(name)                                                       \
+    namespace nsBMF##name { extern BenchMarkFixture __fixture; }                       \
+    class SetBMFixtureDisable##name                                                    \
+    {                                                                                  \
+    public:                                                                            \
+        inline SetBMFixtureDisable##name() { nsBMF##name::__fixture.disabled = true; } \
+    }
+
+#define BM_FIXTURE_TEARDOWN                                                       \
+    void BMFixtureTeardown(const BenchMarkState&);                                \
+    class SetBMFixtureTeardown                                                    \
+    {                                                                             \
+    public:                                                                       \
+        inline SetBMFixtureTeardown() { __fixture.teardown = BMFixtureTeardown; } \
+    };                                                                            \
     void BMFixtureTeardown(const BenchMarkState&)
 
-#define BM_FIXTURE_SETUP                        \
-    void BMFixtureSetup(const BenchMarkState&); \
-    class SetBMFixtureSetup                     \
-    {                                           \
-    public:                                     \
-        inline SetBMFixtureSetup()              \
-        {                                       \
-            __fixture.setup = BMFixtureSetup;   \
-        }                                       \
-    };                                          \
+#define BM_FIXTURE_SETUP                                                 \
+    void BMFixtureSetup(const BenchMarkState&);                          \
+    class SetBMFixtureSetup                                              \
+    {                                                                    \
+    public:                                                              \
+        inline SetBMFixtureSetup() { __fixture.setup = BMFixtureSetup; } \
+    };                                                                   \
     void BMFixtureSetup(const BenchMarkState&)
 
-#define BM_FIXTURE_SETTINGS                                            \
-    void BMFixtureSettings(Allocator* alloc, BenchMarkUnit* settings); \
-    class SetBMFixtureSettings                                         \
-    {                                                                  \
-    public:                                                            \
-        inline SetBMFixtureSettings()                                  \
-        {                                                              \
-            __fixture.settings = BMFixtureSettings;                    \
-        }                                                              \
-    };                                                                 \
+#define BM_FIXTURE_SETTINGS                                                       \
+    void BMFixtureSettings(Allocator* alloc, BenchMarkUnit* settings);            \
+    class SetBMFixtureSettings                                                    \
+    {                                                                             \
+    public:                                                                       \
+        inline SetBMFixtureSettings() { __fixture.settings = BMFixtureSettings; } \
+    };                                                                            \
     void BMFixtureSettings(Allocator* alloc, BenchMarkUnit* settings)
 
 #define BM_SUITE(bmname)                                                                  \
     extern void RegisterBenchMarkSuite(BenchMarkSuite*);                                  \
     namespace nsBMS##bmname                                                               \
     {                                                                                     \
-        void BMSetup_Nil(const BenchMarkState&)                                           \
-        {                                                                                 \
-        }                                                                                 \
-        void BMTeardown_Nil(const BenchMarkState&)                                        \
-        {                                                                                 \
-        }                                                                                 \
-        void BMSettings_Nil(Allocator* alloc, BenchMarkUnit* settings)                    \
-        {                                                                                 \
-        }                                                                                 \
-        static BenchMarkSuite __suite;                                                    \
+        void           BMSetup_Nil(const BenchMarkState&) {}                              \
+        void           BMTeardown_Nil(const BenchMarkState&) {}                           \
+        void           BMSettings_Nil(Allocator* alloc, BenchMarkUnit* settings) {}       \
+        BenchMarkSuite __suite;                                                           \
         class BMSRegister                                                                 \
         {                                                                                 \
         public:                                                                           \
@@ -231,44 +216,43 @@ namespace BenchMark
                 RegisterBenchMarkSuite(&__suite);                                         \
             }                                                                             \
         };                                                                                \
-        static BMSRegister __register(#bmname, __FILE__, __LINE__ + 2);                   \
+        BMSRegister __register(#bmname, __FILE__, __LINE__ + 2);                          \
     }                                                                                     \
     namespace nsBMS##bmname
 
-#define BM_SUITE_TEARDOWN                        \
-    void BMSuiteTeardown(const BenchMarkState&); \
-    class SetBMSuiteTeardown                     \
-    {                                            \
-    public:                                      \
-        inline SetBMSuiteTeardown()              \
-        {                                        \
-            __suite.teardown = BMSuiteTeardown;  \
-        }                                        \
-    };                                           \
+#define BM_SUITE_DISABLE(name)                                                     \
+    namespace nsBMS##name { extern BenchMarkSuite __suite; }                       \
+    class SetBMSuiteDisable##name                                                  \
+    {                                                                              \
+    public:                                                                        \
+        inline SetBMSuiteDisable##name() { nsBMS##name::__suite.disabled = true; } \
+    }
+
+#define BM_SUITE_TEARDOWN                                                   \
+    void BMSuiteTeardown(const BenchMarkState&);                            \
+    class SetBMSuiteTeardown                                                \
+    {                                                                       \
+    public:                                                                 \
+        inline SetBMSuiteTeardown() { __suite.teardown = BMSuiteTeardown; } \
+    };                                                                      \
     void BMSuiteTeardown(const BenchMarkState&)
 
-#define BM_SUITE_SETUP                        \
-    void BMSuiteSetup(const BenchMarkState&); \
-    class SetBMSuiteSetup                     \
-    {                                         \
-    public:                                   \
-        inline SetBMSuiteSetup()              \
-        {                                     \
-            __suite.setup = BMSuiteSetup;     \
-        }                                     \
-    };                                        \
+#define BM_SUITE_SETUP                                             \
+    void BMSuiteSetup(const BenchMarkState&);                      \
+    class SetBMSuiteSetup                                          \
+    {                                                              \
+    public:                                                        \
+        inline SetBMSuiteSetup() { __suite.setup = BMSuiteSetup; } \
+    };                                                             \
     void BMSuiteSetup(const BenchMarkState&)
 
-#define BM_SUITE_SETTINGS                                            \
-    void BMSuiteSettings(Allocator* alloc, BenchMarkUnit* settings); \
-    class SetBMSuiteSettings                                         \
-    {                                                                \
-    public:                                                          \
-        inline SetBMSuiteSettings()                                  \
-        {                                                            \
-            __suite.settings = BMSuiteSettings;                      \
-        }                                                            \
-    };                                                               \
+#define BM_SUITE_SETTINGS                                                   \
+    void BMSuiteSettings(Allocator* alloc, BenchMarkUnit* settings);        \
+    class SetBMSuiteSettings                                                \
+    {                                                                       \
+    public:                                                                 \
+        inline SetBMSuiteSettings() { __suite.settings = BMSuiteSettings; } \
+    };                                                                      \
     void BMSuiteSettings(Allocator* alloc, BenchMarkUnit* settings)
 
 } // namespace BenchMark

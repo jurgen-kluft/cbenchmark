@@ -38,11 +38,7 @@ namespace BenchMark
             Array<BenchMarkRun*> runs;           // The reports about (non-errneous!) runs of this family.
         };
 
-        BenchMarkReporter();
-        virtual ~BenchMarkReporter();
-
-        void SetOutputStream(TextStream* out) { output_stream_ = out; }
-        void SetErrorStream(TextStream* err) { error_stream_ = err; }
+        virtual ~BenchMarkReporter() {}
 
         // Called once for every suite of benchmarks run.
         // The parameter "context" contains information that the
@@ -54,7 +50,7 @@ namespace BenchMark
 
         // Called once for each group of benchmark runs, gives information about
         // the configurations of the runs.
-        virtual void ReportRunsConfig(double /*min_time*/, bool /*has_explicit_iters*/, IterationCount /*iters*/) {}
+        virtual void ReportRunsConfig(double /*min_time*/, bool /*has_explicit_iters*/, IterationCount /*iters*/) = 0;
 
         // Called once for each group of benchmark runs, gives information about
         // cpu-time and heap memory usage during the benchmark run. If the group
@@ -69,15 +65,7 @@ namespace BenchMark
         virtual void Flush() = 0;
 
         // Called once and only once after ever group of benchmarks is run and reported.
-        virtual void Finalize() {}
-
-        // Write a human readable string to 'out' representing the specified 'context'.
-        // REQUIRES: 'out' is non-null.
-        static void PrintBasicContext(TextStream& out, Context const& context);
-
-    protected:
-        TextStream* output_stream_;
-        TextStream* error_stream_;
+        virtual void Finalize() = 0;
     };
 
 } // namespace BenchMark
