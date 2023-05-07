@@ -33,6 +33,8 @@ namespace BenchMark
         inline bool operator==(const CounterFlags& f) const { return f.flags == flags; }
         inline bool operator!=(const CounterFlags& f) const { return f.flags != flags; }
 
+        inline double OneK() const { return (flags & Is1024) ? 1024.0 : 1000.0; }
+
         u32 flags;
     };
 

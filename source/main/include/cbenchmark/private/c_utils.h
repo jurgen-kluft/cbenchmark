@@ -14,6 +14,7 @@ namespace BenchMark
     extern bool        gAreStringsEqual(char const* const expected, char const* const actual);
 
     extern char* gStringAppend(char* dst, const char* dstEnd, const char* src);
+    extern char* gStringAppend(char* dst, const char* dstEnd, char src);
     extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, const void* p);
     extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, char c);
     extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, short s);
@@ -28,7 +29,8 @@ namespace BenchMark
     extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, float const f);
     extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, double const d);
 
-    inline int gRoundUpToMultipleOfPow2Number(int n, int pow2Number) { return (n + (pow2Number - 1)) & ~(pow2Number - 1); }
+    inline int   gRoundUpToMultipleOfPow2Number(int n, int pow2Number) { return (n + (pow2Number - 1)) & ~(pow2Number - 1); }
+    extern char* gHumanReadableNumber(char* dst, const char* dstEnd, double n, double one_k);
 } // namespace BenchMark
 
 #endif // __CBENCHMARK_UTILS_H__

@@ -2,6 +2,7 @@
 #define __CBENCHMARK_REPORTERSTDOUT_H__
 
 #include "cbenchmark/private/c_benchmark_reporter.h"
+#include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_alloc.h"
 
 namespace BenchMark
@@ -45,7 +46,7 @@ namespace BenchMark
         TextStream*    output_stream_;
         TextStream*    error_stream_;
         OutputOptions  output_options_;
-        Array<Counter> prev_counters_;
+        Counters       prev_counters_;
         char           line1_[640];
         char           line2_[640];
         s32            name_field_width_;

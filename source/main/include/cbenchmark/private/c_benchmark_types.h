@@ -55,6 +55,25 @@ namespace BenchMark
 
         Counters() {}
         Counters(Counters const& other) { counters.Copy(other.counters); }
+        inline s32  Size() const { return counters.Size(); }
+        inline void Clear() { counters.Clear(); }
+        inline void ClearReserve(s32 reserve) { counters.ClearReserve(reserve); }
+        inline void Copy(Counters const& other) { counters.Copy(other.counters); }
+
+        static bool SameNames(Counters const& left, Counters const& right)
+        {
+            if (&left == &right)
+                return true;
+            if (left.counters.Size() != right.counters.Size())
+                return false;
+            for (s32 i = 0; i < left.counters.Size(); ++i)
+            {
+                const Counter& lc = left.counters[i];
+                if (FindByName(right, lc.name) < 0)
+                    return false;
+            }
+            return true;
+        }
 
         static double Finish(Counter const& c, IterationCount iterations, double cpu_time, double num_threads)
         {
@@ -90,7 +109,7 @@ namespace BenchMark
             }
         }
 
-        static s32 Find(Counters const& c, const char* name)
+        static s32 FindByName(Counters const& c, const char* name)
         {
             for (s32 i = 0; i < c.counters.Size(); ++i)
             {
@@ -109,7 +128,7 @@ namespace BenchMark
             {
                 Counter& lc = l.counters[i];
 
-                const s32 it = Find(r, lc.name);
+                const s32 it = FindByName(r, lc.name);
                 if (it >= 0)
                 {
                     lc.value += r.counters[it].value;
@@ -119,7 +138,7 @@ namespace BenchMark
             for (s32 i = 0; i < r.counters.Size(); ++i)
             {
                 Counter const& rc = r.counters[i];
-                const s32      it = Find(l, rc.name);
+                const s32      it = FindByName(l, rc.name);
                 if (it < 0)
                 {
                     l.counters.PushBack(rc);

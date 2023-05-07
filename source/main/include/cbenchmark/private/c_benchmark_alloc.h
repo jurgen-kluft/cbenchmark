@@ -101,29 +101,43 @@ namespace BenchMark
             m_capacity = cap;
         }
 
+        void ClearReserve(s32 cap)
+        {
+            if (m_capacity >= cap)
+            {
+                m_size = 0;
+                return;
+            }
+
+            Release();
+
+            m_data     = m_alloc->Alloc<T>(sizeof(T) * cap);
+            m_capacity = cap;
+        }
+
         void Clear()
         {
             m_size = 0;
-            m_capacity = 0;
-            if (m_alloc != nullptr)
-            {
-                m_alloc->Deallocate(m_data);
-                m_data = nullptr;
-            }
         }
 
-        void Copy(const Array<T>& other)
+        void Release()
         {
             if (m_data != nullptr)
                 m_alloc->Deallocate(m_data);
 
-            m_alloc    = other.m_alloc;
-            m_data     = m_alloc->Alloc<T>(sizeof(T) * other.m_capacity);
-            m_size     = other.m_size;
-            m_capacity = other.m_capacity;
+            m_data     = nullptr;
+            m_size     = 0;
+            m_capacity = 0;
+        }
 
-            for (s32 i = 0; i < m_size; ++i)
+        void Copy(const Array<T>& other)
+        {
+            if (other.Size() > m_capacity)
+                ClearReserve(other.Size());
+
+            for (s32 i = 0; i < other.Size(); ++i)
                 m_data[i] = other.m_data[i];
+            m_size = other.Size();
         }
 
         bool Empty() const { return m_size == 0; }
