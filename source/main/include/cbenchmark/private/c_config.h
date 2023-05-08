@@ -9,7 +9,7 @@ namespace BenchMark
     class BenchMarkContext
     {
     public:
-        BenchMarkContext();
+        inline BenchMarkContext() : mAllocator(nullptr), mObserver(nullptr) {}
 
         Allocator*         mAllocator;
         BenchMarkObserver* mObserver;

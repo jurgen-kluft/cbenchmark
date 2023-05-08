@@ -38,7 +38,7 @@ namespace BenchMark
             , cpu_time_used(0.0)
             , manual_time_used(0.0)
             , complexity_n(0)
-            , skipped_({Skipped::NotSkipped})
+            , skipped_(Skipped::NotSkipped)
             , report_label_(nullptr)
             , skip_message_(nullptr)
         {

@@ -136,12 +136,14 @@ namespace BenchMark
 
     struct Skipped
     {
-        enum
+        enum ESkipped
         {
             NotSkipped         = 0,
             SkippedWithMessage = 1,
             SkippedWithError   = -1,
         };
+
+        inline Skipped(ESkipped s) : skipped(s) {}
 
         bool Is(u32 s) const { return skipped == s; }
         bool IsNot(u32 s) const { return skipped != s; }

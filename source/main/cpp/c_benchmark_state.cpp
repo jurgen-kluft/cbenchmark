@@ -28,7 +28,7 @@ namespace BenchMark
         , total_iterations_(0)
         , started_(false)
         , finished_(false)
-        , skipped_({Skipped::NotSkipped})
+        , skipped_(Skipped::NotSkipped)
     {
     }
 
@@ -125,16 +125,16 @@ namespace BenchMark
     {
         BM_CHECK(!started_ && !finished_);
         started_          = true;
-        total_iterations_ = Skipped().IsSkipped() ? 0 : max_iterations;
+        total_iterations_ = skipped_.IsSkipped() ? 0 : max_iterations;
         StartStopBarrier(manager_);
-        if (Skipped().IsNotSkipped())
+        if (skipped_.IsNotSkipped())
             ResumeTiming();
     }
 
     void BenchMarkState::FinishKeepRunning()
     {
-        BM_CHECK(started_ && (!finished_ || Skipped().IsNotSkipped()));
-        if (Skipped().IsNotSkipped())
+        BM_CHECK(started_ && (!finished_ || skipped_.IsNotSkipped()));
+        if (skipped_.IsNotSkipped())
         {
             PauseTiming();
         }
