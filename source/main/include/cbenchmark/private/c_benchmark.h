@@ -1,5 +1,5 @@
-#ifndef __CBENCHMARK_BENCHMARK_H__
-#define __CBENCHMARK_BENCHMARK_H__
+#ifndef __CBENCHMARK_RUN_BENCHMARK_H__
+#define __CBENCHMARK_RUN_BENCHMARK_H__
 
 namespace BenchMark
 {
@@ -11,4 +11,4 @@ namespace BenchMark
 
 } // namespace BenchMark
 
-#endif ///< __CBENCHMARK_BENCHMARK_H__
+#endif // __CBENCHMARK_RUN_BENCHMARK_H__

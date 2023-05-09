@@ -48,13 +48,14 @@ namespace BenchMark
         // PrintBasicContext(*error_stream_, context);
         return false;
     }
+
     void ConsoleReporter::ReportRuns(Array<BenchMarkRun*> const& reports)
     {
         for (s32 i = 0; i < reports.Size(); ++i)
         {
             BenchMarkRun* run          = reports[i];
             bool          print_header = !printed_header_;
-            print_header |= (output_options_ & OO_Tabular) && (!Counters::SameNames(run->counters, prev_counters_));
+            print_header               = print_header || ((output_options_ & OO_Tabular) && (!Counters::SameNames(run->counters, prev_counters_)));
             if (print_header)
             {
                 printed_header_ = true;
@@ -63,6 +64,12 @@ namespace BenchMark
             }
         }
     }
+
+    void ConsoleReporter::ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters)
+    {
+
+    }
+
 
     void ConsoleReporter::PrintRunData(const BenchMarkRun& result)
     {
@@ -203,12 +210,23 @@ namespace BenchMark
         *str = '\0';
 
         char* str2  = &line2_[0];
-        int   width = str - &line2_[0];
+        int   width = (int)(str - &line2_[0]);
         for (int i = 0; i < width; ++i)
             str2[i] = '-';
         *str2 = '\0';
 
         ((((*output_stream_) << line2_).endl() << line1_).endl() << line2_).endl();
     }
+
+    void         ConsoleReporter::Flush()
+    {
+
+    }
+
+    void ConsoleReporter::Finalize()
+    {
+
+    }
+
 
 } // namespace BenchMark

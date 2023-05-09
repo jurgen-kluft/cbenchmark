@@ -21,7 +21,7 @@ namespace BenchMark
 {
     // Flushes streams after invoking reporter methods that write to them. This
     // ensures users get timely updates even when streams are not line-buffered.
-    void FlushStreams(BenchMarkReporter* reporter)
+    static void FlushStreams(BenchMarkReporter* reporter)
     {
         if (!reporter)
             return;
@@ -29,7 +29,7 @@ namespace BenchMark
     }
 
     // Reports in both display and file reporters.
-    void Report(BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter, const RunResults* run_results)
+    static void Report(BenchMarkReporter* reporter, const RunResults* run_results)
     {
         auto report_one = [](BenchMarkReporter* reporter, bool aggregates_only, const RunResults* results)
         {
@@ -42,12 +42,9 @@ namespace BenchMark
                 reporter->ReportRuns(results->aggregates_only);
         };
 
-        report_one(display_reporter, run_results->display_report_aggregates_only, run_results);
-        if (file_reporter)
-            report_one(file_reporter, run_results->file_report_aggregates_only, run_results);
+        report_one(reporter, run_results->display_report_aggregates_only, run_results);
 
-        FlushStreams(display_reporter);
-        FlushStreams(file_reporter);
+        FlushStreams(reporter);
     }
 
     template <typename T> T min(T a, T b) { return a < b ? a : b; }
@@ -86,10 +83,10 @@ namespace BenchMark
         }
     }
 
-    void RunBenchMarkInstances(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    static void RunBenchMarkInstances(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* reporter)
     {
         // Note the file_reporter can be null.
-        BM_CHECK(display_reporter != nullptr);
+        BM_CHECK(reporter != nullptr);
 
         // Determine the width of the name field using a minimum width of 10.
         bool might_have_aggregates = globals->FLAGS_benchmark_repetitions > 1;
@@ -121,10 +118,9 @@ namespace BenchMark
             reports_for_family = temp->Construct<BenchMarkReporter::PerFamilyRunReports>();
         }
 
-        if (display_reporter->ReportContext(context) && (!file_reporter || file_reporter->ReportContext(context)))
+        if (reporter->ReportContext(context))
         {
-            FlushStreams(display_reporter);
-            FlushStreams(file_reporter);
+            FlushStreams(reporter);
 
             s32 num_repetitions_total = 0;
 
@@ -195,9 +191,7 @@ namespace BenchMark
 
                 // FIXME: report each repetition separately, not all of them in bulk.
 
-                display_reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner));
-                if (file_reporter)
-                    file_reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner));
+                reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner));
 
                 AggregateResults(runner, allocator, results->non_aggregates, results->aggregates_only);
 
@@ -215,7 +209,7 @@ namespace BenchMark
                     }
                 }
 
-                Report(display_reporter, file_reporter, results);
+                Report(reporter, results);
 
                 // Destroy the reports
                 for (int i = 0; i < results->non_aggregates.Size(); ++i)
@@ -242,19 +236,15 @@ namespace BenchMark
             }
         }
 
-        display_reporter->Finalize();
-        if (file_reporter)
-            file_reporter->Finalize();
-
-        FlushStreams(display_reporter);
-        FlushStreams(file_reporter);
+        reporter->Finalize();
+        FlushStreams(reporter);    
     }
 
     // Permutations is determined by the number of inputs to repeat a benchmark on.
     // If this is "large" then warn the user during configuration.
     static constexpr size_t kMaxPerms = 100;
 
-    bool CreateBenchMarkInstances(Allocator* allocator, BenchMarkUnit* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
+    static bool CreateBenchMarkInstances(Allocator* allocator, BenchMarkUnit* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
     {
         const Array<s32>& thread_counts     = benchmark->thread_counts_;
         const s32         num_thread_counts = thread_counts.Empty() ? 1 : thread_counts.Size();
@@ -302,7 +292,7 @@ namespace BenchMark
         }
     }
 
-    void RunBenchMarkSuite(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    static void RunBenchMarkSuite(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* reporter)
     {
         if (suite->disabled)
             return;
@@ -349,7 +339,7 @@ namespace BenchMark
                         // Report the details of this benchmark unit ?
                         // - name / filename / line number
 
-                        RunBenchMarkInstances(allocator, temp, globals, benchmark_instances, display_reporter, file_reporter);
+                        RunBenchMarkInstances(allocator, temp, globals, benchmark_instances, reporter);
                     }
 
                     // Destroy the benchmark instances
@@ -368,17 +358,25 @@ namespace BenchMark
         }
     }
 
-    void RunBenchMarks(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter)
+    void RunBenchMarks(Allocator* allocator, Allocator* temp_allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
     {
         BenchMarkSuite* suite = BenchMarkSuiteList::head;
         while (suite != nullptr)
         {
             if (!suite->disabled)
             {
-                RunBenchMarkSuite(allocator, temp, globals, suite, display_reporter, file_reporter);
+                RunBenchMarkSuite(allocator, temp_allocator, globals, suite, reporter);
             }
             suite = suite->next;
         }
     }
+
+    bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter)
+    {
+        // Setup the allocators
+        // Setup the globals
+        // Run the benchmarks
+    }
+
 
 } // namespace BenchMark

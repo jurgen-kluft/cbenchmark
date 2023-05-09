@@ -122,6 +122,7 @@ namespace BenchMark
         {
             *dst++ = *src++;
         }
+        return dst;
     }
 
     char* gStringAppend(char* dst, const char* dstEnd, char src)

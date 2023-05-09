@@ -33,12 +33,14 @@ namespace BenchMark
 
         virtual bool ReportContext(const Context& context);
         virtual void ReportRuns(Array<BenchMarkRun*> const& reports);
+        virtual void ReportRunsConfig(double /*min_time*/, bool /*has_explicit_iters*/, IterationCount /*iters*/);
 
     protected:
         virtual void PrintRunData(const BenchMarkRun& report);
         virtual void PrintHeader(const BenchMarkRun& report);
 
         virtual void Flush();
+        virtual void Finalize();
 
         void SetOutputStream(TextStream* out) { output_stream_ = out; }
         void SetErrorStream(TextStream* err) { error_stream_ = err; }
