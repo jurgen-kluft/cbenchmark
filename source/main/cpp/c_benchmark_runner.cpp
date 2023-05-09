@@ -1,7 +1,6 @@
 #include "cbenchmark/private/c_config.h"
 #include "cbenchmark/private/c_benchmark.h"
 #include "cbenchmark/private/c_benchmark_results.h"
-#include "cbenchmark/private/c_exception.h"
 #include "cbenchmark/private/c_time_helpers.h"
 #include "cbenchmark/private/c_stringbuilder.h"
 #include "cbenchmark/private/c_stdout.h"
@@ -114,7 +113,7 @@ namespace BenchMark
     public:
         BenchMarkRunner();
 
-        void           Init(Allocator* allocator, Allocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
+        void           Init(Allocator* allocator, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
         int            GetNumRepeats() const { return repeats; }
         bool           HasRepeatsRemaining() const { return GetNumRepeats() != num_repetitions_done; }
         void           DoOneRepetition(BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
@@ -124,7 +123,7 @@ namespace BenchMark
         IterationCount GetIters() const { return iters; }
 
         Allocator*               allocator_;
-        Allocator*               temp_;
+        ScratchAllocator*        temp_;
         BenchMarkInstance const* instance;
 
         BenchTimeType parsed_benchtime_flag;
@@ -167,12 +166,12 @@ namespace BenchMark
 
     // Public Interface
     BenchMarkRunner* CreateRunner(Allocator* a) { return a->Construct<BenchMarkRunner>(); }
-    void             InitRunner(BenchMarkRunner* r, Allocator* a, Allocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_) { r->Init(a, t, globals, b_); }
+    void             InitRunner(BenchMarkRunner* r, Allocator* a, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_) { r->Init(a, t, globals, b_); }
     void             DestroyRunner(BenchMarkRunner*& r, Allocator* a) { a->Destruct(r); }
 
     void InitRunResults(BenchMarkRunner* r, BenchMarkGlobals* globals, RunResults& results)
     {
-        BenchMarkInstance const* instance = r->instance;
+        BenchMarkInstance const* instance      = r->instance;
         results.display_report_aggregates_only = (globals->FLAGS_benchmark_report_aggregates_only || globals->FLAGS_benchmark_display_aggregates_only);
         results.file_report_aggregates_only    = globals->FLAGS_benchmark_report_aggregates_only;
         if (instance->aggregation_report_mode().mode != AggregationReportMode::Unspecified)
@@ -181,7 +180,6 @@ namespace BenchMark
             results.file_report_aggregates_only    = (instance->aggregation_report_mode().mode & AggregationReportMode::FileReportAggregatesOnly);
             // BM_CHECK(FLAGS_benchmark_perf_counters.empty() || (perf_counters_measurement_ptr->num_counters() == 0)) << "Perf counters were requested but could not be set up.";
         }
-
     }
 
     int            GetNumRepeats(const BenchMarkRunner* r) { return r->GetNumRepeats(); }
@@ -196,7 +194,6 @@ namespace BenchMark
     void           ThreadTimerStop(ThreadTimer* timer) { timer->StopTimer(); }
     bool           ThreadTimerIsRunning(ThreadTimer* timer) { return timer->IsRunning(); }
     void           ThreadTimerSetIterationTime(ThreadTimer* timer, double seconds) { timer->SetIterationTime(seconds); }
-
 
     BenchMarkRunner::BenchMarkRunner()
         : allocator_(nullptr)
@@ -213,7 +210,7 @@ namespace BenchMark
     {
     }
 
-    void BenchMarkRunner::Init(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, const BenchMarkInstance* b_)
+    void BenchMarkRunner::Init(Allocator* allocator, ScratchAllocator* temp, BenchMarkGlobals* globals, const BenchMarkInstance* b_)
     {
         allocator_                   = (allocator);
         temp_                        = (temp);

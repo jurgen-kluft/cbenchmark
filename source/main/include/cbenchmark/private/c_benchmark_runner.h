@@ -11,6 +11,7 @@
 namespace BenchMark
 {
     class Allocator;
+    class ScratchAllocator;
     class BenchMarkRun;
     class BenchMarkInstance;
     class PerfCountersMeasurement;
@@ -27,7 +28,7 @@ namespace BenchMark
 
     class BenchMarkRunner;
     BenchMarkRunner* CreateRunner(Allocator* a);
-    void             InitRunner(BenchMarkRunner* r, Allocator* a, Allocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
+    void             InitRunner(BenchMarkRunner* r, Allocator* a, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
     void             InitRunResults(BenchMarkRunner* r, BenchMarkGlobals* globals, RunResults& results);
     void             DestroyRunner(BenchMarkRunner*& r, Allocator* a);
     int              GetNumRepeats(const BenchMarkRunner* r);

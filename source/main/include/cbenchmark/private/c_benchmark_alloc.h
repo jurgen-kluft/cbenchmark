@@ -35,6 +35,36 @@ namespace BenchMark
         virtual void  v_Deallocate(void* ptr)                                               = 0;
     };
 
+    class ForwardAllocator
+    {
+    public:
+        template <typename T> T* Checkout(unsigned int size, unsigned int alignment = sizeof(void*)) { return v_Checkout(size, alignment); }
+        void                     Commit(void* ptr) { v_Commit(ptr); }
+
+        template <typename T> T* Alloc(unsigned int size, unsigned int alignment = sizeof(void*))
+        {
+            void* ptr = v_Checkout(size, alignment);
+            v_Commit(ptr);
+            return ptr;
+        }
+        void Dealloc(void* ptr) {}
+
+        // Construct and Destruct
+        template <typename T, typename... Args> T* Construct(Args... args)
+        {
+            void* mem = v_Checkout(sizeof(T), sizeof(void*));
+            v_Commit(mem);
+            T* object = new (mem) T(args...);
+            return object;
+        }
+
+        template <typename T> void Destruct(T* object) { object->~T(); }
+
+    protected:
+        virtual void* v_Checkout(unsigned int size, unsigned int alignment) = 0;
+        virtual void  v_Commit(void* ptr)                                   = 0;
+    };
+
     class ScratchAllocator : public Allocator
     {
     public:
@@ -50,7 +80,7 @@ namespace BenchMark
         NullAllocator() {}
 
         virtual void* v_Allocate(unsigned int size, unsigned int alignment) { return 0; }
-        virtual void  v_Deallocate(void* ptr) { }
+        virtual void  v_Deallocate(void* ptr) {}
     };
 
     class AllocatorTracker : public Allocator
