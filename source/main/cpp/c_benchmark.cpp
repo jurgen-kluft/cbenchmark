@@ -1,3 +1,6 @@
+#include "ccore/c_target.h"
+#include "ccore/c_debug.h"
+
 #include "cbenchmark/private/c_config.h"
 #include "cbenchmark/private/c_benchmark_results.h"
 #include "cbenchmark/private/c_benchmark_instance.h"
@@ -237,7 +240,7 @@ namespace BenchMark
         }
 
         reporter->Finalize();
-        FlushStreams(reporter);    
+        FlushStreams(reporter);
     }
 
     // Permutations is determined by the number of inputs to repeat a benchmark on.
@@ -358,7 +361,7 @@ namespace BenchMark
         }
     }
 
-    void RunBenchMarks(Allocator* allocator, Allocator* temp_allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
+    bool RunBenchMarks(Allocator* allocator, Allocator* temp_allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
     {
         BenchMarkSuite* suite = BenchMarkSuiteList::head;
         while (suite != nullptr)
@@ -369,14 +372,69 @@ namespace BenchMark
             }
             suite = suite->next;
         }
+        return true;
     }
+
+    class MainAllocator : public Allocator
+    {
+    public:
+        virtual void* v_Allocate(unsigned int size, unsigned int alignment)
+        {
+            return aligned_alloc(alignment, size);
+        }
+
+        virtual void  v_Deallocate(void* ptr)
+        {
+            free(ptr);
+        }
+    };
+
+    typedef unsigned char u8;
+
+    class MainScratchAllocator : public ScratchAllocator
+    {
+        u8* buffer_;
+
+        u8* buffer_begin_;
+        u8* buffer_end_;
+
+    public:
+        void Init(Allocator* alloc, u32 size)
+        {
+            buffer_begin_ = (u8*)alloc->Allocate(size);
+            buffer_end_   = buffer_begin_ + size;
+            buffer_       = buffer_begin_;
+        }
+
+    protected:
+        virtual void* v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*))
+        {
+            u8* p   = (u8*)((uintptr_t)(buffer_ + alignment - 1) & ~(alignment - 1));
+            buffer_ = p + size;
+            if (buffer_ > buffer_end_)
+            {
+                ASSERT(false);
+                return nullptr;
+            }
+            return p;
+        }
+
+        virtual void v_Deallocate(void* ptr) {}
+        virtual void v_Reset() { buffer_ = buffer_begin_; }
+    };
 
     bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter)
     {
         // Setup the allocators
-        // Setup the globals
-        // Run the benchmarks
-    }
+        MainAllocator main_allocator;
+        MainScratchAllocator scratch_allocator;
+        scratch_allocator.Init(&main_allocator, 8 * 1024 * 1024);
 
+        // Setup the globals
+        BenchMarkGlobals globals;
+
+        // Run the benchmarks
+        return BenchMark::RunBenchMarks(&main_allocator, &scratch_allocator, &globals, &reporter);
+    }
 
 } // namespace BenchMark

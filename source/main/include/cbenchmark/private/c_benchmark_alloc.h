@@ -10,8 +10,8 @@ namespace BenchMark
     public:
         virtual ~Allocator() {}
 
-        void*        Allocate(unsigned int size, unsigned int alignment = sizeof(void*)) { return v_Allocate(size, alignment); }
-        unsigned int Deallocate(void* ptr) { return v_Deallocate(ptr); }
+        void* Allocate(unsigned int size, unsigned int alignment = sizeof(void*)) { return v_Allocate(size, alignment); }
+        void  Deallocate(void* ptr) { v_Deallocate(ptr); }
 
         template <typename T> T* Alloc(unsigned int size) { return (T*)v_Allocate(size, sizeof(void*)); }
         void                     Dealloc(void* ptr) { v_Deallocate(ptr); }
@@ -31,8 +31,17 @@ namespace BenchMark
         }
 
     protected:
-        virtual void*        v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*)) = 0;
-        virtual unsigned int v_Deallocate(void* ptr)                                               = 0;
+        virtual void* v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*)) = 0;
+        virtual void  v_Deallocate(void* ptr)                                               = 0;
+    };
+
+    class ScratchAllocator : public Allocator
+    {
+    public:
+        inline void Reset() { v_Reset(); }
+
+    protected:
+        virtual void v_Reset() = 0;
     };
 
     class NullAllocator : public Allocator
@@ -40,8 +49,8 @@ namespace BenchMark
     public:
         NullAllocator() {}
 
-        virtual void*        v_Allocate(unsigned int size, unsigned int alignment) { return 0; }
-        virtual unsigned int v_Deallocate(void* ptr) { return 0; }
+        virtual void* v_Allocate(unsigned int size, unsigned int alignment) { return 0; }
+        virtual void  v_Deallocate(void* ptr) { }
     };
 
     class AllocatorTracker : public Allocator
@@ -68,10 +77,10 @@ namespace BenchMark
             return mAllocator->Allocate(size, alignment);
         }
 
-        virtual unsigned int v_Deallocate(void* ptr)
+        virtual void v_Deallocate(void* ptr)
         {
             DecNumAllocations();
-            return mAllocator->Deallocate(ptr);
+            mAllocator->Deallocate(ptr);
         }
     };
 
@@ -115,10 +124,7 @@ namespace BenchMark
             m_capacity = cap;
         }
 
-        void Clear()
-        {
-            m_size = 0;
-        }
+        void Clear() { m_size = 0; }
 
         void Release()
         {

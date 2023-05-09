@@ -1,17 +1,17 @@
 #ifdef TARGET_PC
 
-#include "cbenchmark/cbenchmark.h"
-#include "cbenchmark/private/c_Time_Helpers.h"
-#include "cbenchmark/private/c_StringBuilder.h"
-#include "cbenchmark/private/c_BenchMark_alloc.h"
-#include "cbenchmark/private/c_BenchMark_Reporter_Console.h"
+#    include "cbenchmark/cbenchmark.h"
+#    include "cbenchmark/private/c_Time_Helpers.h"
+#    include "cbenchmark/private/c_StringBuilder.h"
+#    include "cbenchmark/private/c_BenchMark_alloc.h"
+#    include "cbenchmark/private/c_BenchMark_Reporter_Console.h"
 
-#include <cstdio>
-#include <cstring>
+#    include <cstdio>
+#    include <cstring>
 
-#include <windows.h>
+#    include <windows.h>
 
-typedef WORD PlatformColorCode;
+typedef WORD      PlatformColorCode;
 PlatformColorCode GetPlatformColorCode(BenchMark::TextColor color)
 {
     switch (color)
@@ -32,7 +32,6 @@ class StdOut : public BenchMark::TextOutput
     bool has_default_color_attrs;
     WORD default_color_attrs;
 
-
 public:
     StdOut()
         : has_default_color_attrs(false)
@@ -40,7 +39,7 @@ public:
     {
     }
 
-    virtual void setColor(BenchMark::TextColor color) 
+    virtual void setColor(BenchMark::TextColor color)
     {
         const HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
         if (!has_default_color_attrs)
@@ -55,7 +54,7 @@ public:
         SetConsoleTextAttribute(stdout_handle, GetPlatformColorCode(color) | FOREGROUND_INTENSITY);
     }
 
-    virtual void resetColor() 
+    virtual void resetColor()
     {
         fflush(stdout);
 
@@ -64,26 +63,27 @@ public:
         SetConsoleTextAttribute(stdout_handle, default_color_attrs);
     }
 
-    virtual void flush(const char* text)
+    virtual void print(const char* text)
     {
         // std::out / console writer
+        const HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+        fprintf(stdout_handle, "%s", text);
     }
 };
 
-
 extern bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter);
 
-int         main(int argc, char** argv)
+int main(int argc, char** argv)
 {
-    StdOut                        stdoutput;
-    BenchMark::TextStream         out_stream;
-    BenchMark::TextStream         err_stream;
+    StdOut                stdoutput;
+    BenchMark::TextStream out_stream;
+    BenchMark::TextStream err_stream;
     out_stream.out = &stdoutput;
     err_stream.out = &stdoutput;
 
     // TODO give the text stream objects enough memory to write their log to
 
-    BenchMark::ConsoleReporter    reporter(&out_stream, &err_stream);
+    BenchMark::ConsoleReporter reporter(&out_stream, &err_stream);
 
     BenchMark::InitTimer();
 

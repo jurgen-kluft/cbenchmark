@@ -1,7 +1,6 @@
 #include "cbenchmark/private/c_config.h"
 #include "cbenchmark/private/c_benchmark.h"
 #include "cbenchmark/private/c_benchmark_results.h"
-#include "cbenchmark/private/c_exception.h"
 #include "cbenchmark/private/c_time_helpers.h"
 #include "cbenchmark/private/c_stringbuilder.h"
 #include "cbenchmark/private/c_stdout.h"

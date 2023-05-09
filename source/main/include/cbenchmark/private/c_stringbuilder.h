@@ -22,14 +22,14 @@ namespace BenchMark
 
     void FormatFloat(TextStream& stream, double value, int decimal_places, int prec);
     void FormatTime(TextStream& stream, double time);
-    void FormatString(TextStream& stream, const char* text, int width=0);
+    void FormatString(TextStream& stream, const char* text, int width=0, bool left_justified=false);
 
     class TextOutput
     {
     public:
         virtual void setColor(TextColor color) = 0;
         virtual void resetColor()              = 0;
-        virtual void flush(const char* text) = 0;
+        virtual void print(const char* text) = 0;
     };
 
     class TextStream
@@ -41,7 +41,7 @@ namespace BenchMark
         inline int  capacity() const { return (int)(eos - sos); }
         inline void flush()
         {
-            out->flush(stream);
+            out->print(stream);
             stream = sos;
         }
         TextStream& endl();
