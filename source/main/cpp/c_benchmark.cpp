@@ -86,7 +86,7 @@ namespace BenchMark
         }
     }
 
-    static void RunBenchMarkInstances(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* reporter)
+    static void RunBenchMarkInstances(Allocator* allocator, ScratchAllocator* scratch, BenchMarkGlobals* globals, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* reporter)
     {
         // Note the file_reporter can be null.
         BM_CHECK(reporter != nullptr);
@@ -118,7 +118,7 @@ namespace BenchMark
         BenchMarkReporter::PerFamilyRunReports* reports_for_family = nullptr;
         if (!benchmark_instances[0]->complexity().Is(BigO::O_None))
         {
-            reports_for_family = temp->Construct<BenchMarkReporter::PerFamilyRunReports>();
+            reports_for_family = scratch->Construct<BenchMarkReporter::PerFamilyRunReports>();
         }
 
         if (reporter->ReportContext(context))
@@ -129,10 +129,10 @@ namespace BenchMark
 
             // Benchmarks to run
             Array<BenchMarkRunner*> runners;
-            runners.Init(temp, 0, benchmark_instances.Size());
+            runners.Init(scratch, 0, benchmark_instances.Size());
 
             Array<RunResults*> run_results;
-            run_results.Init(temp, 0, benchmark_instances.Size());
+            run_results.Init(scratch, 0, benchmark_instances.Size());
 
             // Count the number of benchmark_instances with threads to warn the user in case
             // performance counters are used.
@@ -145,8 +145,8 @@ namespace BenchMark
 
                 benchmarks_with_threads += (benchmark->threads() > 0);
 
-                BenchMarkRunner* runner = CreateRunner(temp);
-                InitRunner(runner, allocator, temp, globals, benchmark);
+                BenchMarkRunner* runner = CreateRunner(scratch);
+                InitRunner(runner, allocator, scratch, globals, benchmark);
                 runners.PushBack(runner);
 
                 const int num_repeats_of_this_instance = GetNumRepeats(runner);
@@ -154,16 +154,16 @@ namespace BenchMark
                 if (reports_for_family)
                     reports_for_family->num_runs_total += num_repeats_of_this_instance;
 
-                RunResults* results = temp->Construct<RunResults>();
-                results->non_aggregates.Init(temp, 0, num_repeats_of_this_instance);
-                results->aggregates_only.Init(temp, 0, num_repeats_of_this_instance);
+                RunResults* results = scratch->Construct<RunResults>();
+                results->non_aggregates.Init(scratch, 0, num_repeats_of_this_instance);
+                results->aggregates_only.Init(scratch, 0, num_repeats_of_this_instance);
                 InitRunResults(runner, globals, *results);
                 run_results.PushBack(results);
             }
             BM_CHECK(runners.Size() == benchmark_instances.Size() && "Unexpected runner count.");
 
             Array<s32> repetition_indices;
-            repetition_indices.Init(temp, 0, num_repetitions_total);
+            repetition_indices.Init(scratch, 0, num_repetitions_total);
 
             for (s32 runner_index = 0, num_runners = runners.Size(); runner_index != num_runners; ++runner_index)
             {
@@ -205,7 +205,7 @@ namespace BenchMark
                     {
                         Array<BenchMarkRun*> additional_run_stats;
                         additional_run_stats.Init(allocator, 0, 2);
-                        ComputeBigO(allocator, temp, reports_for_family->runs, additional_run_stats);
+                        ComputeBigO(allocator, scratch, reports_for_family->runs, additional_run_stats);
 
                         // run_results->aggregates_only.insert(run_results->aggregates_only.end(), additional_run_stats.begin(), additional_run_stats.end());
                         results->aggregates_only.PushBack(additional_run_stats);
@@ -217,25 +217,25 @@ namespace BenchMark
                 // Destroy the reports
                 for (int i = 0; i < results->non_aggregates.Size(); ++i)
                 {
-                    temp->Destruct(results->non_aggregates[i]);
+                    scratch->Destruct(results->non_aggregates[i]);
                 }
                 for (int i = 0; i < results->aggregates_only.Size(); ++i)
                 {
-                    temp->Destruct(results->aggregates_only[i]);
+                    scratch->Destruct(results->aggregates_only[i]);
                 }
-                temp->Destruct(results);
+                scratch->Destruct(results);
             }
 
             // Destroy the reports for family
             if (reports_for_family != nullptr)
             {
-                temp->Destruct(reports_for_family);
+                scratch->Destruct(reports_for_family);
             }
 
             // Destroy all runners
             for (int i = 0; i < runners.Size(); ++i)
             {
-                DestroyRunner(runners[i], temp);
+                DestroyRunner(runners[i], scratch);
             }
         }
 
@@ -295,7 +295,7 @@ namespace BenchMark
         }
     }
 
-    static void RunBenchMarkSuite(Allocator* allocator, Allocator* temp, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* reporter)
+    static void RunBenchMarkSuite(Allocator* allocator, ScratchAllocator* scratch, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* reporter)
     {
         if (suite->disabled)
             return;
@@ -306,20 +306,20 @@ namespace BenchMark
         //   - fixture name(num units)
 
         // A benchmark-suite has a list of benchmark-fixtures where every fixture has a list of benchmark-units.
-        // A benchmark-unit is a BenchMarkUnit (should be merged int one object)
 
         BenchMarkFixture* fixture = suite->head;
         while (fixture != nullptr)
         {
-            if (fixture->disabled)
-            {
-                fixture = fixture->next;
-                continue;
-            }
-
             // Report the details of this fixture ?
             // - name / filename / line number
             // - num units
+
+            if (fixture->disabled)
+            {
+                // Report this fixture as disabled
+                fixture = fixture->next;
+                continue;
+            }
 
             BenchMarkUnit* unit = fixture->head;
             while (unit != nullptr)
@@ -342,7 +342,7 @@ namespace BenchMark
                         // Report the details of this benchmark unit ?
                         // - name / filename / line number
 
-                        RunBenchMarkInstances(allocator, temp, globals, benchmark_instances, reporter);
+                        RunBenchMarkInstances(allocator, scratch, globals, benchmark_instances, reporter);
                     }
 
                     // Destroy the benchmark instances
@@ -361,14 +361,14 @@ namespace BenchMark
         }
     }
 
-    bool RunBenchMarks(Allocator* allocator, Allocator* temp_allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
+    bool RunBenchMarks(Allocator* allocator, ScratchAllocator* scratch_allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
     {
         BenchMarkSuite* suite = BenchMarkSuiteList::head;
         while (suite != nullptr)
         {
             if (!suite->disabled)
             {
-                RunBenchMarkSuite(allocator, temp_allocator, globals, suite, reporter);
+                RunBenchMarkSuite(allocator, scratch_allocator, globals, suite, reporter);
             }
             suite = suite->next;
         }
