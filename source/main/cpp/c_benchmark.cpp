@@ -377,14 +377,19 @@ namespace BenchMark
 
     class MainAllocator : public Allocator
     {
+        s32 num_allocations_;
+
     public:
         virtual void* v_Allocate(unsigned int size, unsigned int alignment)
         {
+            ASSERT(num_allocations_ >= 0);
+            num_allocations_++;
             return aligned_alloc(alignment, size);
         }
-
-        virtual void  v_Deallocate(void* ptr)
+        virtual void v_Deallocate(void* ptr)
         {
+            ASSERT(num_allocations_ > 0);
+            --num_allocations_;
             free(ptr);
         }
     };
@@ -397,36 +402,96 @@ namespace BenchMark
 
         u8* buffer_begin_;
         u8* buffer_end_;
+        s32 num_allocations_;
 
     public:
         void Init(Allocator* alloc, u32 size)
         {
-            buffer_begin_ = (u8*)alloc->Allocate(size);
-            buffer_end_   = buffer_begin_ + size;
-            buffer_       = buffer_begin_;
+            buffer_begin_    = (u8*)alloc->Allocate(size);
+            buffer_end_      = buffer_begin_ + size;
+            buffer_          = buffer_begin_;
+            num_allocations_ = 0;
         }
 
     protected:
         virtual void* v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*))
         {
-            u8* p   = (u8*)((uintptr_t)(buffer_ + alignment - 1) & ~(alignment - 1));
-            buffer_ = p + size;
-            if (buffer_ > buffer_end_)
+            u8* p = (u8*)((uintptr_t)(buffer_ + alignment - 1) & ~(alignment - 1));
+            if ((p + size) > buffer_end_)
             {
                 ASSERT(false);
                 return nullptr;
             }
+            num_allocations_++;
+            buffer_ = p + size;
             return p;
         }
 
-        virtual void v_Deallocate(void* ptr) {}
-        virtual void v_Reset() { buffer_ = buffer_begin_; }
+        virtual void v_Deallocate(void* ptr)
+        {
+            ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
+            --num_allocations_;
+        }
+
+        virtual void v_Reset()
+        {
+            ASSERT(num_allocations_ == 0);
+            buffer_ = buffer_begin_;
+        }
+    };
+
+    class MainForwardAllocator : public ForwardAllocator
+    {
+        u8* buffer_;
+
+        u8* buffer_begin_;
+        u8* buffer_end_;
+        s32 checkout_;
+        s32 num_allocations_;
+
+    public:
+        void Init(Allocator* alloc, u32 size)
+        {
+            buffer_begin_    = (u8*)alloc->Allocate(size);
+            buffer_end_      = buffer_begin_ + size;
+            buffer_          = buffer_begin_;
+            checkout_        = 0;
+            num_allocations_ = 0;
+        }
+
+    protected:
+        virtual void* v_Checkout(unsigned int size, unsigned int alignment)
+        {
+            ASSERT(checkout_ >= 0);
+            u8* p = (u8*)((uintptr_t)(buffer_ + alignment - 1) & ~(alignment - 1));
+            if ((p + size) > buffer_end_)
+                return nullptr;
+            buffer_ = p + size;
+            ASSERT(buffer_ < buffer_end_);
+            num_allocations_++;
+            checkout_++;
+            return p;
+        }
+
+        virtual void v_Commit(void* ptr)
+        {
+            buffer_ = (u8*)ptr;
+            --checkout_;
+            ASSERT(buffer_ < buffer_end_);
+            ASSERT(checkout_ == 0);
+        }
+
+        virtual void v_Deallocate(void* ptr)
+        {
+            ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
+            --num_allocations_;
+        }
     };
 
     bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter)
     {
         // Setup the allocators
-        MainAllocator main_allocator;
+        MainAllocator        main_allocator;
         MainScratchAllocator scratch_allocator;
         scratch_allocator.Init(&main_allocator, 8 * 1024 * 1024);
 

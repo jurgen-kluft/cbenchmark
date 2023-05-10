@@ -47,7 +47,7 @@ namespace BenchMark
             v_Commit(ptr);
             return ptr;
         }
-        void Dealloc(void* ptr) {}
+        void Dealloc(void* ptr) { v_Deallocate(ptr); }
 
         // Construct and Destruct
         template <typename T, typename... Args> T* Construct(Args... args)
@@ -63,6 +63,7 @@ namespace BenchMark
     protected:
         virtual void* v_Checkout(unsigned int size, unsigned int alignment) = 0;
         virtual void  v_Commit(void* ptr)                                   = 0;
+        virtual void  v_Deallocate(void* ptr)                               = 0;
     };
 
     class ScratchAllocator : public Allocator
@@ -83,12 +84,12 @@ namespace BenchMark
         virtual void  v_Deallocate(void* ptr) {}
     };
 
-    class AllocatorTracker : public Allocator
+    class TrackingAllocator : public Allocator
     {
         Allocator* mAllocator;
 
     public:
-        AllocatorTracker(Allocator* allocator)
+        TrackingAllocator(Allocator* allocator)
             : mAllocator(allocator)
             , mNumAllocations(0)
         {
