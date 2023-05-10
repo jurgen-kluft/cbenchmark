@@ -52,7 +52,7 @@ extern bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter);
 
 int main(int argc, char** argv)
 {
-    BenchMark::InitTimer();
+    BenchMark::g_InitTimer();
 
     BenchMark::MainAllocator    main_allocator;
     BenchMark::BenchMarkGlobals globals;

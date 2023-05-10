@@ -92,7 +92,7 @@ namespace BenchMark
         {
             name_.function_name = str;
 
-            // Name/Arg/Arg/..
+            // Name/{ArgName:}Arg/{ArgName:}Arg/..
             str = gStringAppend(str, nullptr, benchmark->name);
             for (s32 i = 0; i < args_.Size(); ++i)
             {

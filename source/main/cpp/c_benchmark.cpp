@@ -250,7 +250,7 @@ namespace BenchMark
     // If this is "large" then warn the user during configuration.
     static constexpr size_t kMaxPerms = 100;
 
-    static bool CreateBenchMarkInstances(Allocator* main_allocator, ForwardAllocator* forward_allocator, ScratchAllocator* scratch_allocator, BenchMarkUnit* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
+    static bool CreateBenchMarkInstances(ForwardAllocator* forward_allocator, ScratchAllocator* scratch_allocator, BenchMarkUnit* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
     {
         const Array<s32>& thread_counts     = benchmark->thread_counts_;
         const s32         num_thread_counts = thread_counts.Empty() ? 1 : thread_counts.Size();
@@ -351,7 +351,7 @@ namespace BenchMark
                     }
 
                     Array<BenchMarkInstance*> benchmark_instances;
-                    if (CreateBenchMarkInstances(main_allocator, forward_allocator, scratch_allocator, unit, benchmark_instances))
+                    if (CreateBenchMarkInstances(forward_allocator, scratch_allocator, unit, benchmark_instances))
                     {
                         // Report the details of this benchmark unit ?
                         // - name / filename / line number

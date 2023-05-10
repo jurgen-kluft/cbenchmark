@@ -52,13 +52,13 @@ namespace BenchMark
     };
 
     // TODO to be implemented
-    double ProcessCPUUsage() { return 0.0; }  // Return the CPU usage of the current process
-    double ChildrenCPUUsage() { return 0.0; } // Return the CPU usage of the children of the current process
-    double ThreadCPUUsage() { return 0.0; }   // Return the CPU usage of the current thread
+    static double ProcessCPUUsage() { return 0.0; }  // Return the CPU usage of the current process
+    static double ChildrenCPUUsage() { return 0.0; } // Return the CPU usage of the children of the current process
+    static double ThreadCPUUsage() { return 0.0; }   // Return the CPU usage of the current thread
 
 #define HAVE_STEADY_CLOCK 1
 
-    inline double ChronoClockNow()
+    static inline double ChronoClockNow()
     {
 #if defined(HAVE_STEADY_CLOCK)
         using FpSeconds = std::chrono::duration<double, std::chrono::seconds::period>;
@@ -84,7 +84,7 @@ namespace BenchMark
         {
             running_         = true;
             start_real_time_ = ChronoClockNow();
-            start_cpu_time_  = TimeStamp();
+            start_cpu_time_  = g_TimeStart();
         }
 
         // Called by each thread
@@ -95,7 +95,7 @@ namespace BenchMark
             real_time_used_ += ChronoClockNow() - start_real_time_;
 
             // Floating point error may result in the subtraction producing a negative time.
-            const double cpu_time = TimeStamp() - start_cpu_time_;
+            const double cpu_time = g_GetElapsedTimeInMs(start_cpu_time_);
             if (cpu_time > 0)
                 cpu_time_used_ += cpu_time;
         }

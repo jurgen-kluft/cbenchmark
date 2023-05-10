@@ -7,9 +7,9 @@ namespace BenchMark
 {
     typedef u64 time_t;
 
-    void   InitTimer();
-    time_t TimeStamp();
-    double GetElapsedTimeInMs(time_t start);
+    void   g_InitTimer();
+    time_t g_TimeStart();
+    double g_GetElapsedTimeInMs(time_t start);
     
 } // namespace BenchMark
 
