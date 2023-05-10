@@ -1,9 +1,11 @@
 #ifdef TARGET_MAC
 #    include "cbenchmark/cbenchmark.h"
-#    include "cbenchmark/private/c_Time_Helpers.h"
-#    include "cbenchmark/private/c_StringBuilder.h"
-#    include "cbenchmark/private/c_BenchMark_alloc.h"
-#    include "cbenchmark/private/c_BenchMark_Reporter_Console.h"
+#    include "cbenchmark/private/c_benchmark.h"
+#    include "cbenchmark/private/c_benchmark_allocators.h"
+#    include "cbenchmark/private/c_benchmark_instance.h"
+#    include "cbenchmark/private/c_benchmark_reporter_console.h"
+#    include "cbenchmark/private/c_time_helpers.h"
+#    include "cbenchmark/private/c_stringbuilder.h"
 
 #    include <stdlib.h>
 #    include <stdio.h>
@@ -47,18 +49,37 @@ public:
 
 extern bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter);
 
-int         main(int argc, char** argv)
+
+int main(int argc, char** argv)
 {
     BenchMark::InitTimer();
+
+    BenchMark::MainAllocator    main_allocator;
+    BenchMark::BenchMarkGlobals globals;
 
     StdOut                stdoutput;
     BenchMark::TextStream out_stream;
     BenchMark::TextStream err_stream;
     out_stream.out = &stdoutput;
     err_stream.out = &stdoutput;
+
+    const unsigned int kOutStreamBufferSize = 4 * 1024;
+    const unsigned int kErrStreamBufferSize = 1 * 1024;
+
+    out_stream.sos    = (char*)main_allocator.Allocate(kOutStreamBufferSize, 8);
+    out_stream.eos    = out_stream.sos + kOutStreamBufferSize - 1;
+    out_stream.stream = out_stream.sos;
+
+    err_stream.sos    = (char*)main_allocator.Allocate(kErrStreamBufferSize, 8);
+    err_stream.eos    = err_stream.sos + kErrStreamBufferSize - 1;
+    err_stream.stream = err_stream.sos;
+
     BenchMark::ConsoleReporter reporter(&out_stream, &err_stream);
 
-    bool result = gRunBenchMark(reporter);
+    bool result = BenchMark::gRunBenchMark(&main_allocator, &globals, reporter);
+
+    main_allocator.Deallocate(out_stream.sos);
+    main_allocator.Deallocate(err_stream.sos);
 
     return result ? 0 : -1;
 }

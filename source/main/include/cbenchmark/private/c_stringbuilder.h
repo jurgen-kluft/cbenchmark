@@ -20,10 +20,6 @@ namespace BenchMark
         COLOR_WHITE
     };
 
-    void FormatFloat(TextStream& stream, double value, int decimal_places, int prec);
-    void FormatTime(TextStream& stream, double time);
-    void FormatString(TextStream& stream, const char* text, int width=0, bool left_justified=false);
-
     class TextOutput
     {
     public:

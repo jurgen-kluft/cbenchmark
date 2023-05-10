@@ -375,7 +375,7 @@ namespace BenchMark
         }
     }
 
-    bool RunBenchMarks(Allocator* allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
+    static bool RunBenchMarks(Allocator* allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
     {
         BenchMarkSuite* suite = BenchMarkSuiteList::head;
         while (suite != nullptr)
@@ -389,11 +389,9 @@ namespace BenchMark
         return true;
     }
 
-    bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter)
+    bool gRunBenchMark(MainAllocator* allocator, BenchMarkGlobals* globals, BenchMark::BenchMarkReporter& reporter)
     {
-        MainAllocator    main_allocator;
-        BenchMarkGlobals globals;
-        return BenchMark::RunBenchMarks(&main_allocator, &globals, &reporter);
+        return BenchMark::RunBenchMarks(allocator, globals, &reporter);
     }
 
 } // namespace BenchMark

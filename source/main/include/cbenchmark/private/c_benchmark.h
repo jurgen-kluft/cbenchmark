@@ -3,11 +3,11 @@
 
 namespace BenchMark
 {
-    struct Allocators;
+    class MainAllocator;
+    class BenchMarkGlobals;
     class BenchMarkReporter;
-    struct BenchMarkGlobals;
 
-    void RunBenchMarks(Allocators& allocators, BenchMarkGlobals* globals, BenchMarkReporter* display_reporter, BenchMarkReporter* file_reporter);
+    bool gRunBenchMark(MainAllocator* allocator, BenchMarkGlobals* globals, BenchMarkReporter& reporter);
 
 } // namespace BenchMark
 

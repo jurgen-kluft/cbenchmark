@@ -18,8 +18,9 @@ namespace BenchMark
     class ThreadManager;
     class PerfCountersMeasurement;
 
-    struct BenchMarkGlobals
+    class BenchMarkGlobals
     {
+    public:
         BenchMarkGlobals();
 
         double FLAGS_benchmark_min_time;
