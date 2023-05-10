@@ -70,7 +70,7 @@ namespace BenchMark
 
         void                    init(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int per_family_instance_index, int thread_count);
         const BenchmarkName&    name() const { return name_; }
-        Array<s32> const&       args() const { return args_; }
+        Array<s32> const*       args() const { return &args_; }
         int                     per_family_instance_index() const { return per_family_instance_index_; }
         AggregationReportMode   aggregation_report_mode() const { return aggregation_report_mode_; }
         TimeUnit                time_unit() const { return time_unit_; }

@@ -35,7 +35,6 @@ namespace BenchMark
         : main_(nullptr)
         , buffer_begin_(nullptr)
         , buffer_end_(nullptr)
-        , num_allocations_(0)
         , mark_(0)
     {
     }
@@ -53,7 +52,7 @@ namespace BenchMark
         buffer_begin_    = (u8*)alloc->Allocate(size);
         buffer_end_      = buffer_begin_ + size;
         buffer_[mark_]   = buffer_begin_;
-        num_allocations_ = 0;
+        num_allocations_[mark_] = 0;
     }
 
     void* ScratchAllocator::v_Allocate(unsigned int size, unsigned int alignment)
@@ -64,7 +63,7 @@ namespace BenchMark
             ASSERT(false);
             return nullptr;
         }
-        num_allocations_++;
+        num_allocations_[mark_]++;
         buffer_[mark_] = p + size;
         return p;
     }
@@ -72,18 +71,21 @@ namespace BenchMark
     void ScratchAllocator::v_Deallocate(void* ptr)
     {
         ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
-        --num_allocations_;
+        num_allocations_[mark_]--;
     }
 
     void ScratchAllocator::v_PushScope()
     {
-        ASSERT(mark_ < 16);
-        buffer_[++mark_] = buffer_[mark_ - 1];
+        ++mark_;
+        ASSERT(mark_ < (sizeof(buffer_) / sizeof(buffer_[0])));
+        buffer_[mark_] = buffer_[mark_ - 1];
+        num_allocations_[mark_] = 0;
     }
 
     void ScratchAllocator::v_PopScope()
     {
-        ASSERT(num_allocations_ == 0);
+        ASSERT(num_allocations_[mark_] == 0);
+        ASSERT(mark_ > 0);
         --mark_;
     }
 

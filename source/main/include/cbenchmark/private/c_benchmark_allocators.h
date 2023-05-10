@@ -78,10 +78,10 @@ namespace BenchMark
     class ScratchAllocator : public Allocator
     {
         Allocator* main_;
-        u8*        buffer_[16];
+        u8*        buffer_[15];
         u8*        buffer_begin_;
         u8*        buffer_end_;
-        s32        num_allocations_;
+        s32        num_allocations_[15];
         s32        mark_;
 
     public:
