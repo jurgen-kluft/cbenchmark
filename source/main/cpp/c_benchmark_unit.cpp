@@ -10,7 +10,17 @@
 
 namespace BenchMark
 {
-    s32 BenchMarkUnit::BuildArgs() { return 0; }
+    s32 BenchMarkUnit::BuildArgs(Allocator* alloc, Array<Array<s32>>& args) 
+    { 
+        // check what we have:
+        // - args, []{x,y,..,...}
+        // - arg, []{ x:{a,b,c,...}, y:{a,b,c,...}, ...]
+        // - arg range, multiplier mode, []{ x: range, y: range, ...}
+        // - arg range, step mode (dense), []{ x: range, y: range, ...}
+
+
+        return 0; 
+    }
 
     void BenchMarkUnit::ReportAggregatesOnly(bool value) { aggregation_report_mode_ = value ? AggregationReportMode::ReportAggregatesOnly : AggregationReportMode::Default; }
 
@@ -93,7 +103,7 @@ namespace BenchMark
         arg_.PushBack(Args(args, argc));
     }
 
-    void BenchMarkUnit::AddRange(s32 lo, s32 hi, s32 multiplier, s32 mode)
+    void BenchMarkUnit::AddRange(s32 lo, s32 hi, s32 multiplier, ArgRange::EMode mode)
     {
         if (count_only_)
         {

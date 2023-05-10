@@ -6,7 +6,7 @@
 #include "cbenchmark/private/c_stdout.h"
 #include "cbenchmark/private/c_utils.h"
 
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 #include "cbenchmark/private/c_benchmark_name.h"
 #include "cbenchmark/private/c_benchmark_instance.h"
 #include "cbenchmark/private/c_benchmark_state.h"
@@ -50,7 +50,7 @@ namespace BenchMark
         , benchmark_(nullptr)
         , per_family_instance_index_(0)
         , aggregation_report_mode_(AggregationReportMode::Default)
-        , args_(nullptr)
+        , args_()
         , time_unit_(TimeUnit::Nanosecond)
         , time_settings_()
         , complexity_(BigO::O_None)
@@ -65,12 +65,9 @@ namespace BenchMark
     {
     }
 
-    void BenchMarkInstance::run(BenchMarkState& state, Allocator* allocator) const
-    {
-        benchmark_->run_(state, allocator);
-    }
+    void BenchMarkInstance::run(BenchMarkState& state, Allocator* allocator) const { benchmark_->run_(state, allocator); }
 
-    void BenchMarkInstance::init(Allocator* allocator, BenchMarkUnit* benchmark, int per_family_instance_index, int thread_count)
+    void BenchMarkInstance::init(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int per_family_instance_index, int thread_count)
     {
         benchmark_                 = benchmark;
         per_family_instance_index_ = (per_family_instance_index);
@@ -86,77 +83,109 @@ namespace BenchMark
         iterations_                = (benchmark->iterations_);
         threads_                   = (thread_count);
 
-        // args_ = (args);
+        args_.Init(allocator, 0, args.Size());
+        for (s32 i = 0; i < args.Size(); ++i)
+            args_.PushBack(args[i]);
 
-        // name_.function_name = benchmark->name_;
+        // 'Reserve' enough memory for the name and parts.
+        char* str = allocator->Checkout<char>(512);
+        {
+            name_.function_name = str;
 
-        // size_t arg_i = 0;
-        // for (const auto& arg : args)
-        // {
-        //     if (!name_.args.empty())
-        //     {
-        //         name_.args += '/';
-        //     }
+            // Name/Arg/Arg/..
+            str = gStringAppend(str, nullptr, benchmark->name);
+            for (s32 i = 0; i < args_.Size(); ++i)
+            {
+                if (i != 0)
+                {
+                    str = gStringAppend(str, nullptr, '/');
+                }
 
-        //     if (arg_i < benchmark->arg_names_.size())
-        //     {
-        //         const auto& arg_name = benchmark->arg_names_[arg_i];
-        //         if (!arg_name.empty())
-        //         {
-        //             name_.args += StrFormat("%s:", arg_name.c_str());
-        //         }
-        //     }
+                if (benchmark_->arg_names_count_ > i)
+                {
+                    str = gStringFormatAppend(str, nullptr, "%s:", benchmark_->arg_names_[i]);
+                }
 
-        //     name_.args += StrFormat("%" PRId64, arg);
-        //     ++arg_i;
-        // }
+                str = gStringFormatAppend(str, nullptr, "%d", args_[i]);
+            }
+            *str++ = '\0'; // Terminate
 
-        // if (!IsZero(benchmark->min_time_))
-        // {
-        //     name_.min_time = StrFormat("min_time:%0.3f", benchmark->min_time_);
-        // }
+            if (!gIsZero(benchmark->min_time_))
+            {
+                name_.min_time = str;
+                str            = gStringFormatAppend(str, nullptr, "min_time:%0.3f", benchmark->min_time_);
+                *str++ = '\0'; // Terminate
+            }
 
-        // if (!IsZero(benchmark->min_warmup_time_))
-        // {
-        //     name_.min_warmup_time = StrFormat("min_warmup_time:%0.3f", benchmark->min_warmup_time_);
-        // }
+            if (!gIsZero(benchmark->min_warmup_time_))
+            {
+                name_.min_warmup_time = str;
+                str                   = gStringFormatAppend(str, nullptr, "min_warmup_time:%0.3f", benchmark->min_warmup_time_);
+                *str++ = '\0'; // Terminate
+            }
 
-        // if (benchmark->iterations_ != 0)
-        // {
-        //     name_.iterations = StrFormat("iterations:%lu", static_cast<unsigned long>(benchmark->iterations_));
-        // }
+            if (benchmark->iterations_ != 0)
+            {
+                name_.iterations = str;
+                str              = gStringFormatAppend(str, nullptr, "iterations:%lu", static_cast<unsigned long>(benchmark->iterations_));
+                *str++ = '\0'; // Terminate
+            }
 
-        // if (benchmark->repetitions_ != 0)
-        // {
-        //     name_.repetitions = StrFormat("repeats:%d", benchmark->repetitions_);
-        // }
+            if (benchmark->repetitions_ != 0)
+            {
+                name_.repetitions = str;
+                str               = gStringFormatAppend(str, nullptr, "repeats:%d", benchmark->repetitions_);
+                *str++ = '\0'; // Terminate
+            }
 
-        // if (benchmark->measure_process_cpu_time_)
-        // {
-        //     name_.time_type = "process_time";
-        // }
+            s32 time_types  = 0;
+            name_.time_type = str;
+            if (benchmark->time_settings_.MeasureProcessCpuTime())
+            {
+                str = gStringAppend(str, nullptr, "process_time");
+                time_types++;
+            }
 
-        // if (benchmark->use_manual_time_)
-        // {
-        //     if (!name_.time_type.empty())
-        //     {
-        //         name_.time_type += '/';
-        //     }
-        //     name_.time_type += "manual_time";
-        // }
-        // else if (benchmark->use_real_time_)
-        // {
-        //     if (!name_.time_type.empty())
-        //     {
-        //         name_.time_type += '/';
-        //     }
-        //     name_.time_type += "real_time";
-        // }
+            if (benchmark->time_settings_.UseManualTime())
+            {
+                if (time_types > 0)
+                {
+                    str = gStringAppend(str, nullptr, '/');
+                }
+                name_.time_type = str;
+                str             = gStringAppend(str, nullptr, "manual_time");
+                time_types++;
+            }
+            else if (benchmark->time_settings_.UseRealTime())
+            {
+                if (time_types > 0)
+                {
+                    str = gStringAppend(str, nullptr, '/');
+                }
+                name_.time_type = str;
+                str             = gStringAppend(str, nullptr, "real_time");
+                time_types++;
+            }
 
-        // if (!benchmark->thread_counts_.empty())
-        // {
-        //     name_.threads = StrFormat("threads:%d", threads_);
-        // }
+            if (time_types > 0)
+            {
+                *str++ = '\0'; // Terminate
+            }
+            else
+            {
+                name_.time_type = nullptr;
+            }
+
+            if (!benchmark->thread_counts_.Empty())
+            {
+                name_.threads = str;
+                str           = gStringFormatAppend(str, nullptr, "threads:%d", threads_);
+                *str++        = '\0'; // Terminate
+            }
+
+            *str++ = '\0'; // Terminate
+        }
+        allocator->Commit(str);
 
         setup_    = benchmark->setup_;
         teardown_ = benchmark->teardown_;

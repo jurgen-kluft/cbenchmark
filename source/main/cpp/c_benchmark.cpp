@@ -19,6 +19,7 @@
 #include "cbenchmark/private/c_utils.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 namespace BenchMark
 {
@@ -86,8 +87,10 @@ namespace BenchMark
         }
     }
 
-    static void RunBenchMarkInstances(Allocator* allocator, ScratchAllocator* scratch, BenchMarkGlobals* globals, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* reporter)
+    static void RunBenchMarkInstances(Allocator* main_allocator, ForwardAllocator* forward_allocator, ScratchAllocator* scratch_allocator, BenchMarkGlobals* globals, const Array<BenchMarkInstance*>& benchmark_instances, BenchMarkReporter* reporter)
     {
+        USE_SCRATCH(scratch_allocator);
+
         // Note the file_reporter can be null.
         BM_CHECK(reporter != nullptr);
 
@@ -118,7 +121,7 @@ namespace BenchMark
         BenchMarkReporter::PerFamilyRunReports* reports_for_family = nullptr;
         if (!benchmark_instances[0]->complexity().Is(BigO::O_None))
         {
-            reports_for_family = scratch->Construct<BenchMarkReporter::PerFamilyRunReports>();
+            reports_for_family = scratch_allocator->Construct<BenchMarkReporter::PerFamilyRunReports>();
         }
 
         if (reporter->ReportContext(context))
@@ -129,10 +132,10 @@ namespace BenchMark
 
             // Benchmarks to run
             Array<BenchMarkRunner*> runners;
-            runners.Init(scratch, 0, benchmark_instances.Size());
+            runners.Init(forward_allocator, 0, benchmark_instances.Size());
 
             Array<RunResults*> run_results;
-            run_results.Init(scratch, 0, benchmark_instances.Size());
+            run_results.Init(forward_allocator, 0, benchmark_instances.Size());
 
             // Count the number of benchmark_instances with threads to warn the user in case
             // performance counters are used.
@@ -145,8 +148,8 @@ namespace BenchMark
 
                 benchmarks_with_threads += (benchmark->threads() > 0);
 
-                BenchMarkRunner* runner = CreateRunner(scratch);
-                InitRunner(runner, allocator, scratch, globals, benchmark);
+                BenchMarkRunner* runner = CreateRunner(forward_allocator);
+                InitRunner(runner, forward_allocator, scratch_allocator, globals, benchmark);
                 runners.PushBack(runner);
 
                 const int num_repeats_of_this_instance = GetNumRepeats(runner);
@@ -154,16 +157,16 @@ namespace BenchMark
                 if (reports_for_family)
                     reports_for_family->num_runs_total += num_repeats_of_this_instance;
 
-                RunResults* results = scratch->Construct<RunResults>();
-                results->non_aggregates.Init(scratch, 0, num_repeats_of_this_instance);
-                results->aggregates_only.Init(scratch, 0, num_repeats_of_this_instance);
+                RunResults* results = forward_allocator->Construct<RunResults>();
+                results->non_aggregates.Init(forward_allocator, 0, num_repeats_of_this_instance);
+                results->aggregates_only.Init(forward_allocator, 0, num_repeats_of_this_instance);
                 InitRunResults(runner, globals, *results);
                 run_results.PushBack(results);
             }
             BM_CHECK(runners.Size() == benchmark_instances.Size() && "Unexpected runner count.");
 
             Array<s32> repetition_indices;
-            repetition_indices.Init(scratch, 0, num_repetitions_total);
+            repetition_indices.Init(forward_allocator, 0, num_repetitions_total);
 
             for (s32 runner_index = 0, num_runners = runners.Size(); runner_index != num_runners; ++runner_index)
             {
@@ -186,7 +189,7 @@ namespace BenchMark
                 RunResults*      results          = run_results[repetition_index];
 
                 BenchMarkRun*& report = results->non_aggregates.Alloc();
-                report                = allocator->Construct<BenchMarkRun>();
+                report                = forward_allocator->Construct<BenchMarkRun>();
 
                 DoOneRepetition(runner, report, reports_for_family);
                 if (HasRepeatsRemaining(runner))
@@ -196,7 +199,7 @@ namespace BenchMark
 
                 reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner));
 
-                AggregateResults(runner, allocator, results->non_aggregates, results->aggregates_only);
+                AggregateResults(runner, forward_allocator, results->non_aggregates, results->aggregates_only);
 
                 // Maybe calculate complexity report
                 if (reports_for_family != nullptr)
@@ -204,8 +207,8 @@ namespace BenchMark
                     if (reports_for_family->num_runs_done == reports_for_family->num_runs_total)
                     {
                         Array<BenchMarkRun*> additional_run_stats;
-                        additional_run_stats.Init(allocator, 0, 2);
-                        ComputeBigO(allocator, scratch, reports_for_family->runs, additional_run_stats);
+                        additional_run_stats.Init(forward_allocator, 0, 2);
+                        ComputeBigO(forward_allocator, scratch_allocator, reports_for_family->runs, additional_run_stats);
 
                         // run_results->aggregates_only.insert(run_results->aggregates_only.end(), additional_run_stats.begin(), additional_run_stats.end());
                         results->aggregates_only.PushBack(additional_run_stats);
@@ -217,25 +220,25 @@ namespace BenchMark
                 // Destroy the reports
                 for (int i = 0; i < results->non_aggregates.Size(); ++i)
                 {
-                    scratch->Destruct(results->non_aggregates[i]);
+                    forward_allocator->Destruct(results->non_aggregates[i]);
                 }
                 for (int i = 0; i < results->aggregates_only.Size(); ++i)
                 {
-                    scratch->Destruct(results->aggregates_only[i]);
+                    forward_allocator->Destruct(results->aggregates_only[i]);
                 }
-                scratch->Destruct(results);
+                forward_allocator->Destruct(results);
             }
 
             // Destroy the reports for family
             if (reports_for_family != nullptr)
             {
-                scratch->Destruct(reports_for_family);
+                scratch_allocator->Destruct(reports_for_family);
             }
 
             // Destroy all runners
             for (int i = 0; i < runners.Size(); ++i)
             {
-                DestroyRunner(runners[i], scratch);
+                DestroyRunner(runners[i], forward_allocator);
             }
         }
 
@@ -247,14 +250,15 @@ namespace BenchMark
     // If this is "large" then warn the user during configuration.
     static constexpr size_t kMaxPerms = 100;
 
-    static bool CreateBenchMarkInstances(Allocator* allocator, BenchMarkUnit* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
+    static bool CreateBenchMarkInstances(Allocator* main_allocator, ForwardAllocator* forward_allocator, ScratchAllocator* scratch_allocator, BenchMarkUnit* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
     {
         const Array<s32>& thread_counts     = benchmark->thread_counts_;
         const s32         num_thread_counts = thread_counts.Empty() ? 1 : thread_counts.Size();
 
         // Have BenchMarkUnit create the arguments for this benchmark
-        const s32 perms = benchmark->BuildArgs();
-        benchmark_instances.Init(allocator, 0, perms * num_thread_counts);
+        Array<Array<s32>> args;
+        const s32         perms = benchmark->BuildArgs(forward_allocator, args);
+        benchmark_instances.Init(forward_allocator, 0, perms * num_thread_counts);
 
         s32 per_benchmark_instance_index = 0;
         for (s32 arg_index = 0; arg_index < perms; ++arg_index)
@@ -264,8 +268,8 @@ namespace BenchMark
                 const s32 num_threads = thread_counts.Empty() ? 1 : thread_counts[i];
 
                 BenchMarkInstance*& instance = benchmark_instances.Alloc();
-                instance                     = allocator->Construct<BenchMarkInstance>();
-                instance->init(allocator, benchmark, per_benchmark_instance_index, num_threads);
+                instance                     = forward_allocator->Construct<BenchMarkInstance>();
+                instance->init(forward_allocator, benchmark, args[arg_index], per_benchmark_instance_index, num_threads);
 
                 benchmark_instances.PushBack(instance);
                 ++per_benchmark_instance_index;
@@ -295,7 +299,7 @@ namespace BenchMark
         }
     }
 
-    static void RunBenchMarkSuite(Allocator* allocator, ScratchAllocator* scratch, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* reporter)
+    static void RunBenchMarkSuite(Allocator* main_allocator, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* reporter)
     {
         if (suite->disabled)
             return;
@@ -306,6 +310,14 @@ namespace BenchMark
         //   - fixture name(num units)
 
         // A benchmark-suite has a list of benchmark-fixtures where every fixture has a list of benchmark-units.
+        ScratchAllocator _scratch_allocator;
+        _scratch_allocator.Init(main_allocator, 1024 * 1024);
+
+        ForwardAllocator _forward_allocator;
+        _forward_allocator.Init(main_allocator, 4 * 1024 * 1024);
+
+        ScratchAllocator* scratch_allocator = &_scratch_allocator;
+        ForwardAllocator* forward_allocator = &_forward_allocator;
 
         BenchMarkFixture* fixture = suite->head;
         while (fixture != nullptr)
@@ -326,29 +338,31 @@ namespace BenchMark
             {
                 if (!unit->IsDisabled())
                 {
+                    USE_SCRATCH(scratch_allocator);
+
                     // Apply the settings for this benchmark unit, from Suite, Fixture and Unit
                     // Two passes
                     for (s32 i = 0; i < 2; ++i)
                     {
                         unit->PrepareSettings(i == 0);
-                        suite->settings(allocator, unit);
-                        fixture->settings(allocator, unit);
-                        unit->settings_(allocator, unit);
+                        suite->settings(scratch_allocator, unit);
+                        fixture->settings(scratch_allocator, unit);
+                        unit->settings_(scratch_allocator, unit);
                     }
 
                     Array<BenchMarkInstance*> benchmark_instances;
-                    if (CreateBenchMarkInstances(allocator, unit, benchmark_instances))
+                    if (CreateBenchMarkInstances(main_allocator, forward_allocator, scratch_allocator, unit, benchmark_instances))
                     {
                         // Report the details of this benchmark unit ?
                         // - name / filename / line number
 
-                        RunBenchMarkInstances(allocator, scratch, globals, benchmark_instances, reporter);
+                        RunBenchMarkInstances(main_allocator, forward_allocator, scratch_allocator, globals, benchmark_instances, reporter);
                     }
 
                     // Destroy the benchmark instances
                     for (int i = 0; i < benchmark_instances.Size(); ++i)
                     {
-                        allocator->Destruct(benchmark_instances[i]);
+                        forward_allocator->Destruct(benchmark_instances[i]);
                     }
 
                     // Reset the settings for this benchmark unit (release memory)
@@ -361,145 +375,25 @@ namespace BenchMark
         }
     }
 
-    bool RunBenchMarks(Allocator* allocator, ScratchAllocator* scratch_allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
+    bool RunBenchMarks(Allocator* allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
     {
         BenchMarkSuite* suite = BenchMarkSuiteList::head;
         while (suite != nullptr)
         {
             if (!suite->disabled)
             {
-                RunBenchMarkSuite(allocator, scratch_allocator, globals, suite, reporter);
+                RunBenchMarkSuite(allocator, globals, suite, reporter);
             }
             suite = suite->next;
         }
         return true;
     }
 
-    class MainAllocator : public Allocator
-    {
-        s32 num_allocations_;
-
-    public:
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment)
-        {
-            ASSERT(num_allocations_ >= 0);
-            num_allocations_++;
-            return aligned_alloc(alignment, size);
-        }
-        virtual void v_Deallocate(void* ptr)
-        {
-            ASSERT(num_allocations_ > 0);
-            --num_allocations_;
-            free(ptr);
-        }
-    };
-
-    typedef unsigned char u8;
-
-    class MainScratchAllocator : public ScratchAllocator
-    {
-        u8* buffer_;
-
-        u8* buffer_begin_;
-        u8* buffer_end_;
-        s32 num_allocations_;
-
-    public:
-        void Init(Allocator* alloc, u32 size)
-        {
-            buffer_begin_    = (u8*)alloc->Allocate(size);
-            buffer_end_      = buffer_begin_ + size;
-            buffer_          = buffer_begin_;
-            num_allocations_ = 0;
-        }
-
-    protected:
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*))
-        {
-            u8* p = (u8*)((uintptr_t)(buffer_ + alignment - 1) & ~(alignment - 1));
-            if ((p + size) > buffer_end_)
-            {
-                ASSERT(false);
-                return nullptr;
-            }
-            num_allocations_++;
-            buffer_ = p + size;
-            return p;
-        }
-
-        virtual void v_Deallocate(void* ptr)
-        {
-            ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
-            --num_allocations_;
-        }
-
-        virtual void v_Reset()
-        {
-            ASSERT(num_allocations_ == 0);
-            buffer_ = buffer_begin_;
-        }
-    };
-
-    class MainForwardAllocator : public ForwardAllocator
-    {
-        u8* buffer_;
-
-        u8* buffer_begin_;
-        u8* buffer_end_;
-        s32 checkout_;
-        s32 num_allocations_;
-
-    public:
-        void Init(Allocator* alloc, u32 size)
-        {
-            buffer_begin_    = (u8*)alloc->Allocate(size);
-            buffer_end_      = buffer_begin_ + size;
-            buffer_          = buffer_begin_;
-            checkout_        = 0;
-            num_allocations_ = 0;
-        }
-
-    protected:
-        virtual void* v_Checkout(unsigned int size, unsigned int alignment)
-        {
-            ASSERT(checkout_ >= 0);
-            u8* p = (u8*)((uintptr_t)(buffer_ + alignment - 1) & ~(alignment - 1));
-            if ((p + size) > buffer_end_)
-                return nullptr;
-            buffer_ = p + size;
-            ASSERT(buffer_ < buffer_end_);
-            num_allocations_++;
-            checkout_++;
-            return p;
-        }
-
-        virtual void v_Commit(void* ptr)
-        {
-            buffer_ = (u8*)ptr;
-            --checkout_;
-            ASSERT(buffer_ < buffer_end_);
-            ASSERT(checkout_ == 0);
-        }
-
-        virtual void v_Deallocate(void* ptr)
-        {
-            ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
-            --num_allocations_;
-        }
-    };
-
     bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter)
     {
-        // Setup the allocators
-        MainAllocator        main_allocator;
-        MainScratchAllocator scratch_allocator;
-        scratch_allocator.Init(&main_allocator, 8 * 1024 * 1024);
-
-        // Setup the globals
+        MainAllocator    main_allocator;
         BenchMarkGlobals globals;
-
-        // Run the benchmarks
-        return BenchMark::RunBenchMarks(&main_allocator, &scratch_allocator, &globals, &reporter);
+        return BenchMark::RunBenchMarks(&main_allocator, &globals, &reporter);
     }
 
 } // namespace BenchMark

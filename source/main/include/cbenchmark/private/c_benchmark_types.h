@@ -2,8 +2,9 @@
 #define __CBENCHMARK_BENCHMARK_TYPES_H__
 
 #include "cbenchmark/private/c_types.h"
+#include "cbenchmark/private/c_benchmark_array.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 #include "cbenchmark/private/c_utils.h"
 
 namespace BenchMark
@@ -12,8 +13,15 @@ namespace BenchMark
 
     struct ArgRange
     {
+        enum EMode
+        {
+            Uninitialized = 0,
+            Multiplier = 1,
+            Step       = 2,
+        };
+
         ArgRange() {}
-        ArgRange(s32 _a, s32 _b, s32 _c, s32 _mode)
+        ArgRange(s32 _a, s32 _b, s32 _c, EMode _mode)
             : a(_a)
             , b(_b)
             , c(_c)
@@ -22,7 +30,7 @@ namespace BenchMark
         }
 
         s32             a, b, c;
-        s32             mode; // 0 = un-initialized, 1 = multiplier, 2 = step
+        EMode           mode;
         static ArgRange empty;
     };
 

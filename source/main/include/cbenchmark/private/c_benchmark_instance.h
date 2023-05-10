@@ -3,6 +3,7 @@
 
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_types.h"
+#include "cbenchmark/private/c_benchmark_array.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_name.h"
 #include "cbenchmark/private/c_benchmark_unit.h"
@@ -10,6 +11,8 @@
 
 namespace BenchMark
 {
+    class Allocator;
+    class ForwardAllocator;
     class BenchMarkState;
     class ThreadTimer;
     class ThreadManager;
@@ -64,9 +67,9 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void                    init(Allocator* allocator, BenchMarkUnit* benchmark, int per_family_instance_index, int thread_count);
+        void                    init(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int per_family_instance_index, int thread_count);
         const BenchmarkName&    name() const { return name_; }
-        Array<s32> const*       args() const { return args_; }
+        Array<s32> const&       args() const { return args_; }
         int                     per_family_instance_index() const { return per_family_instance_index_; }
         AggregationReportMode   aggregation_report_mode() const { return aggregation_report_mode_; }
         TimeUnit                time_unit() const { return time_unit_; }
@@ -90,7 +93,7 @@ namespace BenchMark
         BenchMarkUnit*          benchmark_;
         int                     per_family_instance_index_;
         AggregationReportMode   aggregation_report_mode_;
-        Array<s32>*             args_;
+        Array<s32>              args_;
         TimeUnit                time_unit_;
         TimeSettings            time_settings_;
         BigO                    complexity_;

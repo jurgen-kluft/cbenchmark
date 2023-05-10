@@ -31,6 +31,9 @@ namespace BenchMark
 
     inline int   gRoundUpToMultipleOfPow2Number(int n, int pow2Number) { return (n + (pow2Number - 1)) & ~(pow2Number - 1); }
     extern char* gHumanReadableNumber(char* dst, const char* dstEnd, double n, double one_k);
+    extern void  gSetWidthFormat(char* format, int width);
+    extern char* gFormatTime(double time, char* str, const char* str_end);
+    extern bool  gIsZero(double n);
 } // namespace BenchMark
 
 #endif // __CBENCHMARK_UTILS_H__

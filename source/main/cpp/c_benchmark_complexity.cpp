@@ -166,10 +166,13 @@ namespace BenchMark
     typedef BenchMarkRun Run;
 
     // TODO Could benefit from an additional 'temp' allocator 
-    void ComputeBigO(Allocator* alloc, Allocator* temp, const Array<Run*>& reports, Array<Run*>& bigo)
+    void ComputeBigO(Allocator* alloc, ScratchAllocator* temp, const Array<Run*>& reports, Array<Run*>& bigo)
     {
         if (reports.Size() < 2)
             return;
+
+        // Deferred scope release of the scratch allocator.
+        USE_SCRATCH(temp);
 
         // Accumulators.
         Array<s64>    n;

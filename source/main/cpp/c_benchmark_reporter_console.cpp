@@ -4,39 +4,6 @@
 
 namespace BenchMark
 {
-    static void SetWidthFormat(char* format, int width)
-    {
-        int i       = 0;
-        format[i++] = '%';
-        if (width > 99)
-            format[i++] = '0' + (width / 100);
-        if (width > 9)
-            format[i++] = '0' + ((width % 100) / 10);
-        if (width > 0)
-            format[i++] = '0' + (width % 10);
-        format[i++] = 's';
-        format[i++] = '\0';
-    }
-
-    static char* FormatTime(double time, char* str, const char* str_end)
-    {
-        // For the time columns of the console printer 13 digits are reserved. One of
-        // them is a space and max two of them are the time unit (e.g ns). That puts
-        // us at 10 digits usable for the number.
-        // Align decimal places...
-        if (time < 1.0)
-            return gStringFormatAppend(str, str_end, "%10.3f", time);
-        if (time < 10.0)
-            return gStringFormatAppend(str, str_end, "%10.2f", time);
-        if (time < 100.0)
-            return gStringFormatAppend(str, str_end, "%10.1f", time);
-
-        // Assuming the time is at max 9.9999e+99 and we have 10 digits for the
-        // number, we get 10-1(.)-1(e)-1(sign)-2(exponent) = 5 digits to print.
-        if (time > 9999999999 /*max 10 digit number*/)
-            return gStringFormatAppend(str, str_end, "%1.4e", time);
-        return gStringFormatAppend(str, str_end, "%10.0f", time);
-    }
 
     bool ConsoleReporter::ReportContext(const Context& context)
     {
@@ -74,7 +41,7 @@ namespace BenchMark
     void ConsoleReporter::PrintRunData(const BenchMarkRun& result)
     {
         char nameWidthFormat[8];
-        SetWidthFormat(nameWidthFormat, static_cast<int>(name_field_width_));
+        gSetWidthFormat(nameWidthFormat, static_cast<int>(name_field_width_));
 
         char* str = &line2_[0];
         str       = result.run_name.FullName(str, &line2_[639]);
@@ -111,10 +78,10 @@ namespace BenchMark
         {
             const char* timeLabel = result.time_unit.ToString();
             // printer(Out, COLOR_YELLOW, "%s %-4s %s %-4s ", real_time_str.c_str(), timeLabel, cpu_time_str.c_str(), timeLabel);
-            line = FormatTime(real_time, line, &line1_[639]);
+            line = gFormatTime(real_time, line, &line1_[639]);
             line = gStringFormatAppend(line, &line1_[639], "%s", " ");
             line = gStringFormatAppend(line, &line1_[639], "%-4s ", timeLabel);
-            line = FormatTime(cpu_time, line, &line1_[639]);
+            line = gFormatTime(cpu_time, line, &line1_[639]);
             line = gStringFormatAppend(line, &line1_[639], "%s", " ");
             line = gStringFormatAppend(line, &line1_[639], "%-4s ", timeLabel);
         }
@@ -157,7 +124,7 @@ namespace BenchMark
             if (output_options_ & OO_Tabular)
             {
                 //printer(Out, COLOR_DEFAULT, " %*s%s", gStringLength(cname) - gStringLength(unit), str, unit);
-                SetWidthFormat(nameWidthFormat, gStringLength(cname) - gStringLength(unit));
+                gSetWidthFormat(nameWidthFormat, gStringLength(cname) - gStringLength(unit));
                 line = gStringAppend(line, &line1_[639], " ");
                 line = gStringFormatAppend(line, &line1_[639], nameWidthFormat, str);
                 line = gStringAppend(line, &line1_[639], unit);
@@ -182,7 +149,7 @@ namespace BenchMark
     void ConsoleReporter::PrintHeader(const BenchMarkRun& report)
     {
         char nameWidthFormat[8];
-        SetWidthFormat(nameWidthFormat, static_cast<int>(name_field_width_));
+        gSetWidthFormat(nameWidthFormat, static_cast<int>(name_field_width_));
 
         line1_[0] = '\0';
         line2_[0] = '\0';

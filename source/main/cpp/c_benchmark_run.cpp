@@ -12,7 +12,7 @@
 #include "cbenchmark/private/c_benchmark_instance.h"
 #include "cbenchmark/private/c_benchmark_state.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 
 namespace BenchMark
 {

@@ -2,7 +2,7 @@
 #define __CBENCHMARK_TESTREPORTER_H__
 
 #include "cbenchmark/private/c_benchmark_types.h"
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 #include "cbenchmark/private/c_stringbuilder.h"
 
 namespace BenchMark

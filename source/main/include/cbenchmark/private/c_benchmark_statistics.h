@@ -3,7 +3,7 @@
 
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 
 namespace BenchMark
 {

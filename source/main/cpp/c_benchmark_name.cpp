@@ -7,7 +7,7 @@
 #include "cbenchmark/private/c_stdout.h"
 #include "cbenchmark/private/c_utils.h"
 
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 #include "cbenchmark/private/c_benchmark_name.h"
 
 namespace BenchMark

@@ -116,6 +116,45 @@ namespace BenchMark
         return ToBinaryStringFullySpecified(dst, dstEnd, n, 1.1, 1, one_k);
     }
 
+    void gSetWidthFormat(char* format, int width)
+    {
+        int i       = 0;
+        format[i++] = '%';
+        if (width > 99)
+            format[i++] = '0' + (width / 100);
+        if (width > 9)
+            format[i++] = '0' + ((width % 100) / 10);
+        if (width > 0)
+            format[i++] = '0' + (width % 10);
+        format[i++] = 's';
+        format[i++] = '\0';
+    }
+
+    char* gFormatTime(double time, char* str, const char* str_end)
+    {
+        // For the time columns of the console printer 13 digits are reserved. One of
+        // them is a space and max two of them are the time unit (e.g ns). That puts
+        // us at 10 digits usable for the number.
+        // Align decimal places...
+        if (time < 1.0)
+            return gStringFormatAppend(str, str_end, "%10.3f", time);
+        if (time < 10.0)
+            return gStringFormatAppend(str, str_end, "%10.2f", time);
+        if (time < 100.0)
+            return gStringFormatAppend(str, str_end, "%10.1f", time);
+
+        // Assuming the time is at max 9.9999e+99 and we have 10 digits for the
+        // number, we get 10-1(.)-1(e)-1(sign)-2(exponent) = 5 digits to print.
+        if (time > 9999999999 /*max 10 digit number*/)
+            return gStringFormatAppend(str, str_end, "%1.4e", time);
+        return gStringFormatAppend(str, str_end, "%10.0f", time);
+    }
+
+    bool gIsZero(double x)
+    {
+        return x > -1e-9 && x < 1e-9;
+    }
+
     char* gStringAppend(char* dst, const char* dstEnd, const char* src)
     {
         while (dst < dstEnd && *src != '\0')

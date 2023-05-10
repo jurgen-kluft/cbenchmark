@@ -1,7 +1,7 @@
 #ifndef __CBENCHMARK_BENCHMARK_COMPLEXITY_H__
 #define __CBENCHMARK_BENCHMARK_COMPLEXITY_H__
 
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 
 namespace BenchMark
 {

@@ -2,11 +2,12 @@
 #define __CBENCHMARK_BENCHMARK_STATE_H__
 
 #include "cbenchmark/private/c_types.h"
+#include "cbenchmark/private/c_benchmark_array.h"
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
 #include "cbenchmark/private/c_benchmark_check.h"
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 
 namespace BenchMark
 {

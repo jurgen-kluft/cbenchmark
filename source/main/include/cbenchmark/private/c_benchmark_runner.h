@@ -6,7 +6,7 @@
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
 #include "cbenchmark/private/c_benchmark_reporter.h"
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 
 namespace BenchMark
 {

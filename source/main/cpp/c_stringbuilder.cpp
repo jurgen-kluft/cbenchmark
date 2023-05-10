@@ -2,7 +2,7 @@
 #include "cbenchmark/private/c_stringbuilder.h"
 #include "cbenchmark/private/c_utils.h"
 #include "cbenchmark/private/c_types.h"
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 
 namespace BenchMark
 {

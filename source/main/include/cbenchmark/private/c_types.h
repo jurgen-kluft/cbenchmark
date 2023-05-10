@@ -4,6 +4,8 @@
 namespace BenchMark
 {
 #ifdef TARGET_PC
+    typedef char s8;
+    typedef unsigned char u8;
 
     typedef int s32;
     typedef unsigned int u32;
@@ -12,6 +14,8 @@ namespace BenchMark
     typedef __int64 s64;
 
 #elif defined(TARGET_MAC)
+    typedef char s8;
+    typedef unsigned char u8;
 
     typedef int s32;
     typedef unsigned int u32;

@@ -2,6 +2,7 @@
 #define __CBENCHMARK_BENCHMARK_UNIT_H__
 
 #include "cbenchmark/private/c_types.h"
+#include "cbenchmark/private/c_benchmark_array.h"
 #include "cbenchmark/private/c_benchmark_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
 #include "cbenchmark/private/c_benchmark_statistics.h"
@@ -103,17 +104,16 @@ namespace BenchMark
         int            disabled;   // 0 = enabled, 1 = disabled, should this benchmark be run?
         int            lineNumber; // the line number in the source file
 
-        s32 BuildArgs();
+        s32 BuildArgs(Allocator* alloc, Array<Array<s32>>& args);
 
         void PrepareSettings(bool count_only);
-        void SetDefaults();
         void SetEnabled(bool enabled);
         bool IsDisabled() const { return disabled != 0; }
         void AddArgs(s32 const* args, s32 argc);
         void AddArg(const s32* args, s32 argc);
-        void AddRange(s32 lo, s32 hi, s32 multiplier, s32 mode);
-        void AddArgRange(s32 lo, s32 hi, s32 multiplier = 8) { AddRange(lo, hi, multiplier, 1); }
-        void AddArgDenseRange(s32 start, s32 limit, s32 step = 32) { AddRange(start, limit, step, 2); }
+        void AddRange(s32 lo, s32 hi, s32 multiplier, ArgRange::EMode mode);
+        void AddArgRange(s32 lo, s32 hi, s32 multiplier = 8) { AddRange(lo, hi, multiplier, ArgRange::Multiplier); }
+        void AddArgDenseRange(s32 start, s32 limit, s32 step = 32) { AddRange(start, limit, step, ArgRange::Step); }
         void SetArgNames(const char** names, s32 names_size);
         void SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size);
         void SetComplexity(BigO complexity);

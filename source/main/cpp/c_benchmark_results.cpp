@@ -2,7 +2,7 @@
 #include "cbenchmark/private/c_benchmark_state.h"
 #include "cbenchmark/private/c_benchmark_unit.h"
 #include "cbenchmark/private/c_benchmark_reporter.h"
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 
 #include <string>
 
@@ -17,43 +17,40 @@ namespace BenchMark
 
             BM_FIXTURE_SETTINGS
             {
-                { // (1) either this
-                    // {x,y,z}
-                    // {x,y,z}
-                    // {x,y,z}
-                    // ...
-                    BM_ARGS(8, 64 );
-                    BM_ARGS(8, 128 );
-                    BM_ARGS(16, 64 );
-                    BM_ARGS(16, 128 );
-                    BM_ARGS(32, 64 );
-                    BM_ARGS(32, 128 );
-                    BM_ARGS(64, 64 );
-                    BM_ARGS(64, 128 );
-                    BM_ARGS(128, 64 );
-                    BM_ARGS(128, 128 );
+                {                      // (1) either this
+                    BM_ARGS(8, 64);    // {x,y}
+                    BM_ARGS(8, 128);   // {x,y}
+                    BM_ARGS(16, 64);   // {x,y}
+                    BM_ARGS(16, 128);  // {x,y}
+                    BM_ARGS(32, 64);   // {x,y}
+                    BM_ARGS(32, 128);  // {x,y}
+                    BM_ARGS(64, 64);   // {x,y}
+                    BM_ARGS(64, 128);  // {x,y}
+                    BM_ARGS(128, 64);  // {x,y}
+                    BM_ARGS(128, 128); // {x,y}
                 }
 
-                { // (2) or this 
+                {                                   // (2) or this
+                    BM_ADD_ARG(8, 16, 32, 64, 128); // x
+                    BM_ADD_ARG(64, 128);            // y
+
                     // These 2 named arguments will be permuted together, and will result in:
-                    // { x: 8, y: 64 }
-                    // { x: 8, y: 128 }
-                    // { x: 16, y: 64 }
-                    // { x: 16, y: 128 }
-                    // { x: 32, y: 64 }
-                    // { x: 32, y: 128 }
-                    // { x: 64, y: 64 }
-                    // { x: 64, y: 128 }
-                    // { x: 128, y: 64 }
-                    // { x: 128, y: 128 }
-                    BM_ADD_ARG(8, 16, 32, 64, 128);
-                    BM_ADD_ARG(64, 128);
+                    // { 8, 64 }, x and y
+                    // { 8, 128 }, x and y
+                    // { 16, 64 }, x and y
+                    // { 16, 128 }, x and y
+                    // { 32, 64 }, x and y
+                    // { 32, 128 }, x and y
+                    // { 64, 64 }, x and y
+                    // { 64, 128 }, x and y
+                    // { 128, 64 }, x and y
+                    // { 128, 128 }, x and y
                 }
 
-                { // (3) or this
-                    // This will have the same result as (2)
-                    BM_ADD_ARG_RANGE(8, 128, 8);
-                    BM_ADD_ARG_DENSE_RANGE(64, 128, 64);
+                {                                        // (3) or this
+                    BM_ADD_ARG_RANGE(8, 128, 8);         // x
+                    BM_ADD_ARG_DENSE_RANGE(64, 128, 64); // y
+                    // Will have the same result as (2)
                 }
 
                 // The above 3 examples emit arguments with 2 values each, let's say x and y.
@@ -79,7 +76,7 @@ namespace BenchMark
                 // Override any setting that was set in suite and fixture.
             }
 
-            //BM_UNIT_DISABLE(memcpy);
+            // BM_UNIT_DISABLE(memcpy);
 
             BM_UNIT(memcpy)
             {

@@ -1,4 +1,4 @@
-#include "cbenchmark/private/c_benchmark_alloc.h"
+#include "cbenchmark/private/c_benchmark_allocators.h"
 #include "cbenchmark/private/c_time_helpers.h"
 #include "cbenchmark/private/c_benchmark_run.h"
 #include "cbenchmark/private/c_benchmark_check.h"
