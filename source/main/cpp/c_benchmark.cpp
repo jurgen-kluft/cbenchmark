@@ -149,7 +149,7 @@ namespace BenchMark
                 benchmarks_with_threads += (benchmark->threads() > 0);
 
                 BenchMarkRunner* runner = CreateRunner(forward_allocator);
-                InitRunner(runner, forward_allocator, scratch_allocator, globals, benchmark);
+                InitRunner(runner, main_allocator, forward_allocator, scratch_allocator, globals, benchmark);
                 runners.PushBack(runner);
 
                 const int num_repeats_of_this_instance = GetNumRepeats(runner);
@@ -194,8 +194,6 @@ namespace BenchMark
                 DoOneRepetition(runner, report, reports_for_family);
                 if (HasRepeatsRemaining(runner))
                     continue;
-
-                // FIXME: report each repetition separately, not all of them in bulk.
 
                 reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner));
 
@@ -261,9 +259,9 @@ namespace BenchMark
         benchmark_instances.Init(forward_allocator, 0, perms * num_thread_counts);
 
         s32 per_benchmark_instance_index = 0;
-        for (s32 arg_index = 0; arg_index < perms; ++arg_index)
+        for (s32 i = 0; i < num_thread_counts; ++i)
         {
-            for (s32 i = 0; i < num_thread_counts; ++i)
+            for (s32 arg_index = 0; arg_index < perms; ++arg_index)
             {
                 const s32 num_threads = thread_counts.Empty() ? 1 : thread_counts[i];
 
@@ -271,7 +269,6 @@ namespace BenchMark
                 instance                     = forward_allocator->Construct<BenchMarkInstance>();
                 instance->init(forward_allocator, benchmark, args[arg_index], per_benchmark_instance_index, num_threads);
 
-                benchmark_instances.PushBack(instance);
                 ++per_benchmark_instance_index;
             }
         }
@@ -299,17 +296,14 @@ namespace BenchMark
         }
     }
 
+    // A benchmark-suite has a list of benchmark-fixtures where every fixture has a list of benchmark-units.
     static void RunBenchMarkSuite(Allocator* main_allocator, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* reporter)
     {
-        if (suite->disabled)
-            return;
-
         // Report the details of this benchmark suite ?
         // - name / filename / line number
         // - list
         //   - fixture name(num units)
 
-        // A benchmark-suite has a list of benchmark-fixtures where every fixture has a list of benchmark-units.
         ScratchAllocator _scratch_allocator;
         _scratch_allocator.Init(main_allocator, 1024 * 1024);
 
@@ -323,12 +317,11 @@ namespace BenchMark
         while (fixture != nullptr)
         {
             // Report the details of this fixture ?
-            // - name / filename / line number
-            // - num units
+            // - name / filename / line number / num units
 
             if (fixture->disabled)
             {
-                // Report this fixture as disabled
+                // Report this fixture as disabled?
                 fixture = fixture->next;
                 continue;
             }
@@ -344,7 +337,11 @@ namespace BenchMark
                     // Two passes
                     for (s32 i = 0; i < 2; ++i)
                     {
-                        unit->PrepareSettings(i == 0);
+                        switch (i)
+                        {
+                            case 0: unit->PrepareSettings(); break;
+                            case 1: unit->ApplySettings(); break;
+                        }
                         suite->settings(scratch_allocator, unit);
                         fixture->settings(scratch_allocator, unit);
                         unit->settings_(scratch_allocator, unit);
@@ -366,7 +363,7 @@ namespace BenchMark
                     }
 
                     // Reset the settings for this benchmark unit (release memory)
-                    unit->PrepareSettings(true);
+                    unit->ReleaseSettings();
                 }
 
                 unit = unit->next;
@@ -389,9 +386,6 @@ namespace BenchMark
         return true;
     }
 
-    bool gRunBenchMark(MainAllocator* allocator, BenchMarkGlobals* globals, BenchMark::BenchMarkReporter& reporter)
-    {
-        return BenchMark::RunBenchMarks(allocator, globals, &reporter);
-    }
+    bool gRunBenchMark(MainAllocator* allocator, BenchMarkGlobals* globals, BenchMark::BenchMarkReporter& reporter) { return BenchMark::RunBenchMarks(allocator, globals, &reporter); }
 
 } // namespace BenchMark

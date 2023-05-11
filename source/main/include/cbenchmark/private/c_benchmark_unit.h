@@ -106,7 +106,10 @@ namespace BenchMark
 
         s32 BuildArgs(Allocator* alloc, Array<Array<s32>>& args);
 
-        void PrepareSettings(bool count_only);
+        void PrepareSettings();
+        void ApplySettings();
+        void ReleaseSettings();
+        
         void SetEnabled(bool enabled);
         bool IsDisabled() const { return disabled != 0; }
         void AddArgs(s32 const* args, s32 argc);

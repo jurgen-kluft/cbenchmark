@@ -10,16 +10,15 @@
 
 namespace BenchMark
 {
-    s32 BenchMarkUnit::BuildArgs(Allocator* alloc, Array<Array<s32>>& args) 
-    { 
+    s32 BenchMarkUnit::BuildArgs(Allocator* alloc, Array<Array<s32>>& args)
+    {
         // check what we have:
         // - args, []{x,y,..,...}
         // - arg, []{ x:{a,b,c,...}, y:{a,b,c,...}, ...]
         // - arg range, multiplier mode, []{ x: range, y: range, ...}
         // - arg range, step mode (dense), []{ x: range, y: range, ...}
 
-
-        return 0; 
+        return 0;
     }
 
     void BenchMarkUnit::ReportAggregatesOnly(bool value) { aggregation_report_mode_ = value ? AggregationReportMode::ReportAggregatesOnly : AggregationReportMode::Default; }
@@ -33,42 +32,45 @@ namespace BenchMark
             aggregation_report_mode_.mode = static_cast<u32>(aggregation_report_mode_.mode | AggregationReportMode::DisplayReportAggregatesOnly);
     }
 
-    void BenchMarkUnit::PrepareSettings(bool count_only)
+    void BenchMarkUnit::PrepareSettings()
     {
-        if (count_only_)
-        {
-            args_               = Array<Args>();
-            arg_                = Array<Args>();
-            arg_ranges_         = Array<ArgRange>();
-            arg_names_          = Array<const char*>();
-            thread_counts_      = Array<s32>();
-            statistics_         = Array<Statistic>();
-            args_count_         = 0;
-            arg_count_          = 0;
-            arg_ranges_count_   = 0;
-            arg_names_count_    = 0;
-            counters_size_      = 2;
-            thread_counts_size_ = 0;
-            statistics_count_   = 4;
-        }
-        else
-        {
-            args_.Init(allocator, 0, args_count_);
-            arg_.Init(allocator, 0, arg_count_);
-            arg_ranges_.Init(allocator, 0, arg_ranges_count_);
-            arg_names_.Init(allocator, 0, arg_names_count_);
-            thread_counts_.Init(allocator, 0, thread_counts_size_);
-            counters_.counters.Init(allocator, 0, counters_size_);
-            statistics_.Init(allocator, 0, statistics_count_);
+        args_               = Array<Args>();
+        arg_                = Array<Args>();
+        arg_ranges_         = Array<ArgRange>();
+        arg_names_          = Array<const char*>();
+        thread_counts_      = Array<s32>();
+        statistics_         = Array<Statistic>();
+        args_count_         = 0;
+        arg_count_          = 0;
+        arg_ranges_count_   = 0;
+        arg_names_count_    = 0;
+        counters_size_      = 2;
+        thread_counts_size_ = 0;
+        statistics_count_   = 4;
+    }
 
-            AddStatisticsComputer(Statistic("mean", StatisticsMean, {StatisticUnit::Time}));
-            AddStatisticsComputer(Statistic("median", StatisticsMedian, {StatisticUnit::Time}));
-            AddStatisticsComputer(Statistic("stddev", StatisticsStdDev, {StatisticUnit::Time}));
-            AddStatisticsComputer(Statistic("cv", StatisticsCV, {StatisticUnit::Percentage}));
+    void BenchMarkUnit::ApplySettings()
+    {
+        args_.Init(allocator, 0, args_count_);
+        arg_.Init(allocator, 0, arg_count_);
+        arg_ranges_.Init(allocator, 0, arg_ranges_count_);
+        arg_names_.Init(allocator, 0, arg_names_count_);
+        thread_counts_.Init(allocator, 0, thread_counts_size_);
+        counters_.counters.Init(allocator, 0, counters_size_);
+        statistics_.Init(allocator, 0, statistics_count_);
 
-            AddCounter("items per second", CounterFlags::IsRate);
-            AddCounter("bytes per second", CounterFlags::IsRate);
-        }
+        AddStatisticsComputer(Statistic("mean", StatisticsMean, {StatisticUnit::Time}));
+        AddStatisticsComputer(Statistic("median", StatisticsMedian, {StatisticUnit::Time}));
+        AddStatisticsComputer(Statistic("stddev", StatisticsStdDev, {StatisticUnit::Time}));
+        AddStatisticsComputer(Statistic("cv", StatisticsCV, {StatisticUnit::Percentage}));
+
+        AddCounter("items per second", CounterFlags::IsRate);
+        AddCounter("bytes per second", CounterFlags::IsRate);
+    }
+
+    void BenchMarkUnit::ReleaseSettings()
+    {
+        PrepareSettings();
     }
 
     void BenchMarkUnit::AddStatisticsComputer(Statistic stat)

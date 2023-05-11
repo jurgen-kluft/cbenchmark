@@ -1,3 +1,6 @@
+#include "ccore/c_target.h"
+#include "ccore/c_debug.h"
+
 #include "cbenchmark/private/c_config.h"
 #include "cbenchmark/private/c_benchmark.h"
 #include "cbenchmark/private/c_benchmark_results.h"
@@ -113,7 +116,7 @@ namespace BenchMark
     public:
         BenchMarkRunner();
 
-        void           Init(Allocator* allocator, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
+        void           Init(Allocator* allocator, ForwardAllocator* forward, ScratchAllocator* scratch, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
         int            GetNumRepeats() const { return repeats; }
         bool           HasRepeatsRemaining() const { return GetNumRepeats() != num_repetitions_done; }
         void           DoOneRepetition(BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
@@ -123,7 +126,8 @@ namespace BenchMark
         IterationCount GetIters() const { return iters; }
 
         Allocator*               allocator_;
-        ScratchAllocator*        temp_;
+        ForwardAllocator*        forward_allocator_;
+        ScratchAllocator*        scratch_allocator_;
         BenchMarkInstance const* instance;
 
         BenchTimeType parsed_benchtime_flag;
@@ -156,17 +160,17 @@ namespace BenchMark
             double             seconds;
         };
 
-        IterationResults DoNIterations();
-        IterationCount   PredictNumItersNeeded(const IterationResults& i) const;
-        bool             ShouldReportIterationResults(const IterationResults& i) const;
-        double           GetMinTimeToApply() const;
-        void             FinishWarmUp(const IterationCount& i);
-        void             RunWarmUp();
+        void           DoNIterations(IterationResults& iteration_results);
+        IterationCount PredictNumItersNeeded(const IterationResults& i) const;
+        bool           ShouldReportIterationResults(const IterationResults& i) const;
+        double         GetMinTimeToApply() const;
+        void           FinishWarmUp(const IterationCount& i);
+        void           RunWarmUp();
     };
 
     // Public Interface
     BenchMarkRunner* CreateRunner(Allocator* a) { return a->Construct<BenchMarkRunner>(); }
-    void             InitRunner(BenchMarkRunner* r, Allocator* a, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_) { r->Init(a, t, globals, b_); }
+    void             InitRunner(BenchMarkRunner* r, Allocator* a, ForwardAllocator* f, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_) { r->Init(a, f, t, globals, b_); }
     void             DestroyRunner(BenchMarkRunner*& r, Allocator* a) { a->Destruct(r); }
 
     void InitRunResults(BenchMarkRunner* r, BenchMarkGlobals* globals, RunResults& results)
@@ -197,7 +201,8 @@ namespace BenchMark
 
     BenchMarkRunner::BenchMarkRunner()
         : allocator_(nullptr)
-        , temp_(nullptr)
+        , scratch_allocator_(nullptr)
+        , forward_allocator_(nullptr)
         , instance(nullptr)
         , parsed_benchtime_flag(BenchTimeType())
         , min_time(0.0)
@@ -210,10 +215,11 @@ namespace BenchMark
     {
     }
 
-    void BenchMarkRunner::Init(Allocator* allocator, ScratchAllocator* temp, BenchMarkGlobals* globals, const BenchMarkInstance* b_)
+    void BenchMarkRunner::Init(Allocator* allocator, ForwardAllocator* forward, ScratchAllocator* scratch, BenchMarkGlobals* globals, const BenchMarkInstance* b_)
     {
         allocator_                   = (allocator);
-        temp_                        = (temp);
+        scratch_allocator_           = (scratch);
+        forward_allocator_           = (forward);
         instance                     = (b_);
         parsed_benchtime_flag        = (BenchTimeType(globals->FLAGS_benchmark_min_time));
         min_time                     = (ComputeMinTime(b_, parsed_benchtime_flag));
@@ -230,30 +236,30 @@ namespace BenchMark
 
     // TODO could really benefit from a temporary allocator
 
-    BenchMarkRunner::IterationResults BenchMarkRunner::DoNIterations()
+    void BenchMarkRunner::DoNIterations(BenchMarkRunner::IterationResults& iteration_results)
     {
-        // BM_VLOG(2) << "Running " << instance->name().str() << " for " << iters << "\n";
+        USE_SCRATCH(scratch_allocator_);
 
-        // TODO allocate from a temporary allocator
-        ThreadManager* manager = temp_->Construct<ThreadManager>(instance->threads());
+        // "Running " << instance->name << " for " << iters
+
+        ThreadManager* manager = scratch_allocator_->Construct<ThreadManager>(instance->threads());
 
         // TODO We should setup an allocator with memory per thread.
         // Also the BenchMarkRunResult should be allocated from a temporary allocator.
         Array<BenchMarkRunResult*> results;
-        results.Init(temp_, 0, thread_pool.Capacity());
+        results.Init(scratch_allocator_, 0, thread_pool.Capacity());
 
         // Run all but one thread in separate threads
         for (s32 ti = 0; ti < thread_pool.Capacity(); ++ti)
         {
             BenchMarkRunResult*& result = results.Alloc();
-            result                      = temp_->Construct<BenchMarkRunResult>();
+            result                      = scratch_allocator_->Construct<BenchMarkRunResult>();
             thread_pool[ti]             = std::thread(&RunInThread, instance, iters, static_cast<int>(ti + 1), manager, result);
         }
 
         // And run one thread here directly and use the results from iteration_results.
         // (If we were asked to run just one thread, we don't create new threads.)
         // Yes, we need to do this here *after* we start the separate threads.
-        IterationResults iteration_results;
         RunInThread(instance, iters, 0, manager, &iteration_results.results);
 
         // The main thread has finished. Now let's wait for the other threads.
@@ -268,11 +274,11 @@ namespace BenchMark
         {
             BenchMarkRunResult* rr = results[ti];
             iteration_results.results.Merge(*rr);
-            temp_->Destruct(rr);
+            scratch_allocator_->Destruct(rr);
         }
 
         // And get rid of the manager.
-        temp_->Destruct(manager);
+        scratch_allocator_->Destruct(manager);
 
         // Adjust real/manual time stats since they were reported per thread.
         iteration_results.results.real_time_used /= instance->threads();
@@ -282,7 +288,7 @@ namespace BenchMark
         if (instance->measure_process_cpu_time())
             iteration_results.results.cpu_time_used /= instance->threads();
 
-        // BM_VLOG(2) << "Ran in " << i.results.cpu_time_used << "/" << i.results.real_time_used << "\n";
+        // "Ran in " << i.results.cpu_time_used << "/" << i.results.real_time_used
 
         // By using KeepRunningBatch a benchmark can iterate more times than
         // requested, so take the iteration count from i.results.
@@ -298,8 +304,6 @@ namespace BenchMark
         {
             iteration_results.seconds = iteration_results.results.real_time_used;
         }
-
-        return iteration_results;
     }
 
     template <typename T> T min(T a, T b) { return a < b ? a : b; }
@@ -323,7 +327,7 @@ namespace BenchMark
         // But we do have *some* limits though..
         const IterationCount next_iters = min(max_next_iters, kMaxIterations);
 
-        // BM_VLOG(3) << "Next iters: " << next_iters << ", " << multiplier << "\n";
+        // "Next iters: " << next_iters << ", " << multiplier
         return next_iters; // round up before conversion to integer.
     }
 
@@ -390,14 +394,13 @@ namespace BenchMark
             // very confusing for the user to know how to choose a proper value for
             // min_warmup_time if a different approach on running it is used.
             iters = PredictNumItersNeeded(i_warmup);
-            // assert(iters > i_warmup.iters && "if we did more iterations than we want to do the next time, "
-            //                                  "then we should have accepted the current iteration run.");
+            ASSERTS(iters > i_warmup.iters, "if we did more iterations than we want to do the next time, then we should have accepted the current iteration run.");
         }
     }
 
     void BenchMarkRunner::DoOneRepetition(BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family)
     {
-        // assert(HasRepeatsRemaining() && "Already done all repetitions?");
+        ASSERTS(HasRepeatsRemaining(), "Already done all repetitions?");
 
         const bool is_the_first_repetition = num_repetitions_done == 0;
 
@@ -439,8 +442,7 @@ namespace BenchMark
             // iteration count, and run the benchmark again...
 
             iters = PredictNumItersNeeded(i);
-            // assert(iters > i.iters && "if we did more iterations than we want to do the next time, "
-            //                           "then we should have accepted the current iteration run.");
+            ASSERTS(iters > i.iters, "if we did more iterations than we want to do the next time, then we should have accepted the current iteration run.");
         }
 
         // Ok, now actually report
@@ -460,7 +462,7 @@ namespace BenchMark
 
     void BenchMarkRunner::AggregateResults(Allocator* alloc, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only) const
     {
-        // assert(!HasRepeatsRemaining() && "Did not run all repetitions yet?");
+        ASSERT(!HasRepeatsRemaining() && "Did not run all repetitions yet?");
 
         // Calculate additional statistics over the repetitions of this instance
         ComputeStats(allocator_, non_aggregates, aggregates_only);

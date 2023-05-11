@@ -63,8 +63,8 @@ int main(int argc, char** argv)
     out_stream.out = &stdoutput;
     err_stream.out = &stdoutput;
 
-    const unsigned int kOutStreamBufferSize = 4 * 1024;
-    const unsigned int kErrStreamBufferSize = 1 * 1024;
+    const unsigned int kOutStreamBufferSize = 1024;
+    const unsigned int kErrStreamBufferSize = 256;
 
     out_stream.sos    = (char*)main_allocator.Allocate(kOutStreamBufferSize, 8);
     out_stream.eos    = out_stream.sos + kOutStreamBufferSize - 1;
