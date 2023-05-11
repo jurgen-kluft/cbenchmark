@@ -452,6 +452,7 @@ namespace BenchMark
         // simply use that precomputed iteration count.
         BenchMarkState state;
         state.Init(instance->name().function_name, /*iters*/ 1, instance->args(), /*thread_id*/ 0, instance->threads());
+
         for (;;)
         {
             instance->setup()(state);
