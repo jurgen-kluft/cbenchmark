@@ -15,6 +15,7 @@ namespace BenchMark
     class ForwardAllocator;
     class BenchMarkRun;
     class BenchMarkInstance;
+    class BenchMarkGlobals;
     class PerfCountersMeasurement;
     class ThreadManager;
     class ThreadTimer;

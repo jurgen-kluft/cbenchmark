@@ -10,11 +10,13 @@ namespace BenchMark
     {
     public:
         Array()
-            : m_data(nullptr)
+            : m_alloc(nullptr)
+            , m_data(nullptr)
             , m_size(0)
             , m_capacity(0)
         {
         }
+
         ~Array()
         {
             if (m_alloc != nullptr)

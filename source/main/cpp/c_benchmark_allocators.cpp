@@ -48,10 +48,13 @@ namespace BenchMark
 
     void ScratchAllocator::Init(Allocator* alloc, u32 size)
     {
-        main_            = alloc;
-        buffer_begin_    = (u8*)alloc->Allocate(size);
-        buffer_end_      = buffer_begin_ + size;
         Reset();
+
+        main_                   = alloc;
+        buffer_begin_           = (u8*)alloc->Allocate(size);
+        buffer_end_             = buffer_begin_ + size;
+        buffer_[mark_]          = buffer_begin_;
+        num_allocations_[mark_] = 0;
     }
 
     void ScratchAllocator::Reset()
@@ -59,11 +62,10 @@ namespace BenchMark
         mark_ = 0;
         for (int i = 0; i < MAX_MARK; ++i)
         {
-            buffer_[i] = nullptr;
+            buffer_[i]          = nullptr;
             num_allocations_[i] = 0;
         }
-
-        buffer_[mark_]   = buffer_begin_;
+        buffer_[mark_]          = buffer_begin_;
         num_allocations_[mark_] = 0;
     }
 
@@ -90,7 +92,7 @@ namespace BenchMark
     {
         ++mark_;
         ASSERT(mark_ < (sizeof(buffer_) / sizeof(buffer_[0])));
-        buffer_[mark_] = buffer_[mark_ - 1];
+        buffer_[mark_]          = buffer_[mark_ - 1];
         num_allocations_[mark_] = 0;
     }
 
@@ -158,11 +160,11 @@ namespace BenchMark
         return p;
     }
 
-    void* ForwardAllocator::v_Allocate(unsigned int size, unsigned int alignment) 
+    void* ForwardAllocator::v_Allocate(unsigned int size, unsigned int alignment)
     {
         void* ptr = v_Checkout(size, alignment);
         if (ptr == nullptr)
-            return nullptr;    
+            return nullptr;
         v_Commit((u8*)ptr + size);
         return ptr;
     }
