@@ -14,24 +14,13 @@ namespace BenchMark
 
 #define BENCHMARK_BUILTIN_EXPECT(x, y) x
 
-#define BM_ARGS(...)                                                    \
-    {                                                                   \
-        const s32 args[] = {__VA_ARGS__};                               \
-        settings->AddArgs(args, (s32)(sizeof(args) / sizeof(args[0]))); \
-    }
-#define BM_ADD_ARG(...)                                      \
-    {                                                        \
-        const s32 arg[] = {__VA_ARGS__};                     \
-        settings->AddArg(arg, sizeof(arg) / sizeof(arg[0])); \
-    }
+#define BM_ARGS(...) settings->Args(__VA_ARGS__)
+#define BM_ARG(index) settings->Arg(index)
+#define BM_ARG_NAME(index, name) settings->Arg(index, name)
+#define SEQUENCE(...) Sequence(__VA_ARGS__)
+#define RANGE(lo, hi, multi) Range(lo, hi, multi)
+#define DENSE_RANGE(start, limit, step) DenseRange(start, limit, step)
 
-#define BM_ADD_ARG_RANGE(lo, hi, multi) settings->AddArgRange(lo, hi, multi)
-#define BM_ADD_ARG_DENSE_RANGE(start, limit, step) settings->AddArgDenseRange(start, limit, step)
-#define BM_SET_ARG_NAMES(...)                                           \
-    {                                                                   \
-        const char* names[] = {__VA_ARGS__};                            \
-        settings->SetArgNames(names, sizeof(names) / sizeof(names[0])); \
-    }
 #define BM_THREAD_COUNTS(...)             \
     const s32 tcvector[] = {__VA_ARGS__}; \
     settings->SetThreadCounts(tcvector, (s32)(sizeof(tcvector) / sizeof(tcvector[0])))
@@ -101,9 +90,12 @@ namespace BenchMark
         public:                                                                              \
             inline BMRegisterUnit(const char* _name, const char* _filename, int _lineNumber) \
             {                                                                                \
-                __unit.setup_     = BMSetup_Nil;                                             \
-                __unit.teardown_  = BMTeardown_Nil;                                          \
-                __unit.settings_  = BMSettings_Nil;                                          \
+                if (__unit.setup_ == nullptr)                                                \
+                    __unit.setup_ = BMSetup_Nil;                                             \
+                if (__unit.teardown_ == nullptr)                                             \
+                    __unit.teardown_ = BMTeardown_Nil;                                       \
+                if (__unit.settings_ == nullptr)                                             \
+                    __unit.settings_ = BMSettings_Nil;                                       \
                 __unit.run_       = BM_Run_##bmname;                                         \
                 __unit.name       = _name;                                                   \
                 __unit.filename   = _filename;                                               \
@@ -123,9 +115,8 @@ namespace BenchMark
         inline SetBMUnitDisable##name() { nsBMU##name::__unit.disabled = true; } \
     }
 
-
 #define BM_SETTINGS(name)                                                           \
-    void BMUnitSettings##name(BenchMarkUnit* settings);           \
+    void BMUnitSettings##name(BenchMarkUnit* settings);                             \
     namespace nsBMU##name                                                           \
     {                                                                               \
         extern BenchMarkUnit __unit;                                                \
@@ -134,6 +125,7 @@ namespace BenchMark
         public:                                                                     \
             inline SetBMUnitSettings() { __unit.settings_ = BMUnitSettings##name; } \
         };                                                                          \
+        SetBMUnitSettings gSetBMUnitSettings;                                       \
     }                                                                               \
     void BMUnitSettings##name(BenchMarkUnit* settings)
 
@@ -146,9 +138,12 @@ namespace BenchMark
         public:                                                                                 \
             inline BMRegisterFixture(const char* _name, const char* _filename, int _lineNumber) \
             {                                                                                   \
-                __fixture.setup      = BMSetup_Nil;                                             \
-                __fixture.teardown   = BMTeardown_Nil;                                          \
-                __fixture.settings   = BMSettings_Nil;                                          \
+                if (__fixture.setup == nullptr)                                                 \
+                    __fixture.setup = BMSetup_Nil;                                              \
+                if (__fixture.teardown == nullptr)                                              \
+                    __fixture.teardown = BMTeardown_Nil;                                        \
+                if (__fixture.settings == nullptr)                                              \
+                    __fixture.settings = BMSettings_Nil;                                        \
                 __fixture.name       = _name;                                                   \
                 __fixture.filename   = _filename;                                               \
                 __fixture.lineNumber = _lineNumber;                                             \
@@ -186,13 +181,14 @@ namespace BenchMark
     void BMFixtureSetup(const BenchMarkState&)
 
 #define BM_FIXTURE_SETTINGS                                                       \
-    void BMFixtureSettings(BenchMarkUnit* settings);            \
+    void BMFixtureSettings(BenchMarkUnit* settings);                              \
     class SetBMFixtureSettings                                                    \
     {                                                                             \
     public:                                                                       \
         inline SetBMFixtureSettings() { __fixture.settings = BMFixtureSettings; } \
     };                                                                            \
-    void BMFixtureSettings(BenchMarkUnit* settings)
+    SetBMFixtureSettings gSetBMFixtureSettings;                                   \
+    void                 BMFixtureSettings(BenchMarkUnit* settings)
 
 #define BM_SUITE(bmname)                                                                  \
     extern void RegisterBenchMarkSuite(BenchMarkSuite*);                                  \
@@ -200,16 +196,19 @@ namespace BenchMark
     {                                                                                     \
         void           BMSetup_Nil(const BenchMarkState&) {}                              \
         void           BMTeardown_Nil(const BenchMarkState&) {}                           \
-        void           BMSettings_Nil(BenchMarkUnit* settings) {}       \
+        void           BMSettings_Nil(BenchMarkUnit* settings) {}                         \
         BenchMarkSuite __suite;                                                           \
         class BMSRegister                                                                 \
         {                                                                                 \
         public:                                                                           \
             inline BMSRegister(const char* _name, const char* _filename, int _lineNumber) \
             {                                                                             \
-                __suite.setup      = BMSetup_Nil;                                         \
-                __suite.teardown   = BMTeardown_Nil;                                      \
-                __suite.settings   = BMSettings_Nil;                                      \
+                if (__suite.setup == nullptr)                                             \
+                    __suite.setup = BMSetup_Nil;                                          \
+                if (__suite.teardown == nullptr)                                          \
+                    __suite.teardown = BMTeardown_Nil;                                    \
+                if (__suite.settings == nullptr)                                          \
+                    __suite.settings = BMSettings_Nil;                                    \
                 __suite.name       = _name;                                               \
                 __suite.filename   = _filename;                                           \
                 __suite.lineNumber = _lineNumber;                                         \
@@ -247,13 +246,14 @@ namespace BenchMark
     void BMSuiteSetup(const BenchMarkState&)
 
 #define BM_SUITE_SETTINGS                                                   \
-    void BMSuiteSettings(BenchMarkUnit* settings);        \
+    void BMSuiteSettings(BenchMarkUnit* settings);                          \
     class SetBMSuiteSettings                                                \
     {                                                                       \
     public:                                                                 \
         inline SetBMSuiteSettings() { __suite.settings = BMSuiteSettings; } \
     };                                                                      \
-    void BMSuiteSettings(BenchMarkUnit* settings)
+    SetBMSuiteSettings gSetBMSuiteSettings;                                 \
+    void               BMSuiteSettings(BenchMarkUnit* settings)
 
 } // namespace BenchMark
 
