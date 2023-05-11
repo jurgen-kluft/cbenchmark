@@ -64,6 +64,8 @@ namespace BenchMark
         ~ForwardAllocator();
 
         void Init(Allocator* alloc, u32 size);
+        void Reset();
+        void Release();
 
         template <typename T> T* Checkout(unsigned int size, unsigned int alignment = sizeof(void*)) { return (T*)v_Checkout(size, alignment); }
         void                     Commit(void* ptr) { v_Commit(ptr); }
@@ -77,11 +79,12 @@ namespace BenchMark
 
     class ScratchAllocator : public Allocator
     {
+        enum { MAX_MARK = 15 };
         Allocator* main_;
-        u8*        buffer_[15];
+        u8*        buffer_[MAX_MARK];
         u8*        buffer_begin_;
         u8*        buffer_end_;
-        s32        num_allocations_[15];
+        s32        num_allocations_[MAX_MARK];
         s32        mark_;
 
     public:
@@ -89,6 +92,7 @@ namespace BenchMark
         ~ScratchAllocator();
 
         void Init(Allocator* alloc, u32 size);
+        void Reset();
 
         void PushScope() { v_PushScope(); }
         void PopScope() { v_PopScope(); }

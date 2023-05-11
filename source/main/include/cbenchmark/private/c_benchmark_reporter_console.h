@@ -21,15 +21,16 @@ namespace BenchMark
             OO_Defaults     = OO_ColorTabular
         };
 
-        explicit ConsoleReporter(TextStream* out_stream, TextStream* error_stream, OutputOptions opts_ = OO_Defaults)
+        explicit ConsoleReporter(OutputOptions opts_ = OO_Defaults)
             : output_options_(opts_)
             , prev_counters_()
             , name_field_width_(0)
             , printed_header_(false)
         {
-            SetOutputStream(out_stream);
-            SetErrorStream(error_stream);
         }
+
+        void Init(Allocator* allocator, ConsoleOutput* out, s32 max_line_width = 512);
+        void Exit(Allocator* allocator);
 
         virtual bool ReportContext(const Context& context);
         virtual void ReportRuns(Array<BenchMarkRun*> const& reports);
@@ -42,17 +43,15 @@ namespace BenchMark
         virtual void Flush();
         virtual void Finalize();
 
-        void SetOutputStream(TextStream* out) { output_stream_ = out; }
-        void SetErrorStream(TextStream* err) { error_stream_ = err; }
-
-        TextStream*    output_stream_;
-        TextStream*    error_stream_;
-        OutputOptions  output_options_;
-        Counters       prev_counters_;
-        char           line1_[640];
-        char           line2_[640];
-        s32            name_field_width_;
-        bool           printed_header_;
+        TextStream    output_stream_;
+        TextStream    error_stream_;
+        OutputOptions output_options_;
+        Counters      prev_counters_;
+        char*         line1_;
+        char*         line2_;
+        s32           max_line_width_;
+        s32           name_field_width_;
+        bool          printed_header_;
     };
 
 } // namespace BenchMark

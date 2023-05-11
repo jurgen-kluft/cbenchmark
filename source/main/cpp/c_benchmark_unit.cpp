@@ -49,7 +49,7 @@ namespace BenchMark
         statistics_count_   = 4;
     }
 
-    void BenchMarkUnit::ApplySettings()
+    void BenchMarkUnit::ApplySettings(Allocator* allocator)
     {
         args_.Init(allocator, 0, args_count_);
         arg_.Init(allocator, 0, arg_count_);

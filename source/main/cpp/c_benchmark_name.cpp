@@ -11,16 +11,23 @@
 
 namespace BenchMark
 {
-    static void StringAppend(char*& str, char const* strEnd, const char* sep, const char* append)
+    static char* gStringAppend2(char* str, char const* strEnd, const char* str1, const char* str2)
     {
-        while (sep != nullptr && *sep != '\0' && str < strEnd)
+        if (str1 != nullptr)
         {
-            *str++ = *sep++;
+            while (*str1 != '\0' && str < strEnd)
+            {
+                *str++ = *str1++;
+            }
         }
-        while (*append != '\0' && str < strEnd)
+        if (str2 != nullptr)
         {
-            *str++ = *append++;
+            while (*str2 != '\0' && str < strEnd)
+            {
+                *str++ = *str2++;
+            }
         }
+        return str;
     }
 
     s32 BenchmarkName::FullNameLen() const
@@ -38,16 +45,95 @@ namespace BenchMark
 
     char* BenchmarkName::FullName(char* dst, const char* dstEnd) const
     {
-        char* str = dst;
-        StringAppend(str, dstEnd, nullptr, function_name);
-        StringAppend(str, dstEnd, "/", args);
-        StringAppend(str, dstEnd, "/", min_time);
-        StringAppend(str, dstEnd, "/", min_warmup_time);
-        StringAppend(str, dstEnd, "/", iterations);
-        StringAppend(str, dstEnd, "/", repetitions);
-        StringAppend(str, dstEnd, "/", time_type);
-        StringAppend(str, dstEnd, "/", threads);
-
-        return str;
+        dst = gStringAppend(dst, dstEnd, function_name);
+        dst = gStringAppend2(dst, dstEnd, "/", args);
+        dst = gStringAppend2(dst, dstEnd, "/", min_time);
+        dst = gStringAppend2(dst, dstEnd, "/", min_warmup_time);
+        dst = gStringAppend2(dst, dstEnd, "/", iterations);
+        dst = gStringAppend2(dst, dstEnd, "/", repetitions);
+        dst = gStringAppend2(dst, dstEnd, "/", time_type);
+        dst = gStringAppend2(dst, dstEnd, "/", threads);
+        return dst;
     }
+
+    void BenchmarkName::CopyFrom(ForwardAllocator* alloc, BenchmarkName const& other)
+    {
+        Release();
+        allocator = alloc;
+
+        // first determine the size of the string
+        const s32 len = other.FullNameLen();
+
+        // allocate the string
+        char* str = allocator->Checkout<char>(len + 1);
+        str[len]  = '\0';
+        {
+            function_name = str;
+            str           = gStringAppend(str, str + len, other.function_name);
+            str           = gStringAppend(str, str + len, '\0');
+
+            args = str;
+            if (other.args != nullptr)
+            {
+                str = gStringAppend(str, str + len, other.args);
+                str = gStringAppend(str, str + len, '\0');
+            }
+            if (other.min_time != nullptr)
+            {
+                str = gStringAppend(str, str + len, other.min_time);
+                str = gStringAppend(str, str + len, '\0');
+            }
+            if (other.min_warmup_time != nullptr)
+            {
+                str = gStringAppend(str, str + len, other.min_warmup_time);
+                str = gStringAppend(str, str + len, '\0');
+            }
+            if (other.iterations != nullptr)
+            {
+                str = gStringAppend(str, str + len, other.iterations);
+                str = gStringAppend(str, str + len, '\0');
+            }
+            if (other.repetitions != nullptr)
+            {
+                str = gStringAppend(str, str + len, other.repetitions);
+                str = gStringAppend(str, str + len, '\0');
+            }
+            if (other.time_type != nullptr)
+            {
+                str = gStringAppend(str, str + len, other.time_type);
+                str = gStringAppend(str, str + len, '\0');
+            }
+            if (other.threads != nullptr)
+            {
+                str = gStringAppend(str, str + len, other.threads);
+                str = gStringAppend(str, str + len, '\0');
+            }
+        }
+        allocator->Commit(str);
+    }
+
+    void BenchmarkName::Release()
+    {
+        if (allocator != nullptr)
+        {
+            allocator->Deallocate(function_name);
+            allocator->Deallocate(args);
+            allocator->Deallocate(min_time);
+            allocator->Deallocate(min_warmup_time);
+            allocator->Deallocate(iterations);
+            allocator->Deallocate(repetitions);
+            allocator->Deallocate(time_type);
+            allocator->Deallocate(threads);
+
+            function_name   = nullptr;
+            args            = nullptr;
+            min_time        = nullptr;
+            min_warmup_time = nullptr;
+            iterations      = nullptr;
+            repetitions     = nullptr;
+            time_type       = nullptr;
+            threads         = nullptr;
+        }
+    }
+
 } // namespace BenchMark

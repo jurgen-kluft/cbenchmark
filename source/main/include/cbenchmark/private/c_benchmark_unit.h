@@ -50,7 +50,7 @@ namespace BenchMark
     typedef void (*setup_function)(const BenchMarkState&);
     typedef void (*teardown_function)(const BenchMarkState&);
     typedef void (*run_function)(BenchMarkState&, Allocator* alloc);
-    typedef void (*settings_function)(Allocator* alloc, BenchMarkUnit* settings);
+    typedef void (*settings_function)(BenchMarkUnit* settings);
 
     struct Args
     {
@@ -66,7 +66,7 @@ namespace BenchMark
     class BenchMarkUnit
     {
     public:
-        Allocator*            allocator;                //
+        //Allocator*            allocator;                //
         Array<Args>           final_args_;              // {...}[]
         TimeUnit              time_unit_;               // time unit to use for output
         TimeSettings          time_settings_;           //
@@ -107,7 +107,7 @@ namespace BenchMark
         s32 BuildArgs(Allocator* alloc, Array<Array<s32>>& args);
 
         void PrepareSettings();
-        void ApplySettings();
+        void ApplySettings(Allocator* allocator);
         void ReleaseSettings();
         
         void SetEnabled(bool enabled);

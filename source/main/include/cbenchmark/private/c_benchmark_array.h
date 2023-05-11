@@ -38,23 +38,25 @@ namespace BenchMark
 
         void ClearReserve(s32 cap)
         {
+            m_size = 0;
             if (m_capacity >= cap)
-            {
-                m_size = 0;
                 return;
+
+            m_capacity = 0;
+            if (m_alloc != nullptr)
+            {
+                if (m_data != nullptr)
+                    m_alloc->Deallocate(m_data);
+                m_data     = m_alloc->Alloc<T>(sizeof(T) * cap);
+                m_capacity = cap;
             }
-
-            Release();
-
-            m_data     = m_alloc->Alloc<T>(sizeof(T) * cap);
-            m_capacity = cap;
         }
 
         void Clear() { m_size = 0; }
 
         void Release()
         {
-            if (m_data != nullptr)
+            if (m_data != nullptr && m_alloc != nullptr)
                 m_alloc->Deallocate(m_data);
 
             m_data     = nullptr;
@@ -65,7 +67,12 @@ namespace BenchMark
         void Copy(const Array<T>& other)
         {
             if (other.Size() > m_capacity)
+            {
+                if (m_alloc == nullptr)
+                    m_alloc = other.m_alloc;
+
                 ClearReserve(other.Size());
+            }
 
             for (s32 i = 0; i < other.Size(); ++i)
                 m_data[i] = other.m_data[i];
@@ -84,15 +91,6 @@ namespace BenchMark
         {
             m_size++;
             return m_data[m_size - 1];
-        }
-
-        bool PushBack(Array<T>& other)
-        {
-            if (m_size + other.m_size > m_capacity)
-                return false;
-            for (s32 i = 0; i < other.m_size; ++i)
-                m_data[m_size++] = other.m_data[i];
-            return true;
         }
 
         bool PushBack(const T& value)

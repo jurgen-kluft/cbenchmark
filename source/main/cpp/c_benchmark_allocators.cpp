@@ -51,6 +51,18 @@ namespace BenchMark
         main_            = alloc;
         buffer_begin_    = (u8*)alloc->Allocate(size);
         buffer_end_      = buffer_begin_ + size;
+        Reset();
+    }
+
+    void ScratchAllocator::Reset()
+    {
+        mark_ = 0;
+        for (int i = 0; i < MAX_MARK; ++i)
+        {
+            buffer_[i] = nullptr;
+            num_allocations_[i] = 0;
+        }
+
         buffer_[mark_]   = buffer_begin_;
         num_allocations_[mark_] = 0;
     }
@@ -112,6 +124,23 @@ namespace BenchMark
         buffer_begin_    = (u8*)alloc->Allocate(size);
         buffer_end_      = buffer_begin_ + size;
         buffer_          = buffer_begin_;
+        checkout_        = 0;
+        num_allocations_ = 0;
+    }
+
+    void ForwardAllocator::Reset()
+    {
+        buffer_          = buffer_begin_;
+        checkout_        = 0;
+        num_allocations_ = 0;
+    }
+
+    void ForwardAllocator::Release()
+    {
+        main_->Deallocate(buffer_begin_);
+        buffer_begin_    = nullptr;
+        buffer_end_      = nullptr;
+        buffer_          = nullptr;
         checkout_        = 0;
         num_allocations_ = 0;
     }

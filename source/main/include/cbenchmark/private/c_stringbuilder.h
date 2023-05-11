@@ -20,7 +20,7 @@ namespace BenchMark
         COLOR_WHITE
     };
 
-    class TextOutput
+    class ConsoleOutput
     {
     public:
         virtual void setColor(TextColor color) = 0;
@@ -35,12 +35,7 @@ namespace BenchMark
         inline int  getN() const { return (int)(eos - stream); }
         inline int  used() const { return (int)(stream - sos); }
         inline int  capacity() const { return (int)(eos - sos); }
-        inline void flush()
-        {
-            out->print(stream);
-            stream = sos;
-        }
-        TextStream& endl();
+
         TextStream& operator<<(const char* txt);
         TextStream& operator<<(const void* p);
         TextStream& operator<<(char const n);
@@ -56,11 +51,13 @@ namespace BenchMark
         TextStream& operator<<(float const f);
         TextStream& operator<<(double const f);
         TextStream& operator<<(TextColor const color);
+        TextStream& flush();
+        TextStream& endl();
 
         char*       stream; // stream cursor
         char*       sos;    // start of stream
         const char* eos;    // end of stream
-        TextOutput* out;    // the output stream
+        ConsoleOutput* out;    // the output stream
     };
 
     class StringBuilder

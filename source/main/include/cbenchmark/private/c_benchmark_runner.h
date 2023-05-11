@@ -35,7 +35,7 @@ namespace BenchMark
     int              GetNumRepeats(const BenchMarkRunner* r);
     bool             HasRepeatsRemaining(const BenchMarkRunner* r);
     void             DoOneRepetition(BenchMarkRunner* r, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
-    void             AggregateResults(BenchMarkRunner* r, Allocator* alloc, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only);
+    void             AggregateResults(BenchMarkRunner* r, ForwardAllocator* alloc, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only);
     double           GetMinTime(const BenchMarkRunner* r);
     bool             HasExplicitIters(const BenchMarkRunner* r);
     IterationCount   GetIters(const BenchMarkRunner* r);

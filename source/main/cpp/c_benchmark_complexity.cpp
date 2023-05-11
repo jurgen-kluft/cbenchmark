@@ -1,3 +1,4 @@
+#include "ccore/c_debug.h"
 #include "cbenchmark/private/c_benchmark_results.h"
 #include "cbenchmark/private/c_benchmark_reporter.h"
 #include "cbenchmark/private/c_benchmark_check.h"
@@ -12,16 +13,16 @@ namespace BenchMark
     // integer power function
     template <typename T> T ipow(T x, u32 y)
     {
-        T temp   = x;
-        T result = 1;
+        T scratch = x;
+        T result  = 1;
         while (y > 0)
         {
             if ((y & 1) == 1)
             {
-                result *= temp;
+                result *= scratch;
             }
-            y    = y >> 1;
-            temp = temp * temp;
+            y       = y >> 1;
+            scratch = scratch * scratch;
         }
         return result;
     }
@@ -29,16 +30,16 @@ namespace BenchMark
     // double power function
     double dpow(double x, u32 y)
     {
-        double temp   = x;
-        double result = 1;
+        double scratch = x;
+        double result  = 1;
         while (y > 0)
         {
             if ((y & 1) == 1)
             {
-                result *= temp;
+                result *= scratch;
             }
-            y    = y >> 1;
-            temp = temp * temp;
+            y       = y >> 1;
+            scratch = scratch * scratch;
         }
         return result;
     }
@@ -163,32 +164,29 @@ namespace BenchMark
         return best_fit;
     }
 
-    typedef BenchMarkRun Run;
-
-    // TODO Could benefit from an additional 'temp' allocator 
-    void ComputeBigO(Allocator* alloc, ScratchAllocator* temp, const Array<Run*>& reports, Array<Run*>& bigo)
+    void ComputeBigO(Allocator* alloc, ScratchAllocator* scratch, const Array<BenchMarkRun*>& reports, Array<BenchMarkRun*>& bigo)
     {
         if (reports.Size() < 2)
             return;
 
-        // Deferred scope release of the scratch allocator.
-        USE_SCRATCH(temp);
+        // Deferred 'scope' release of the scratch allocator.
+        USE_SCRATCH(scratch);
 
         // Accumulators.
         Array<s64>    n;
         Array<double> real_time;
         Array<double> cpu_time;
 
-        n.Init(temp, 0, reports.Size());
-        real_time.Init(temp, 0, reports.Size());
-        cpu_time.Init(temp, 0, reports.Size());
+        n.Init(scratch, 0, reports.Size());
+        real_time.Init(scratch, 0, reports.Size());
+        cpu_time.Init(scratch, 0, reports.Size());
 
         // Populate the accumulators.
         for (s32 i = 0; i < reports.Size(); ++i)
         {
-            const Run* run = reports[i];
+            const BenchMarkRun* run = reports[i];
 
-            // BM_CHECK_GT(run->complexity_n, 0) << "Did you forget to call SetComplexityN?";
+            ASSERTS(run->complexity_n != 0, "Did you forget to call SetComplexityN?");
             n.PushBack(run->complexity_n);
             real_time.PushBack(run->real_accumulated_time / run->iterations);
             cpu_time.PushBack(run->cpu_accumulated_time / run->iterations);
@@ -197,7 +195,7 @@ namespace BenchMark
         LeastSq result_cpu;
         LeastSq result_real;
 
-        const Run* run0 = reports[0];
+        const BenchMarkRun* run0 = reports[0];
         if (run0->complexity.Is(BigO::O_Lambda))
         {
             result_cpu  = MinimalLeastSq(n, cpu_time, run0->complexity_lambda);
@@ -209,30 +207,23 @@ namespace BenchMark
             result_real = MinimalLeastSq(n, real_time, result_cpu.complexity);
         }
 
-        // Drop the 'args' when reporting complexity.
-
-        // TODO Seems to use BenchMarkName structure to construct a run name.
-
-        BenchmarkName run_name = run0->run_name;
-        run_name.args          = nullptr;
-
         // Get the data from the accumulator to Run's.
-        Run*& big_o                      = bigo.Alloc();
-        big_o                            = alloc->Construct<Run>();
-        big_o->run_name                  = run_name;
-        big_o->per_family_instance_index = run0->per_family_instance_index;
-        big_o->run_type                  = Run::RT_Aggregate;
-        big_o->repetitions               = run0->repetitions;
-        big_o->repetition_index          = Run::no_repetition_index;
-        big_o->threads                   = run0->threads;
-        big_o->aggregate_name            = "BigO";
-        big_o->aggregate_unit            = {StatisticUnit::Time};
-        big_o->report_label              = run0->report_label;
-        big_o->iterations                = 0;
-        big_o->real_accumulated_time     = result_real.coef;
-        big_o->cpu_accumulated_time      = result_cpu.coef;
-        big_o->report_big_o              = true;
-        big_o->complexity                = result_cpu.complexity;
+        BenchMarkRun*& big_o         = bigo.Alloc();
+        big_o                        = alloc->Construct<BenchMarkRun>();
+        big_o->run_name              = run0->run_name;
+        big_o->run_name.args         = nullptr; // Drop the 'args' when reporting complexity.
+        big_o->run_type              = BenchMarkRun::RT_Aggregate;
+        big_o->repetitions           = run0->repetitions;
+        big_o->repetition_index      = BenchMarkRun::no_repetition_index;
+        big_o->threads               = run0->threads;
+        big_o->aggregate_name        = "BigO";
+        big_o->aggregate_unit        = {StatisticUnit::Time};
+        big_o->report_label          = run0->report_label;
+        big_o->iterations            = 0;
+        big_o->real_accumulated_time = result_real.coef;
+        big_o->cpu_accumulated_time  = result_cpu.coef;
+        big_o->report_big_o          = true;
+        big_o->complexity            = result_cpu.complexity;
 
         // All the time results are reported after being multiplied by the
         // time unit multiplier. But since RMS is a relative quantity it
@@ -242,22 +233,22 @@ namespace BenchMark
         const double multiplier = run0->time_unit.GetTimeUnitMultiplier();
 
         // Only add label to mean/stddev if it is same for all runs
-        Run*& rms                      = bigo.Alloc();
-        rms                            = alloc->Construct<Run>();
-        rms->run_name                  = run_name;
-        rms->per_family_instance_index = run0->per_family_instance_index;
-        rms->run_type                  = Run::RT_Aggregate;
-        rms->aggregate_name            = "RMS";
-        rms->aggregate_unit            = {StatisticUnit::Percentage};
-        rms->report_label              = big_o->report_label;
-        rms->iterations                = 0;
-        rms->repetition_index          = Run::no_repetition_index;
-        rms->repetitions               = run0->repetitions;
-        rms->threads                   = run0->threads;
-        rms->real_accumulated_time     = result_real.rms / multiplier;
-        rms->cpu_accumulated_time      = result_cpu.rms / multiplier;
-        rms->report_rms                = true;
-        rms->complexity                = result_cpu.complexity;
+        BenchMarkRun*& rms         = bigo.Alloc();
+        rms                        = alloc->Construct<BenchMarkRun>();
+        rms->run_name              = run0->run_name;
+        rms->run_name.args         = nullptr; // Drop the 'args' when reporting complexity.
+        rms->run_type              = BenchMarkRun::RT_Aggregate;
+        rms->aggregate_name        = "RMS";
+        rms->aggregate_unit        = {StatisticUnit::Percentage};
+        rms->report_label          = big_o->report_label;
+        rms->iterations            = 0;
+        rms->repetition_index      = BenchMarkRun::no_repetition_index;
+        rms->repetitions           = run0->repetitions;
+        rms->threads               = run0->threads;
+        rms->real_accumulated_time = result_real.rms / multiplier;
+        rms->cpu_accumulated_time  = result_cpu.rms / multiplier;
+        rms->report_rms            = true;
+        rms->complexity            = result_cpu.complexity;
         // don't forget to keep the time unit, or we won't be able to recover the correct value.
         rms->time_unit = run0->time_unit;
     }

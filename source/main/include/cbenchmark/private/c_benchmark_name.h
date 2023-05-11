@@ -8,10 +8,13 @@
 
 namespace BenchMark
 {
+    class ForwardAllocator;
+
     struct BenchmarkName
     {
         BenchmarkName()
-            : function_name(nullptr)
+            : allocator(nullptr)
+            , function_name(nullptr)
             , args(nullptr)
             , min_time(nullptr)
             , min_warmup_time(nullptr)
@@ -22,18 +25,21 @@ namespace BenchMark
         {
         }
 
-        char* function_name;
-        char* args;
-        char* min_time;
-        char* min_warmup_time;
-        char* iterations;
-        char* repetitions;
-        char* time_type;
-        char* threads;
+        ForwardAllocator* allocator;
+        char*             function_name;
+        char*             args;
+        char*             min_time;
+        char*             min_warmup_time;
+        char*             iterations;
+        char*             repetitions;
+        char*             time_type;
+        char*             threads;
 
         // Return the full name of the benchmark with each non-empty field separated by a '/'
-        s32 FullNameLen() const;
+        s32   FullNameLen() const;
         char* FullName(char* dst, const char* dstEnd) const;
+        void  CopyFrom(ForwardAllocator* alloc, BenchmarkName const& other);
+        void  Release();
     };
 
 } // namespace BenchMark

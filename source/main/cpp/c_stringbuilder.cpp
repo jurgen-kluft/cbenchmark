@@ -82,8 +82,17 @@ namespace BenchMark
         stream = gStringFormatAppend(stream, eos, "%f", d);
         return *this;
     }
+    TextStream& TextStream::flush()
+    {
+        *stream++ = '\0';
+        out->print(sos);
+        stream = sos;
+        return *this;
+    }
+
     TextStream& TextStream::operator<<(TextColor const color)
     { 
+        flush();
         if (color == COLOR_DEFAULT)
         {
             out->resetColor();

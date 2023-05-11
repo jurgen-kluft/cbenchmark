@@ -131,6 +131,9 @@ namespace BenchMark
             Percentage = 100,
         };
 
+        inline bool IsTime() const { return unit == Time; }
+        inline bool IsPercentage() const { return unit == Percentage; }
+
         u32 unit;
     };
 
@@ -143,7 +146,10 @@ namespace BenchMark
             SkippedWithError   = -1,
         };
 
-        inline Skipped(ESkipped s) : skipped(s) {}
+        inline Skipped(ESkipped s)
+            : skipped(s)
+        {
+        }
 
         bool Is(u32 s) const { return skipped == s; }
         bool IsNot(u32 s) const { return skipped != s; }

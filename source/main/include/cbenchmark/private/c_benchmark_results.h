@@ -125,7 +125,7 @@ namespace BenchMark
 
 
 #define BM_SETTINGS(name)                                                           \
-    void BMUnitSettings##name(Allocator* alloc, BenchMarkUnit* settings);           \
+    void BMUnitSettings##name(BenchMarkUnit* settings);           \
     namespace nsBMU##name                                                           \
     {                                                                               \
         extern BenchMarkUnit __unit;                                                \
@@ -135,7 +135,7 @@ namespace BenchMark
             inline SetBMUnitSettings() { __unit.settings_ = BMUnitSettings##name; } \
         };                                                                          \
     }                                                                               \
-    void BMUnitSettings##name(Allocator* alloc, BenchMarkUnit* settings)
+    void BMUnitSettings##name(BenchMarkUnit* settings)
 
 #define BM_FIXTURE(bmname)                                                                      \
     namespace nsBMF##bmname                                                                     \
@@ -186,13 +186,13 @@ namespace BenchMark
     void BMFixtureSetup(const BenchMarkState&)
 
 #define BM_FIXTURE_SETTINGS                                                       \
-    void BMFixtureSettings(Allocator* alloc, BenchMarkUnit* settings);            \
+    void BMFixtureSettings(BenchMarkUnit* settings);            \
     class SetBMFixtureSettings                                                    \
     {                                                                             \
     public:                                                                       \
         inline SetBMFixtureSettings() { __fixture.settings = BMFixtureSettings; } \
     };                                                                            \
-    void BMFixtureSettings(Allocator* alloc, BenchMarkUnit* settings)
+    void BMFixtureSettings(BenchMarkUnit* settings)
 
 #define BM_SUITE(bmname)                                                                  \
     extern void RegisterBenchMarkSuite(BenchMarkSuite*);                                  \
@@ -200,7 +200,7 @@ namespace BenchMark
     {                                                                                     \
         void           BMSetup_Nil(const BenchMarkState&) {}                              \
         void           BMTeardown_Nil(const BenchMarkState&) {}                           \
-        void           BMSettings_Nil(Allocator* alloc, BenchMarkUnit* settings) {}       \
+        void           BMSettings_Nil(BenchMarkUnit* settings) {}       \
         BenchMarkSuite __suite;                                                           \
         class BMSRegister                                                                 \
         {                                                                                 \
@@ -247,13 +247,13 @@ namespace BenchMark
     void BMSuiteSetup(const BenchMarkState&)
 
 #define BM_SUITE_SETTINGS                                                   \
-    void BMSuiteSettings(Allocator* alloc, BenchMarkUnit* settings);        \
+    void BMSuiteSettings(BenchMarkUnit* settings);        \
     class SetBMSuiteSettings                                                \
     {                                                                       \
     public:                                                                 \
         inline SetBMSuiteSettings() { __suite.settings = BMSuiteSettings; } \
     };                                                                      \
-    void BMSuiteSettings(Allocator* alloc, BenchMarkUnit* settings)
+    void BMSuiteSettings(BenchMarkUnit* settings)
 
 } // namespace BenchMark
 

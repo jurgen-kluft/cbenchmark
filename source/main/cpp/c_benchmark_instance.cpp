@@ -48,7 +48,6 @@ namespace BenchMark
     BenchMarkInstance::BenchMarkInstance()
         : name_()
         , benchmark_(nullptr)
-        , per_family_instance_index_(0)
         , aggregation_report_mode_(AggregationReportMode::Default)
         , args_()
         , time_unit_(TimeUnit::Nanosecond)
@@ -67,21 +66,20 @@ namespace BenchMark
 
     void BenchMarkInstance::run(BenchMarkState& state, Allocator* allocator) const { benchmark_->run_(state, allocator); }
 
-    void BenchMarkInstance::init(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int per_family_instance_index, int thread_count)
+    void BenchMarkInstance::initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int thread_count)
     {
-        benchmark_                 = benchmark;
-        per_family_instance_index_ = (per_family_instance_index);
-        aggregation_report_mode_   = (benchmark->aggregation_report_mode_);
-        time_unit_                 = (benchmark->time_unit_);
-        time_settings_             = (benchmark->time_settings_);
-        complexity_                = (benchmark->complexity_);
-        complexity_lambda_         = (benchmark->complexity_lambda_);
-        statistics_                = (&benchmark->statistics_);
-        repetitions_               = (benchmark->repetitions_);
-        min_time_                  = (benchmark->min_time_);
-        min_warmup_time_           = (benchmark->min_warmup_time_);
-        iterations_                = (benchmark->iterations_);
-        threads_                   = (thread_count);
+        benchmark_               = benchmark;
+        aggregation_report_mode_ = (benchmark->aggregation_report_mode_);
+        time_unit_               = (benchmark->time_unit_);
+        time_settings_           = (benchmark->time_settings_);
+        complexity_              = (benchmark->complexity_);
+        complexity_lambda_       = (benchmark->complexity_lambda_);
+        statistics_              = (&benchmark->statistics_);
+        repetitions_             = (benchmark->repetitions_);
+        min_time_                = (benchmark->min_time_);
+        min_warmup_time_         = (benchmark->min_warmup_time_);
+        iterations_              = (benchmark->iterations_);
+        threads_                 = (thread_count);
 
         args_.Init(allocator, 0, args.Size());
         for (s32 i = 0; i < args.Size(); ++i)
@@ -114,28 +112,28 @@ namespace BenchMark
             {
                 name_.min_time = str;
                 str            = gStringFormatAppend(str, nullptr, "min_time:%0.3f", benchmark->min_time_);
-                *str++ = '\0'; // Terminate
+                *str++         = '\0'; // Terminate
             }
 
             if (!gIsZero(benchmark->min_warmup_time_))
             {
                 name_.min_warmup_time = str;
                 str                   = gStringFormatAppend(str, nullptr, "min_warmup_time:%0.3f", benchmark->min_warmup_time_);
-                *str++ = '\0'; // Terminate
+                *str++                = '\0'; // Terminate
             }
 
             if (benchmark->iterations_ != 0)
             {
                 name_.iterations = str;
                 str              = gStringFormatAppend(str, nullptr, "iterations:%lu", static_cast<unsigned long>(benchmark->iterations_));
-                *str++ = '\0'; // Terminate
+                *str++           = '\0'; // Terminate
             }
 
             if (benchmark->repetitions_ != 0)
             {
                 name_.repetitions = str;
                 str               = gStringFormatAppend(str, nullptr, "repeats:%d", benchmark->repetitions_);
-                *str++ = '\0'; // Terminate
+                *str++            = '\0'; // Terminate
             }
 
             s32 time_types  = 0;

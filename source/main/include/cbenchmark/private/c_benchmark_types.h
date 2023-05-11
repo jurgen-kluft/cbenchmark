@@ -63,6 +63,7 @@ namespace BenchMark
 
         Counters() {}
         Counters(Counters const& other) { counters.Copy(other.counters); }
+        
         inline s32  Size() const { return counters.Size(); }
         inline void Clear() { counters.Clear(); }
         inline void ClearReserve(s32 reserve) { counters.ClearReserve(reserve); }

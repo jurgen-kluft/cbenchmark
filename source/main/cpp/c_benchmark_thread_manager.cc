@@ -129,7 +129,7 @@ namespace BenchMark
     private:
         bool   running_         = false; // Is the timer running
         double start_real_time_ = 0;     // If running_
-        double start_cpu_time_  = 0;     // If running_
+        time_t start_cpu_time_  = 0;     // If running_
 
         // Accumulated time so far (does not contain current slice if running_)
         double real_time_used_ = 0;

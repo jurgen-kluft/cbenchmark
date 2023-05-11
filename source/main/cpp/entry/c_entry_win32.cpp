@@ -29,7 +29,7 @@ PlatformColorCode GetPlatformColorCode(BenchMark::TextColor color)
     }
 }
 
-class StdOut : public BenchMark::TextOutput
+class StdOut : public BenchMark::ConsoleOutput
 {
     bool has_default_color_attrs;
     WORD default_color_attrs;
@@ -74,35 +74,16 @@ public:
 
 int main(int argc, char** argv)
 {
-    BenchMark::InitTimer();
+    BenchMark::g_InitTimer();
 
     BenchMark::MainAllocator    main_allocator;
     BenchMark::BenchMarkGlobals globals;
 
-    StdOut                stdoutput;
-    BenchMark::TextStream out_stream;
-    BenchMark::TextStream err_stream;
-    out_stream.out = &stdoutput;
-    err_stream.out = &stdoutput;
-
-    const unsigned int kOutStreamBufferSize = 4 * 1024;
-    const unsigned int kErrStreamBufferSize = 1 * 1024;
-
-    out_stream.sos    = (char*)main_allocator.Allocate(kOutStreamBufferSize, 8);
-    out_stream.eos    = out_stream.sos + kOutStreamBufferSize - 1;
-    out_stream.stream = out_stream.sos;
-
-    err_stream.sos    = (char*)main_allocator.Allocate(kErrStreamBufferSize, 8);
-    err_stream.eos    = err_stream.sos + kErrStreamBufferSize - 1;
-    err_stream.stream = err_stream.sos;
-
-    BenchMark::ConsoleReporter reporter(&out_stream, &err_stream);
-
+    StdOut                     stdoutput;
+    BenchMark::ConsoleReporter reporter;
+    reporter.Init(&main_allocator, &stdoutput);
     bool result = BenchMark::gRunBenchMark(&main_allocator, &globals, reporter);
-
-    main_allocator.Deallocate(out_stream.sos);
-    main_allocator.Deallocate(err_stream.sos);
-
+    reporter.Exit(&main_allocator);
     return result ? 0 : -1;
 }
 

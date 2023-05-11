@@ -42,10 +42,25 @@ namespace BenchMark
             , cpu_time_used(0.0)
             , manual_time_used(0.0)
             , complexity_n(0)
+            , counters()
             , skipped_(Skipped::NotSkipped)
             , report_label_(nullptr)
             , skip_message_(nullptr)
         {
+        }
+
+        void Reset()
+        {
+            allocator = nullptr;
+            iterations = 0;
+            real_time_used = 0.0;
+            cpu_time_used = 0.0;
+            manual_time_used = 0.0;
+            complexity_n = 0;
+            counters.Clear();
+            skipped_ = Skipped::NotSkipped;
+            report_label_ = nullptr;
+            skip_message_ = nullptr;
         }
 
         Allocator*     allocator;
@@ -68,10 +83,9 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void                    init(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int per_family_instance_index, int thread_count);
+        void                    initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int thread_count);
         const BenchmarkName&    name() const { return name_; }
         Array<s32> const*       args() const { return &args_; }
-        int                     per_family_instance_index() const { return per_family_instance_index_; }
         AggregationReportMode   aggregation_report_mode() const { return aggregation_report_mode_; }
         TimeUnit                time_unit() const { return time_unit_; }
         bool                    measure_process_cpu_time() const { return time_settings_.MeasureProcessCpuTime(); }
@@ -92,7 +106,6 @@ namespace BenchMark
     private:
         BenchmarkName           name_;
         BenchMarkUnit*          benchmark_;
-        int                     per_family_instance_index_;
         AggregationReportMode   aggregation_report_mode_;
         Array<s32>              args_;
         TimeUnit                time_unit_;

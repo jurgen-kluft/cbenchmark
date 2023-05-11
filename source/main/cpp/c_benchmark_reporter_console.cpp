@@ -5,6 +5,49 @@
 namespace BenchMark
 {
 
+    void ConsoleReporter::Init(Allocator* allocator, ConsoleOutput* out, s32 max_line_width)
+    {
+        const unsigned int kOutStreamBufferSize = 1024;
+        const unsigned int kErrStreamBufferSize = 256;
+
+        output_stream_.out    = out;
+        output_stream_.sos    = (char*)allocator->Allocate(kOutStreamBufferSize, 8);
+        output_stream_.eos    = output_stream_.sos + kOutStreamBufferSize - 1;
+        output_stream_.stream = output_stream_.sos;
+
+        error_stream_.out    = out;
+        error_stream_.sos    = (char*)allocator->Allocate(256, 8);
+        error_stream_.eos    = error_stream_.sos + 256 - 1;
+        error_stream_.stream = error_stream_.sos;
+
+        line1_ = (char*)allocator->Allocate(max_line_width, 8);
+        line2_ = (char*)allocator->Allocate(max_line_width, 8);
+    }
+
+    void ConsoleReporter::Exit(Allocator* allocator)
+    {
+        output_stream_.flush();
+        error_stream_.flush();
+
+        allocator->Deallocate(output_stream_.sos);
+        allocator->Deallocate(error_stream_.sos);
+        allocator->Deallocate(line1_);
+        allocator->Deallocate(line2_);
+
+        line1_ = nullptr;
+        line2_ = nullptr;
+
+        output_stream_.sos    = nullptr;
+        output_stream_.eos    = nullptr;
+        output_stream_.stream = nullptr;
+        output_stream_.out    = nullptr;
+
+        error_stream_.sos    = nullptr;
+        error_stream_.eos    = nullptr;
+        error_stream_.stream = nullptr;
+        error_stream_.out    = nullptr;
+    }
+
     bool ConsoleReporter::ReportContext(const Context& context)
     {
         /* TO BE IMPLEMENTED */
@@ -32,11 +75,7 @@ namespace BenchMark
         }
     }
 
-    void ConsoleReporter::ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters)
-    {
-
-    }
-
+    void ConsoleReporter::ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters) {}
 
     void ConsoleReporter::PrintRunData(const BenchMarkRun& result)
     {
@@ -107,11 +146,11 @@ namespace BenchMark
 
             const char* cname = c.name;
             const char* unit  = "";
-            
+
             char* str = &line2_[0];
             if (result.run_type == BenchMarkRun::RT_Aggregate && result.aggregate_unit.unit == StatisticUnit::Percentage)
             {
-                str = gStringFormatAppend(str, &line2_[639], "%.2f", 100. * c.value);
+                str  = gStringFormatAppend(str, &line2_[639], "%.2f", 100. * c.value);
                 unit = "%";
             }
             else
@@ -123,7 +162,7 @@ namespace BenchMark
 
             if (output_options_ & OO_Tabular)
             {
-                //printer(Out, COLOR_DEFAULT, " %*s%s", gStringLength(cname) - gStringLength(unit), str, unit);
+                // printer(Out, COLOR_DEFAULT, " %*s%s", gStringLength(cname) - gStringLength(unit), str, unit);
                 gSetWidthFormat(nameWidthFormat, gStringLength(cname) - gStringLength(unit));
                 line = gStringAppend(line, &line1_[639], " ");
                 line = gStringFormatAppend(line, &line1_[639], nameWidthFormat, str);
@@ -131,7 +170,7 @@ namespace BenchMark
             }
             else
             {
-                //printer(Out, COLOR_DEFAULT, " %s=%s%s", cname, str, unit);
+                // printer(Out, COLOR_DEFAULT, " %s=%s%s", cname, str, unit);
                 line = gStringAppend(line, &line1_[639], " ");
                 line = gStringAppend(line, &line1_[639], cname);
                 line = gStringAppend(line, &line1_[639], "=");
@@ -142,7 +181,7 @@ namespace BenchMark
 
         *line = '\0';
 
-        ((*output_stream_) << line1_).endl();
+        (output_stream_ << line1_).endl();
         return;
     }
 
@@ -182,18 +221,14 @@ namespace BenchMark
             str2[i] = '-';
         *str2 = '\0';
 
-        ((((*output_stream_) << line2_).endl() << line1_).endl() << line2_).endl();
+        (((output_stream_ << line2_).endl() << line1_).endl() << line2_).endl();
     }
 
-    void         ConsoleReporter::Flush()
+    void ConsoleReporter::Flush() 
     {
-
+        output_stream_.flush();
     }
 
-    void ConsoleReporter::Finalize()
-    {
-
-    }
-
+    void ConsoleReporter::Finalize() {}
 
 } // namespace BenchMark

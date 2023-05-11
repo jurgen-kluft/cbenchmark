@@ -3,15 +3,17 @@
 
 #include "cbenchmark/private/c_types.h"
 #include "cbenchmark/private/c_benchmark_enums.h"
+#include "cbenchmark/private/c_benchmark_array.h"
 #include "cbenchmark/private/c_benchmark_allocators.h"
 
 namespace BenchMark
 {
     class BenchMarkRun;
 
-    double StatisticsMean(const Array<double>& v);
-    double StatisticsMedian(const Array<double>& v);
-    double StatisticsCV(const Array<double>& v);
+    double StatisticsMean(const Array<double>& data);
+    double StatisticsMedian(const Array<double>& data);
+    double StatisticsStdDev(const Array<double>& data);
+    double StatisticsCV(const Array<double>& data);
 
     struct Statistic
     {
@@ -60,12 +62,8 @@ namespace BenchMark
     };
 
     // Returns the number of reports that were aggregated into the result.
-    void ComputeStats(Allocator* alloc, const Array<BenchMarkRun*>& reports, Array<BenchMarkRun*>& result);
+    void ComputeStats(ForwardAllocator* alloc, ScratchAllocator* scratch, const Array<BenchMarkRun*>& reports, Array<BenchMarkRun*>& result);
 
-    double StatisticsMean(const Array<double>& data);
-    double StatisticsMedian(const Array<double>& data);
-    double StatisticsStdDev(const Array<double>& data);
-    double StatisticsCV(const Array<double>& data);
 
 } // namespace BenchMark
 
