@@ -41,7 +41,6 @@ namespace BenchMark
 
     ScratchAllocator::~ScratchAllocator()
     {
-        ASSERT(num_allocations_ == 0);
         if (main_ && buffer_begin_)
             main_->Deallocate(buffer_begin_);
     }

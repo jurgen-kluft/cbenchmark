@@ -27,7 +27,7 @@ PlatformColorCode GetPlatformColorCode(BenchMark::TextColor color)
     }
 }
 
-class StdOut : public BenchMark::TextOutput
+class StdOut : public BenchMark::ConsoleOutput
 {
 public:
     StdOut() {}
@@ -51,20 +51,16 @@ extern bool gRunBenchMark(BenchMark::BenchMarkReporter& reporter);
 
 int main(int argc, char** argv)
 {
-    BenchMark::g_InitTimer();
+   BenchMark::g_InitTimer();
 
     BenchMark::MainAllocator    main_allocator;
     BenchMark::BenchMarkGlobals globals;
 
-    StdOut stdoutput;
-
-    BenchMark::ConsoleReporter reporter(&out_stream, &err_stream);
+    StdOut                     stdoutput;
+    BenchMark::ConsoleReporter reporter;
     reporter.Init(&main_allocator, &stdoutput);
-
     bool result = BenchMark::gRunBenchMark(&main_allocator, &globals, reporter);
-
-    reporter.Exit();
-
+    reporter.Exit(&main_allocator);
     return result ? 0 : -1;
 }
 
