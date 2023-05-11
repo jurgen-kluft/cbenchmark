@@ -34,11 +34,17 @@ namespace BenchMark
                     BM_ARGS(64, 128);  // {x,y}
                     BM_ARGS(128, 64);  // {x,y}
                     BM_ARGS(128, 128); // {x,y}
+
+                    BM_ARG_NAME(0, "x");
+                    BM_ARG_NAME(0, "y");
                 }
 
                 {                                   // (2) or this
-                    BM_ADD_ARG(8, 16, 32, 64, 128); // x
-                    BM_ADD_ARG(64, 128);            // y
+                    BM_ARG(0)->SEQUENCE(8, 16, 32, 64, 128); // x
+                    BM_ARG(0)->SEQUENCE(64, 128);            // y
+
+                    BM_ARG_NAME(0, "x");
+                    BM_ARG_NAME(0, "y");
 
                     // These 2 named arguments will be permuted together, and will result in:
                     // { 8, 64 }, x and y
@@ -54,13 +60,10 @@ namespace BenchMark
                 }
 
                 {                                        // (3) or this
-                    BM_ADD_ARG_RANGE(8, 128, 8);         // x
-                    BM_ADD_ARG_DENSE_RANGE(64, 128, 64); // y
+                    BM_ARG_NAME(0, "x")->RANGE(8, 128, 8);         // x
+                    BM_ARG_NAME(0, "y")->DENSE_RANGE(64, 128, 64); // y
                     // Will have the same result as (2)
                 }
-
-                // The above 3 examples emit arguments with 2 values each, let's say x and y.
-                BM_SET_ARG_NAMES("x", "y");
 
                 // Run the benchmark with 1, 2, 4, 8, 16 threads (increases the permutations)
                 BM_THREAD_COUNTS(1, 2, 4, 8, 16);

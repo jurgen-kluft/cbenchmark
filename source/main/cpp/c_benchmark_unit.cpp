@@ -34,27 +34,20 @@ namespace BenchMark
 
     void BenchMarkUnit::PrepareSettings()
     {
-        args_               = Array<Args>();
-        arg_                = Array<Args>();
-        arg_ranges_         = Array<ArgRange>();
-        arg_names_          = Array<const char*>();
         thread_counts_      = Array<s32>();
         statistics_         = Array<Statistic>();
         args_count_         = 0;
-        arg_count_          = 0;
-        arg_ranges_count_   = 0;
-        arg_names_count_    = 0;
         counters_size_      = 2;
         thread_counts_size_ = 0;
         statistics_count_   = 4;
+
+        count_only_ = true;
     }
 
     void BenchMarkUnit::ApplySettings(Allocator* allocator)
     {
-        args_.Init(allocator, 0, args_count_);
-        arg_.Init(allocator, 0, arg_count_);
-        arg_ranges_.Init(allocator, 0, arg_ranges_count_);
-        arg_names_.Init(allocator, 0, arg_names_count_);
+        count_only_ = false;
+
         thread_counts_.Init(allocator, 0, thread_counts_size_);
         counters_.counters.Init(allocator, 0, counters_size_);
         statistics_.Init(allocator, 0, statistics_count_);
@@ -68,10 +61,7 @@ namespace BenchMark
         AddCounter("bytes per second", CounterFlags::IsRate);
     }
 
-    void BenchMarkUnit::ReleaseSettings()
-    {
-        PrepareSettings();
-    }
+    void BenchMarkUnit::ReleaseSettings() { PrepareSettings(); }
 
     void BenchMarkUnit::AddStatisticsComputer(Statistic stat)
     {
@@ -85,46 +75,7 @@ namespace BenchMark
 
     void BenchMarkUnit::SetEnabled(bool enabled) { disabled = enabled ? 0 : 1; }
 
-    void BenchMarkUnit::AddArgs(s32 const* args, s32 argc)
-    {
-        if (count_only_)
-        {
-            args_count_++;
-            return;
-        }
-        args_.PushBack(Args(args, argc));
-    }
 
-    void BenchMarkUnit::AddArg(const s32* args, s32 argc)
-    {
-        if (count_only_)
-        {
-            arg_count_++;
-            return;
-        }
-        arg_.PushBack(Args(args, argc));
-    }
-
-    void BenchMarkUnit::AddRange(s32 lo, s32 hi, s32 multiplier, ArgRange::EMode mode)
-    {
-        if (count_only_)
-        {
-            arg_ranges_count_++;
-            return;
-        }
-        arg_ranges_.PushBack(ArgRange(lo, hi, multiplier, mode));
-    }
-
-    void BenchMarkUnit::SetArgNames(const char** names, s32 names_size)
-    {
-        if (count_only_)
-        {
-            arg_names_count_ = names_size;
-            return;
-        }
-        for (s32 i = 0; i < names_size; ++i)
-            arg_names_.PushBack(names[i]);
-    }
 
     void BenchMarkUnit::SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size)
     {

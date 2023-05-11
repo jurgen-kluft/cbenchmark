@@ -63,23 +63,39 @@ namespace BenchMark
         s32        argc;
     };
 
+    struct Arg_t
+    {
+        Arg_t();
+
+        template <typename... Args> void Sequence(Args&&... _args)
+        {
+            const s64 argv[] = {_args...};
+            SetSequence(argv, sizeof...(Args));
+        }
+
+        void SetName(char const* name);
+        void AddValue(s64 value);
+        void Range(s32 lo, s32 hi, s32 multiplier = 8);
+        void DenseRange(s32 start, s32 limit, s32 step = 32);
+
+        void SetRange(s32 lo, s32 hi, s32 multiplier, ArgRange::EMode mode);
+        void SetSequence(s64 const* argv, s32 argc);
+
+        char const* name_;
+        bool        count_only_;
+        s32         count_; //
+        Array<s64>  args_;  //
+    };
+
     class BenchMarkUnit
     {
     public:
-        //Allocator*            allocator;                //
-        Array<Args>           final_args_;              // {...}[]
         TimeUnit              time_unit_;               // time unit to use for output
         TimeSettings          time_settings_;           //
         AggregationReportMode aggregation_report_mode_; //
         bool                  count_only_;              // Settings are applied in two passes
-        s32                   arg_names_count_;         //
-        Array<const char*>    arg_names_;               // Arg names (default = x,y,z,w)
-        s32                   args_count_;              //
-        Array<Args>           args_;                    // {x,y,z,w}[]
-        s32                   arg_count_;               //
-        Array<Args>           arg_;                     // x[], y[], z[], w[]
-        s32                   arg_ranges_count_;        //
-        Array<ArgRange>       arg_ranges_;              // x:{lo,hi,multi} * y:{lo,hi,multi} * z:{lo,hi,multi} * w:{lo,hi,multi} permutations
+        int                   args_count_;
+        Arg_t                 args_[8];
         int                   thread_counts_size_;
         Array<s32>            thread_counts_;
         int                   range_multiplier_;
@@ -109,9 +125,19 @@ namespace BenchMark
         void PrepareSettings();
         void ApplySettings(Allocator* allocator);
         void ReleaseSettings();
-        
+
         void SetEnabled(bool enabled);
         bool IsDisabled() const { return disabled != 0; }
+
+        Arg_t* Arg(s32 index);
+        Arg_t* Arg(s32 index, const char* name);
+        template<typename... Args> void Args(Args&&... _args)
+        {
+            const s64 argv[] = {_args...};
+            for (s32 i = 0; i < sizeof...(Args); ++i)
+                Arg(i)->AddValue(argv[i]);
+        }
+
         void AddArgs(s32 const* args, s32 argc);
         void AddArg(const s32* args, s32 argc);
         void AddRange(s32 lo, s32 hi, s32 multiplier, ArgRange::EMode mode);
