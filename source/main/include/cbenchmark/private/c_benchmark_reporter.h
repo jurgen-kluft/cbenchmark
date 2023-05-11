@@ -14,14 +14,14 @@ namespace BenchMark
     public:
         struct Context
         {
-            Context();
+            Context() : name_field_width(0), executable_name(nullptr) {}
 
             // CPUInfo const&    cpu_info;
             // SystemInfo const& sys_info;
 
             // The number of chars in the longest benchmark name.
             s32                name_field_width;
-            static const char* executable_name;
+            const char*         executable_name;
         };
 
         struct PerFamilyRunReports

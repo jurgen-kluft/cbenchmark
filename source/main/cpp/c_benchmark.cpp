@@ -160,7 +160,7 @@ namespace BenchMark
                 RunResults* results = forward_allocator->Construct<RunResults>();
                 results->non_aggregates.Init(forward_allocator, 0, num_repeats_of_this_instance);
                 results->aggregates_only.Init(forward_allocator, 0, num_repeats_of_this_instance);
-                InitRunResults(runner, globals, *results);
+                InitRunResults(runner, globals, results);
 
                 run_results.PushBack(results);
             }
@@ -192,13 +192,13 @@ namespace BenchMark
                 BenchMarkRun*& report = results->non_aggregates.Alloc();
                 report                = forward_allocator->Construct<BenchMarkRun>();
 
-                DoOneRepetition(runner, report, reports_for_family);
+                DoOneRepetition(runner, forward_allocator, report, reports_for_family);
                 if (HasRepeatsRemaining(runner))
                     continue;
 
                 reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner));
 
-                AggregateResults(runner, forward_allocator, results->non_aggregates, results->aggregates_only);
+                AggregateResults(runner, forward_allocator, scratch_allocator, results->non_aggregates, results->aggregates_only);
 
                 // Maybe calculate complexity report
                 if (reports_for_family != nullptr)

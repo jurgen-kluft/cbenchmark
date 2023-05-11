@@ -30,12 +30,12 @@ namespace BenchMark
     class BenchMarkRunner;
     BenchMarkRunner* CreateRunner(Allocator* a);
     void             InitRunner(BenchMarkRunner* r, Allocator* a, ForwardAllocator* f, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
-    void             InitRunResults(BenchMarkRunner* r, BenchMarkGlobals* globals, RunResults& results);
+    void             InitRunResults(BenchMarkRunner* r, BenchMarkGlobals* globals, RunResults* results);
     void             DestroyRunner(BenchMarkRunner*& r, Allocator* a);
     int              GetNumRepeats(const BenchMarkRunner* r);
     bool             HasRepeatsRemaining(const BenchMarkRunner* r);
-    void             DoOneRepetition(BenchMarkRunner* r, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
-    void             AggregateResults(BenchMarkRunner* r, ForwardAllocator* alloc, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only);
+    void             DoOneRepetition(BenchMarkRunner* r, ForwardAllocator* allocator, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
+    void             AggregateResults(BenchMarkRunner* r, ForwardAllocator* allocator, ScratchAllocator* scratch, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only);
     double           GetMinTime(const BenchMarkRunner* r);
     bool             HasExplicitIters(const BenchMarkRunner* r);
     IterationCount   GetIters(const BenchMarkRunner* r);
