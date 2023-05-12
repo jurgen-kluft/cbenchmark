@@ -83,9 +83,13 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void                    initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const* args, int thread_count);
-        const BenchmarkName&    name() const { return name_; }
-        Array<s32> const*       args() const { return args_; }
+        void initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const* args, int thread_count);
+        void run(BenchMarkState& state, Allocator* allocator) const;
+
+        const BenchmarkName& name() const { return name_; }
+        Array<s32> const*    args() const { return args_; }
+        int                  threads() const { return threads_; }
+
         AggregationReportMode   aggregation_report_mode() const { return benchmark_->aggregation_report_mode_; }
         TimeUnit                time_unit() const { return benchmark_->time_unit_; }
         bool                    measure_process_cpu_time() const { return benchmark_->time_settings_.MeasureProcessCpuTime(); }
@@ -98,18 +102,14 @@ namespace BenchMark
         double                  min_time() const { return benchmark_->min_time_; }
         double                  min_warmup_time() const { return benchmark_->min_warmup_time_; }
         IterationCount          iterations() const { return benchmark_->iterations_; }
-        int                     threads() const { return threads_; }
-        setup_function          setup() const { return setup_; }
-        teardown_function       teardown() const { return teardown_; }
-        void                    run(BenchMarkState& state, Allocator* allocator) const;
+        setup_function          setup() const { return benchmark_->setup_; }
+        teardown_function       teardown() const { return benchmark_->teardown_; }
 
     private:
-        BenchmarkName     name_;
         BenchMarkUnit*    benchmark_;
+        BenchmarkName     name_;
         Array<s32> const* args_;
         int               threads_; // Number of concurrent threads to us
-        setup_function    setup_;
-        teardown_function teardown_;
     };
 
 } // namespace BenchMark

@@ -62,51 +62,52 @@ namespace BenchMark
         allocator = alloc;
 
         // first determine the size of the string
-        const s32 len = other.FullNameLen();
+        s32 const len = other.FullNameLen();
 
         // allocate the string
         char* str = allocator->Checkout<char>(len + 1);
         str[len]  = '\0';
+        const char* const strEnd = str + len;
         {
             function_name = str;
-            str           = gStringAppend(str, str + len, other.function_name);
-            str           = gStringAppend(str, str + len, '\0');
+            str           = gStringAppend(str, strEnd, other.function_name);
+            str           = gStringAppend(str, strEnd, '\0');
 
             args = str;
             if (other.args != nullptr)
             {
-                str = gStringAppend(str, str + len, other.args);
-                str = gStringAppend(str, str + len, '\0');
+                str = gStringAppend(str, strEnd, other.args);
+                str = gStringAppend(str, strEnd, '\0');
             }
             if (other.min_time != nullptr)
             {
-                str = gStringAppend(str, str + len, other.min_time);
-                str = gStringAppend(str, str + len, '\0');
+                str = gStringAppend(str, strEnd, other.min_time);
+                str = gStringAppend(str, strEnd, '\0');
             }
             if (other.min_warmup_time != nullptr)
             {
-                str = gStringAppend(str, str + len, other.min_warmup_time);
-                str = gStringAppend(str, str + len, '\0');
+                str = gStringAppend(str, strEnd, other.min_warmup_time);
+                str = gStringAppend(str, strEnd, '\0');
             }
             if (other.iterations != nullptr)
             {
-                str = gStringAppend(str, str + len, other.iterations);
-                str = gStringAppend(str, str + len, '\0');
+                str = gStringAppend(str, strEnd, other.iterations);
+                str = gStringAppend(str, strEnd, '\0');
             }
             if (other.repetitions != nullptr)
             {
-                str = gStringAppend(str, str + len, other.repetitions);
-                str = gStringAppend(str, str + len, '\0');
+                str = gStringAppend(str, strEnd, other.repetitions);
+                str = gStringAppend(str, strEnd, '\0');
             }
             if (other.time_type != nullptr)
             {
-                str = gStringAppend(str, str + len, other.time_type);
-                str = gStringAppend(str, str + len, '\0');
+                str = gStringAppend(str, strEnd, other.time_type);
+                str = gStringAppend(str, strEnd, '\0');
             }
             if (other.threads != nullptr)
             {
-                str = gStringAppend(str, str + len, other.threads);
-                str = gStringAppend(str, str + len, '\0');
+                str = gStringAppend(str, strEnd, other.threads);
+                str = gStringAppend(str, strEnd, '\0');
             }
         }
         allocator->Commit(str);

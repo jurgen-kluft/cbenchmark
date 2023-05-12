@@ -15,7 +15,7 @@ namespace BenchMark
 
     extern char* gStringAppend(char* dst, const char* dstEnd, const char* src);
     extern char* gStringAppend(char* dst, const char* dstEnd, char src);
-    extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, const void* p);
+    extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, const char* p);
     extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, char c);
     extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, short s);
     extern char* gStringFormatAppend(char* dest, const char* dstEnd, const char* format, int i);

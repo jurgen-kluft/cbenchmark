@@ -7,9 +7,7 @@
 
 namespace BenchMark
 {
-#    define DEST_S(d, n) (d, (size_t)(n-d))
-
-    char* gStringFormatAppend(char* dst, const char* dstEnd, const char* format, const void* p) { int a = snprintf(dst, dstEnd-dst, format, p); return dst + a; }
+    char* gStringFormatAppend(char* dst, const char* dstEnd, const char* format, const char* p) { int a = snprintf(dst, dstEnd-dst, format, p); return dst + a; }
     char* gStringFormatAppend(char* dst, const char* dstEnd, const char* format, char c) { int a = snprintf(dst, dstEnd-dst, format, c); return dst + a; }
     char* gStringFormatAppend(char* dst, const char* dstEnd, const char* format, short s) { int a = snprintf(dst, dstEnd-dst, format, s); return dst + a; }
     char* gStringFormatAppend(char* dst, const char* dstEnd, const char* format, int i) { int a = snprintf(dst, dstEnd-dst, format, i); return dst + a; }
