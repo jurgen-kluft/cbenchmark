@@ -88,33 +88,33 @@ namespace BenchMark
             }
             *str++ = '\0'; // Terminate
 
+            name_.min_time = str;
             if (!gIsZero(benchmark->min_time_))
             {
-                name_.min_time = str;
-                str            = gStringFormatAppend(str, strEnd, "min_time:%0.3f", benchmark->min_time_);
-                *str++         = '\0'; // Terminate
+                str = gStringFormatAppend(str, strEnd, "min_time:%0.3f", benchmark->min_time_);
             }
+            *str++ = '\0'; // Terminate
 
+            name_.min_warmup_time = str;
             if (!gIsZero(benchmark->min_warmup_time_))
             {
-                name_.min_warmup_time = str;
-                str                   = gStringFormatAppend(str, strEnd, "min_warmup_time:%0.3f", benchmark->min_warmup_time_);
-                *str++                = '\0'; // Terminate
+                str = gStringFormatAppend(str, strEnd, "min_warmup_time:%0.3f", benchmark->min_warmup_time_);
             }
+            *str++ = '\0'; // Terminate
 
+            name_.iterations = str;
             if (benchmark->iterations_ != 0)
             {
-                name_.iterations = str;
-                str              = gStringFormatAppend(str, strEnd, "iterations:%lu", static_cast<unsigned long>(benchmark->iterations_));
-                *str++           = '\0'; // Terminate
+                str = gStringFormatAppend(str, strEnd, "iterations:%lu", static_cast<unsigned long>(benchmark->iterations_));
             }
+            *str++ = '\0'; // Terminate
 
+            name_.repetitions = str;
             if (benchmark->repetitions_ != 0)
             {
-                name_.repetitions = str;
-                str               = gStringFormatAppend(str, strEnd, "repeats:%d", benchmark->repetitions_);
-                *str++            = '\0'; // Terminate
+                str = gStringFormatAppend(str, strEnd, "repeats:%d", benchmark->repetitions_);
             }
+            *str++ = '\0'; // Terminate
 
             s32 time_types  = 0;
             name_.time_type = str;
@@ -145,20 +145,12 @@ namespace BenchMark
                 time_types++;
             }
 
-            if (time_types > 0)
-            {
-                *str++ = '\0'; // Terminate
-            }
-            else
-            {
-                name_.time_type = nullptr;
-            }
+            *str++ = '\0'; // Terminate
 
+            name_.threads = str;
             if (!benchmark->thread_counts_.Empty())
             {
-                name_.threads = str;
-                str           = gStringFormatAppend(str, strEnd, "threads:%d", threads_);
-                *str++        = '\0'; // Terminate
+                str = gStringFormatAppend(str, strEnd, "threads:%d", threads_);
             }
 
             *str++ = '\0'; // Terminate

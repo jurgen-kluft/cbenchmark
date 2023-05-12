@@ -13,7 +13,7 @@ namespace BenchMark
     // milli, micro, nano, pico, femto, atto, zepto, yocto.
     const char kSmallSIUnits[] = "munpfazy";
 
-    #define arraysize(array) (sizeof(array) / sizeof(array[0]))
+#define arraysize(array) (sizeof(array) / sizeof(array[0]))
 
     // We require that all three arrays have the same size.
     static_assert(arraysize(kBigSIUnits) == arraysize(kBigIECUnits), "SI and IEC unit arrays must be the same size");
@@ -111,10 +111,7 @@ namespace BenchMark
         return ExponentToPrefix(exponent, false, str, strEnd);
     }
 
-    char* gHumanReadableNumber(char* dst, const char* dstEnd, double n, double one_k) 
-    {
-        return ToBinaryStringFullySpecified(dst, dstEnd, n, 1.1, 1, one_k);
-    }
+    char* gHumanReadableNumber(char* dst, const char* dstEnd, double n, double one_k) { return ToBinaryStringFullySpecified(dst, dstEnd, n, 1.1, 1, one_k); }
 
     void gSetWidthFormat(char* format, int width)
     {
@@ -150,10 +147,7 @@ namespace BenchMark
         return gStringFormatAppend(str, str_end, "%10.0f", time);
     }
 
-    bool gIsZero(double x)
-    {
-        return x > -1e-9 && x < 1e-9;
-    }
+    bool gIsZero(double x) { return x > -1e-9 && x < 1e-9; }
 
     char* gStringAppend(char* dst, const char* dstEnd, const char* src)
     {
@@ -265,5 +259,12 @@ namespace BenchMark
     }
 
     bool gAreStringsEqual(char const* expected, char const* actual) { return gCompareStrings(expected, actual) == 0; }
+
+    char* gStringEnd(char* src)
+    {
+        while (*src != '\0')
+            ++src;
+        return src;
+    }
 
 } // namespace BenchMark

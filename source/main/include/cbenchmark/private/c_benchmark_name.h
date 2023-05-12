@@ -25,6 +25,8 @@ namespace BenchMark
         {
         }
 
+        BenchmarkName(const BenchmarkName& other);
+
         ForwardAllocator* allocator;
         char*             function_name;
         char*             args;

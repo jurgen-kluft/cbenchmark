@@ -211,7 +211,7 @@ namespace BenchMark
         BenchMarkRun*& big_o         = bigo.Alloc();
         big_o                        = alloc->Construct<BenchMarkRun>();
         big_o->run_name              = run0->run_name;
-        big_o->run_name.args         = nullptr; // Drop the 'args' when reporting complexity.
+        big_o->run_name.args         = gStringEnd(big_o->run_name.args); // Drop the 'args' when reporting complexity.
         big_o->run_type              = BenchMarkRun::RT_Aggregate;
         big_o->repetitions           = run0->repetitions;
         big_o->repetition_index      = BenchMarkRun::no_repetition_index;
@@ -236,7 +236,7 @@ namespace BenchMark
         BenchMarkRun*& rms         = bigo.Alloc();
         rms                        = alloc->Construct<BenchMarkRun>();
         rms->run_name              = run0->run_name;
-        rms->run_name.args         = nullptr; // Drop the 'args' when reporting complexity.
+        rms->run_name.args         = gStringEnd(rms->run_name.args); // Drop the 'args' when reporting complexity.
         rms->run_type              = BenchMarkRun::RT_Aggregate;
         rms->aggregate_name        = "RMS";
         rms->aggregate_unit        = {StatisticUnit::Percentage};

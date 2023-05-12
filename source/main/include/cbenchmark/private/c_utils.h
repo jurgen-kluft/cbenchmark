@@ -12,6 +12,7 @@ namespace BenchMark
     extern int         gStringLength(const char* str);
     extern s32         gCompareStrings(char const* const expected, char const* const actual);
     extern bool        gAreStringsEqual(char const* const expected, char const* const actual);
+    extern char*       gStringEnd(char* src);
 
     extern char* gStringAppend(char* dst, const char* dstEnd, const char* src);
     extern char* gStringAppend(char* dst, const char* dstEnd, char src);
