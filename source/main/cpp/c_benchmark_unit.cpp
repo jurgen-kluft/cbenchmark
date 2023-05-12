@@ -10,6 +10,55 @@
 
 namespace BenchMark
 {
+    Arg_t::Arg_t()
+        : count_(0)
+        , count_only_(true)
+        , args_()
+        , name_(nullptr)
+    {
+    }
+
+    void Arg_t::SetName(char const* name)
+    {
+        name_ = name;
+    }
+
+    void Arg_t::AddValue(s64 value)
+    {
+        if (count_only_)
+        {
+            count_++;
+            return;
+        }
+        count_++;
+        args_.PushBack(value);
+    }
+
+    void Arg_t::Range(s32 lo, s32 hi, s32 multiplier = 8)
+    {
+
+    }
+
+    void Arg_t::DenseRange(s32 start, s32 limit, s32 step = 32)
+    {
+
+    }
+
+    void Arg_t::SetRange(s32 lo, s32 hi, s32 multiplier, ArgRange::EMode mode)
+    {
+
+    }
+
+    void Arg_t::SetSequence(s64 const* argv, s32 argc)
+    {
+
+    }
+
+
+
+
+
+
     s32 BenchMarkUnit::BuildArgs(Allocator* alloc, Array<Array<s32>>& args)
     {
         // check what we have:
@@ -40,13 +89,26 @@ namespace BenchMark
         counters_size_      = 2;
         thread_counts_size_ = 0;
         statistics_count_   = 4;
-
+        args_count_         = 0;
+        for (s32 i = 0; i < 8; ++i)
+        {
+            args_[i].count_      = 0;
+            args_[i].count_only_ = true;
+            args_[i].args_       = Array<s64>();
+            args_[i].name_       = nullptr;
+        }
         count_only_ = true;
     }
 
     void BenchMarkUnit::ApplySettings(Allocator* allocator)
     {
         count_only_ = false;
+
+        for (s32 i = 0; i < 8; ++i)
+        {
+            args_[i].count_only_ = false;
+            args_[i].args_.Init(allocator, 0, args_[i].count_);
+        }
 
         thread_counts_.Init(allocator, 0, thread_counts_size_);
         counters_.counters.Init(allocator, 0, counters_size_);
@@ -74,8 +136,6 @@ namespace BenchMark
     }
 
     void BenchMarkUnit::SetEnabled(bool enabled) { disabled = enabled ? 0 : 1; }
-
-
 
     void BenchMarkUnit::SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size)
     {

@@ -99,9 +99,9 @@ namespace BenchMark
                     str = gStringAppend(str, nullptr, '/');
                 }
 
-                if (benchmark_->arg_names_count_ > i)
+                if (benchmark_->args_count_ > i && benchmark_->args_[i].name_ != nullptr)
                 {
-                    str = gStringFormatAppend(str, nullptr, "%s:", benchmark_->arg_names_[i]);
+                    str = gStringFormatAppend(str, nullptr, "%s:", benchmark_->args_[i].name_);
                 }
 
                 str = gStringFormatAppend(str, nullptr, "%d", args_[i]);
