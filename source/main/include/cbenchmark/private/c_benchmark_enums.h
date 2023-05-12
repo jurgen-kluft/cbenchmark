@@ -79,6 +79,35 @@ namespace BenchMark
         u32 flags;
     };
 
+    struct TimeSettings
+    {
+        enum EFlag
+        {
+            USE_DEFAULT_TIME_UNIT    = 1,
+            MEASURE_PROCESS_CPU_TIME = 2,
+            USE_REAL_TIME            = 4,
+            USE_MANUAL_TIME          = 8,
+        };
+
+        TimeSettings()
+            : flags(USE_DEFAULT_TIME_UNIT)
+        {
+        }
+
+        inline bool UseDefaultTimeUnit() const { return (flags & USE_DEFAULT_TIME_UNIT) != 0; }
+        inline bool MeasureProcessCpuTime() const { return (flags & MEASURE_PROCESS_CPU_TIME) != 0; }
+        inline bool UseRealTime() const { return (flags & USE_REAL_TIME) != 0; }
+        inline bool UseManualTime() const { return (flags & USE_MANUAL_TIME) != 0; }
+
+        inline void Set(EFlag f, bool value) { flags = (flags & ~f) | (value ? f : 0); }
+        inline void SetUseDefaultTimeUnit(bool value) { Set(USE_DEFAULT_TIME_UNIT, value); }
+        inline void SetMeasureProcessCpuTime(bool value) { Set(MEASURE_PROCESS_CPU_TIME, value); }
+        inline void SetUseRealTime(bool value) { Set(USE_REAL_TIME, value); }
+        inline void SetUseManualTime(bool value) { Set(USE_MANUAL_TIME, value); }
+
+        u8 flags;
+    };
+
     class BigO
     {
     public:
@@ -184,6 +213,9 @@ namespace BenchMark
             IterationCount iters;
             double         time;
         };
+
+        inline bool IsTime() const { return type == TIME; }
+        inline bool IsIters() const { return type == ITERS; }
 
         u32 type;
     };

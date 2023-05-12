@@ -9,8 +9,8 @@ namespace BenchMark
     template <typename T> class Array
     {
     public:
-        Array()
-            : m_alloc(nullptr)
+        Array(Allocator* alloc = nullptr)
+            : m_alloc(alloc)
             , m_data(nullptr)
             , m_size(0)
             , m_capacity(0)
@@ -19,9 +19,11 @@ namespace BenchMark
 
         ~Array()
         {
-            if (m_alloc != nullptr)
+            if (m_alloc != nullptr && m_data != nullptr)
                 m_alloc->Deallocate(m_data);
         }
+
+        DCORE_CLASS_PLACEMENT_NEW_DELETE
 
         void Init(Allocator* alloc, s32 size, s32 cap)
         {

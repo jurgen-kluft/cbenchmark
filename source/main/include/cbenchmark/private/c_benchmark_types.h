@@ -11,29 +11,6 @@ namespace BenchMark
 {
     typedef s64 IterationCount;
 
-    struct ArgRange
-    {
-        enum EMode
-        {
-            Uninitialized = 0,
-            Multiplier = 1,
-            Step       = 2,
-        };
-
-        ArgRange() {}
-        ArgRange(s32 _a, s32 _b, s32 _c, EMode _mode)
-            : a(_a)
-            , b(_b)
-            , c(_c)
-            , mode(_mode)
-        {
-        }
-
-        s32             a, b, c;
-        EMode           mode;
-        static ArgRange empty;
-    };
-
     struct Counter
     {
         const char*  name;

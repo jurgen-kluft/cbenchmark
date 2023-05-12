@@ -13,35 +13,6 @@ namespace BenchMark
     class BenchMarkState;
     class BenchMarkInstance;
 
-    struct TimeSettings
-    {
-        enum EFlag
-        {
-            USE_DEFAULT_TIME_UNIT    = 1,
-            MEASURE_PROCESS_CPU_TIME = 2,
-            USE_REAL_TIME            = 4,
-            USE_MANUAL_TIME          = 8,
-        };
-
-        TimeSettings()
-            : flags(USE_DEFAULT_TIME_UNIT)
-        {
-        }
-
-        inline bool UseDefaultTimeUnit() const { return (flags & USE_DEFAULT_TIME_UNIT) != 0; }
-        inline bool MeasureProcessCpuTime() const { return (flags & MEASURE_PROCESS_CPU_TIME) != 0; }
-        inline bool UseRealTime() const { return (flags & USE_REAL_TIME) != 0; }
-        inline bool UseManualTime() const { return (flags & USE_MANUAL_TIME) != 0; }
-
-        inline void Set(EFlag f, bool value) { flags = (flags & ~f) | (value ? f : 0); }
-        inline void SetUseDefaultTimeUnit(bool value) { Set(USE_DEFAULT_TIME_UNIT, value); }
-        inline void SetMeasureProcessCpuTime(bool value) { Set(MEASURE_PROCESS_CPU_TIME, value); }
-        inline void SetUseRealTime(bool value) { Set(USE_REAL_TIME, value); }
-        inline void SetUseManualTime(bool value) { Set(USE_MANUAL_TIME, value); }
-
-        u32 flags;
-    };
-
     // -----------------------------------------------------------------
     // BenchMarkUnit registration object. The BM_TEST() macro expands
     // into an BenchMarkUnit* object. Various properties can be set on
@@ -52,37 +23,34 @@ namespace BenchMark
     typedef void (*run_function)(BenchMarkState&, Allocator* alloc);
     typedef void (*settings_function)(BenchMarkUnit* settings);
 
-    struct Args
-    {
-        inline Args(s32 const* _args, s32 _argc)
-            : args(_args)
-            , argc(_argc)
-        {
-        }
-        s32 const* args;
-        s32        argc;
-    };
-
     struct Arg_t
     {
         Arg_t();
+
+        enum EArg
+        {
+            Arg_Uninitialized = 0x0,
+            Arg_Value         = 0x1,
+            Arg_Range         = 0x2,
+            Arg_DenseRange    = 0x4,
+            Arg_Sequence      = 0x8,
+        };
 
         template <typename... Args> void Sequence(Args&&... _args)
         {
             const s64 argv[] = {_args...};
             SetSequence(argv, sizeof...(Args));
         }
+        void SetSequence(s64 const* argv, s32 argc);
 
         void SetName(char const* name);
         void AddValue(s64 value);
         void Range(s32 lo, s32 hi, s32 multiplier = 8);
         void DenseRange(s32 start, s32 limit, s32 step = 32);
 
-        void SetRange(s32 lo, s32 hi, s32 multiplier, ArgRange::EMode mode);
-        void SetSequence(s64 const* argv, s32 argc);
-
         char const* name_;
-        bool        count_only_;
+        s8          count_only_;
+        s8          mode_;
         s32         count_; //
         Array<s64>  args_;  //
     };
@@ -90,12 +58,17 @@ namespace BenchMark
     class BenchMarkUnit
     {
     public:
+        enum ESettings
+        {
+            Max_Args = 8,
+        };
+
         TimeUnit              time_unit_;               // time unit to use for output
         TimeSettings          time_settings_;           //
         AggregationReportMode aggregation_report_mode_; //
         bool                  count_only_;              // Settings are applied in two passes
         int                   args_count_;
-        Arg_t                 args_[8];
+        Arg_t                 args_[Max_Args];
         int                   thread_counts_size_;
         Array<s32>            thread_counts_;
         int                   range_multiplier_;
@@ -120,7 +93,16 @@ namespace BenchMark
         int            disabled;   // 0 = enabled, 1 = disabled, should this benchmark be run?
         int            lineNumber; // the line number in the source file
 
-        s32 BuildArgs(Allocator* alloc, Array<Array<s32>>& args);
+        s32    BuildArgs(Allocator* alloc, Array<Array<s32>*>& args);
+        Arg_t* Arg(s32 index);
+        Arg_t* Arg(s32 index, const char* name);
+
+        template <typename... Args> void Args(Args&&... _args)
+        {
+            const s64 argv[] = {_args...};
+            for (s32 i = 0; i < sizeof...(Args); ++i)
+                Arg(i)->AddValue(argv[i]);
+        }
 
         void PrepareSettings();
         void ApplySettings(Allocator* allocator);
@@ -129,21 +111,6 @@ namespace BenchMark
         void SetEnabled(bool enabled);
         bool IsDisabled() const { return disabled != 0; }
 
-        Arg_t* Arg(s32 index);
-        Arg_t* Arg(s32 index, const char* name);
-        template<typename... Args> void Args(Args&&... _args)
-        {
-            const s64 argv[] = {_args...};
-            for (s32 i = 0; i < sizeof...(Args); ++i)
-                Arg(i)->AddValue(argv[i]);
-        }
-
-        void AddArgs(s32 const* args, s32 argc);
-        void AddArg(const s32* args, s32 argc);
-        void AddRange(s32 lo, s32 hi, s32 multiplier, ArgRange::EMode mode);
-        void AddArgRange(s32 lo, s32 hi, s32 multiplier = 8) { AddRange(lo, hi, multiplier, ArgRange::Multiplier); }
-        void AddArgDenseRange(s32 start, s32 limit, s32 step = 32) { AddRange(start, limit, step, ArgRange::Step); }
-        void SetArgNames(const char** names, s32 names_size);
         void SetThreadCounts(s32 const* thread_counts, s32 thread_counts_size);
         void SetComplexity(BigO complexity);
         void SetComplexity(BigO::Func* complexity_lambda_);
@@ -158,13 +125,6 @@ namespace BenchMark
         void SetRepetitions(int repetitions);
         void SetFuncRun(run_function func);
         void SetFuncSettings(settings_function func);
-
-        // Creates a list of integer values for the given range and multiplier.
-        // This can be used together with ArgsProduct() to allow multiple ranges
-        // with different multipliers.
-        static void CreateRange(s32 lo, s32 hi, s32 multi, Array<s64>& out, Allocator* alloc);
-        // Creates a list of integer values for the given range and step.
-        static void CreateDenseRange(s32 start, s32 limit, s32 step, Array<s64>& out, Allocator* alloc);
 
     }; // namespace BenchMark
 } // namespace BenchMark

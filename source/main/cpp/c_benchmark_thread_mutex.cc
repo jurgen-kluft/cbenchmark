@@ -1,5 +1,3 @@
-#include "cbenchmark/private/c_config.h"
-#include "cbenchmark/private/c_benchmark_check.h"
 
 #include <thread>
 #include <condition_variable>

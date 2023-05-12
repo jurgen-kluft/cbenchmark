@@ -48,42 +48,21 @@ namespace BenchMark
     BenchMarkInstance::BenchMarkInstance()
         : name_()
         , benchmark_(nullptr)
-        , aggregation_report_mode_(AggregationReportMode::Default)
         , args_()
-        , time_unit_(TimeUnit::Nanosecond)
-        , time_settings_()
-        , complexity_(BigO::O_None)
-        , complexity_lambda_(nullptr)
-        , counters_(nullptr)
-        , statistics_(nullptr)
-        , repetitions_(1)
-        , min_time_(0.0)
-        , min_warmup_time_(0.0)
-        , iterations_(0)
         , threads_(1)
+        , setup_(nullptr)
+        , teardown_(nullptr)
     {
     }
 
     void BenchMarkInstance::run(BenchMarkState& state, Allocator* allocator) const { benchmark_->run_(state, allocator); }
 
-    void BenchMarkInstance::initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int thread_count)
+    void BenchMarkInstance::initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const* args, int thread_count)
     {
-        benchmark_               = benchmark;
-        aggregation_report_mode_ = (benchmark->aggregation_report_mode_);
-        time_unit_               = (benchmark->time_unit_);
-        time_settings_           = (benchmark->time_settings_);
-        complexity_              = (benchmark->complexity_);
-        complexity_lambda_       = (benchmark->complexity_lambda_);
-        statistics_              = (&benchmark->statistics_);
-        repetitions_             = (benchmark->repetitions_);
-        min_time_                = (benchmark->min_time_);
-        min_warmup_time_         = (benchmark->min_warmup_time_);
-        iterations_              = (benchmark->iterations_);
-        threads_                 = (thread_count);
+        benchmark_ = benchmark;
+        threads_   = (thread_count);
 
-        args_.Init(allocator, 0, args.Size());
-        for (s32 i = 0; i < args.Size(); ++i)
-            args_.PushBack(args[i]);
+        args_ = args;
 
         // 'Reserve' enough memory for the name and parts.
         char* str = allocator->Checkout<char>(512);
@@ -92,7 +71,7 @@ namespace BenchMark
 
             // Name/{ArgName:}Arg/{ArgName:}Arg/..
             str = gStringAppend(str, nullptr, benchmark->name);
-            for (s32 i = 0; i < args_.Size(); ++i)
+            for (s32 i = 0; i < args_->Size(); ++i)
             {
                 if (i != 0)
                 {
@@ -104,7 +83,7 @@ namespace BenchMark
                     str = gStringFormatAppend(str, nullptr, "%s:", benchmark_->args_[i].name_);
                 }
 
-                str = gStringFormatAppend(str, nullptr, "%d", args_[i]);
+                str = gStringFormatAppend(str, nullptr, "%d", (*args_)[i]);
             }
             *str++ = '\0'; // Terminate
 

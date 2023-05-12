@@ -2,6 +2,7 @@
 #define __CBENCHMARK_ALLOCATORS_H__
 
 #include "cbenchmark/private/c_types.h"
+#include "ccore/c_allocator.h"
 
 namespace BenchMark
 {

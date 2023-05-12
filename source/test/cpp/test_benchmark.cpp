@@ -36,15 +36,15 @@ namespace BenchMark
                     BM_ARGS(128, 128); // {x,y}
 
                     BM_ARG_NAME(0, "x");
-                    BM_ARG_NAME(0, "y");
+                    BM_ARG_NAME(1, "y");
                 }
 
                 {                                   // (2) or this
                     BM_ARG(0)->SEQUENCE(8, 16, 32, 64, 128); // x
-                    BM_ARG(0)->SEQUENCE(64, 128);            // y
+                    BM_ARG(1)->SEQUENCE(64, 128);            // y
 
                     BM_ARG_NAME(0, "x");
-                    BM_ARG_NAME(0, "y");
+                    BM_ARG_NAME(1, "y");
 
                     // These 2 named arguments will be permuted together, and will result in:
                     // { 8, 64 }, x and y
@@ -60,8 +60,8 @@ namespace BenchMark
                 }
 
                 {                                        // (3) or this
-                    BM_ARG_NAME(0, "x")->RANGE(8, 128, 8);         // x
-                    BM_ARG_NAME(0, "y")->DENSE_RANGE(64, 128, 64); // y
+                    BM_ARG_NAME(0, "x")->RANGE(8, 128, 8);         // x = 8, 16, 32, 64, 128
+                    BM_ARG_NAME(1, "y")->DENSE_RANGE(64, 128, 64); // y = 64, 128
                     // Will have the same result as (2)
                 }
 
