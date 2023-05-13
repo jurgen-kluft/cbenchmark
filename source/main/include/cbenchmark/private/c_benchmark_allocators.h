@@ -64,7 +64,7 @@ namespace BenchMark
         ForwardAllocator();
         ~ForwardAllocator();
 
-        void Init(Allocator* alloc, u32 size);
+        void Initialize(Allocator* alloc, u32 size);
         void Reset();
         void Release();
 
@@ -92,7 +92,7 @@ namespace BenchMark
         ScratchAllocator();
         ~ScratchAllocator();
 
-        void Init(Allocator* alloc, u32 size);
+        void Initialize(Allocator* alloc, u32 size);
         void Reset();
 
         void PushScope() { v_PushScope(); }

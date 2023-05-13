@@ -17,7 +17,7 @@ namespace BenchMark
 
     struct Statistic
     {
-        typedef double(*Func)(const Array<double>& values);
+        typedef double (*Func)(const Array<double>& values);
 
         Statistic()
             : name_(nullptr)
@@ -58,12 +58,14 @@ namespace BenchMark
         {
         }
 
+        inline bool IsUnspecified() const { return mode == Unspecified; }
+        inline void SetDefault() { mode = Default; }
+
         u32 mode;
     };
 
     // Returns the number of reports that were aggregated into the result.
     void ComputeStats(ForwardAllocator* alloc, ScratchAllocator* scratch, const Array<BenchMarkRun*>& reports, Array<BenchMarkRun*>& result);
-
 
 } // namespace BenchMark
 

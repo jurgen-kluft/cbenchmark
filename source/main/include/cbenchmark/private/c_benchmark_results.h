@@ -28,11 +28,12 @@ namespace BenchMark
 #define BM_COUNTER settings->AddCounter
 #define BM_TIMEUNIT settings->SetTimeUnit
 #define BM_MINTIME settings->SetMinTime
+#define BM_MEMORY_REQUIRED settings->SetMemoryRequired
 #define BM_MINWARMUPTIME settings->SetMinWarmupTime
 #define BM_ITERATIONS settings->SetIterations
 #define BM_REPETITIONS settings->SetRepetitions
 
-#define BM_ITERATE while (state.KeepRunning())
+#define BM_ITERATE BenchMarkState::Iterator iter(&state); while (iter.Next())
 
     class BenchMarkFixture
     {

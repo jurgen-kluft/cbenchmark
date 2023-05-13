@@ -46,11 +46,10 @@ namespace BenchMark
         // platform under which the benchmarks are running. The benchmark run is
         // never started if this function returns false, allowing the reporter
         // to skip runs based on the context information.
-        virtual bool ReportContext(const Context& context) = 0;
+        virtual bool ReportContext(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
 
-        // Called once for each group of benchmark runs, gives information about
-        // the configurations of the runs.
-        virtual void ReportRunsConfig(double /*min_time*/, bool /*has_explicit_iters*/, IterationCount /*iters*/) = 0;
+        // Called once for each group of benchmark runs, gives information about the configurations of the runs.
+        virtual void ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
 
         // Called once for each group of benchmark runs, gives information about
         // cpu-time and heap memory usage during the benchmark run. If the group
@@ -59,13 +58,11 @@ namespace BenchMark
         // Additionally if this group of runs was the last in a family of benchmarks
         // 'reports' contains additional entries representing the asymptotic
         // complexity and RMS of that benchmark family.
-        virtual void ReportRuns(Array<BenchMarkRun*> const& reports) = 0;
+        virtual void ReportRuns(Array<BenchMarkRun*> const& reports, ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
 
         // Called once and only once after ever group of benchmarks is run and reported.
-        virtual void Flush() = 0;
-
-        // Called once and only once after ever group of benchmarks is run and reported.
-        virtual void Finalize() = 0;
+        virtual void Flush(ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
+        virtual void Finalize(ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
     };
 
 } // namespace BenchMark

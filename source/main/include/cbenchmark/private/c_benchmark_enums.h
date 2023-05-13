@@ -51,7 +51,9 @@ namespace BenchMark
             Nanosecond  = 9,
             Microsecond = 6,
             Millisecond = 3,
-            Second      = 0,
+            Second      = 1,
+            Unspecified = 0,
+            Default     = Millisecond,
         };
 
         inline const char* ToString() const
@@ -76,6 +78,9 @@ namespace BenchMark
             return 1.0;
         }
 
+        inline bool IsUnspecified() const { return flags == Unspecified; }
+        inline void SetDefault() { flags = Default; }
+
         u32 flags;
     };
 
@@ -83,6 +88,7 @@ namespace BenchMark
     {
         enum EFlag
         {
+            UNSPECIFIED              = 0,
             USE_DEFAULT_TIME_UNIT    = 1,
             MEASURE_PROCESS_CPU_TIME = 2,
             USE_REAL_TIME            = 4,
@@ -93,13 +99,14 @@ namespace BenchMark
             : flags(USE_DEFAULT_TIME_UNIT)
         {
         }
-
+        inline bool IsUnspecified() const { return flags == UNSPECIFIED; }
         inline bool UseDefaultTimeUnit() const { return (flags & USE_DEFAULT_TIME_UNIT) != 0; }
         inline bool MeasureProcessCpuTime() const { return (flags & MEASURE_PROCESS_CPU_TIME) != 0; }
         inline bool UseRealTime() const { return (flags & USE_REAL_TIME) != 0; }
         inline bool UseManualTime() const { return (flags & USE_MANUAL_TIME) != 0; }
 
-        inline void Set(EFlag f, bool value) { flags = (flags & ~f) | (value ? f : 0); }
+        inline void Set(EFlag f, bool value) { flags = (flags & ~f) | (value ? f : 0); }        
+        inline void SetDefaults() { flags = USE_DEFAULT_TIME_UNIT; }
         inline void SetUseDefaultTimeUnit(bool value) { Set(USE_DEFAULT_TIME_UNIT, value); }
         inline void SetMeasureProcessCpuTime(bool value) { Set(MEASURE_PROCESS_CPU_TIME, value); }
         inline void SetUseRealTime(bool value) { Set(USE_REAL_TIME, value); }

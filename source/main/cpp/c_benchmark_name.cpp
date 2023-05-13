@@ -11,25 +11,6 @@
 
 namespace BenchMark
 {
-    static char* gStringAppend2(char* str, char const* strEnd, const char* str1, const char* str2)
-    {
-        if (str1 != nullptr)
-        {
-            while (*str1 != '\0' && str < strEnd)
-            {
-                *str++ = *str1++;
-            }
-        }
-        if (str2 != nullptr)
-        {
-            while (*str2 != '\0' && str < strEnd)
-            {
-                *str++ = *str2++;
-            }
-        }
-        return str;
-    }
-
     BenchmarkName::BenchmarkName(const BenchmarkName& other)
         : allocator(nullptr)
         , function_name(nullptr)

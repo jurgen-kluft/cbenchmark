@@ -107,10 +107,10 @@ namespace BenchMark
         void SkipWithError(const char* msg);
 
         // Returns true if 'SkipWithMessage(...)' or 'SkipWithError(...)' was called.
-        bool IsSkipped() const { return skipped_.IsNot(Skipped::NotSkipped); }
+        inline bool IsSkipped() const { return skipped_.IsNot(Skipped::NotSkipped); }
 
         // Returns true if an error has been reported with 'SkipWithError(...)'.
-        bool ErrorOccurred() const { return skipped_.Is(Skipped::SkippedWithError); }
+        inline bool ErrorOccurred() const { return skipped_.Is(Skipped::SkippedWithError); }
 
         // REQUIRES: called exactly once per iteration of the benchmarking loop.
         // Set the manually measured time for this benchmark iteration, which
@@ -150,7 +150,7 @@ namespace BenchMark
         // REQUIRES: a benchmark has exited its benchmarking loop.
         inline void SetItemsProcessed(s64 items)
         {
-            counters_.counters[CounterId::ItemsProcessed].value   = static_cast<double>(items);
+            counters_.counters[CounterId::ItemsProcessed].value = static_cast<double>(items);
             counters_.counters[CounterId::ItemsProcessed].flags = CounterFlags::IsRate;
         }
 
@@ -219,6 +219,32 @@ namespace BenchMark
         BenchMarkState();
         void Init(const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads);
         void InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
+
+        struct Iterator
+        {
+            explicit Iterator(BenchMarkState* st)
+                : cached_(st->IsSkipped() ? 0 : st->max_iterations)
+                , parent_(st)
+            {
+                st->StartKeepRunning();
+            }
+
+        public:
+            inline bool Next()
+            {
+                if (cached_ == 0)
+                {
+                    parent_->FinishKeepRunning();
+                    return false;
+                }
+                --cached_;
+                return true;
+            }
+
+        private:
+            IterationCount        cached_;
+            BenchMarkState* const parent_;
+        };
 
     private:
         void StartKeepRunning();

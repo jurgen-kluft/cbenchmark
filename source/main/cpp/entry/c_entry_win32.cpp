@@ -77,13 +77,19 @@ int main(int argc, char** argv)
     BenchMark::g_InitTimer();
 
     BenchMark::MainAllocator    main_allocator;
+    BenchMark::ForwardAllocator forward_allocator;
     BenchMark::BenchMarkGlobals globals;
+    forward_allocator.Initialize(&main_allocator, 128 * 1024);
 
     StdOut                     stdoutput;
     BenchMark::ConsoleReporter reporter;
-    reporter.Init(&main_allocator, &stdoutput);
+    reporter.Initialize(&forward_allocator, &stdoutput);
+
     bool result = BenchMark::gRunBenchMark(&main_allocator, &globals, reporter);
-    reporter.Exit(&main_allocator);
+
+    reporter.Shutdown(&forward_allocator);
+    forward_allocator.Release();
+    
     return result ? 0 : -1;
 }
 

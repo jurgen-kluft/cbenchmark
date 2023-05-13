@@ -23,32 +23,23 @@
 
 namespace BenchMark
 {
-    // Flushes streams after invoking reporter methods that write to them. This
-    // ensures users get timely updates even when streams are not line-buffered.
-    static void FlushStreams(BenchMarkReporter* reporter)
-    {
-        if (!reporter)
-            return;
-        reporter->Flush();
-    }
-
     // Reports in both display and file reporters.
-    static void Report(BenchMarkReporter* reporter, const RunResults* run_results)
+    static void Report(BenchMarkReporter* reporter, const RunResults* run_results, ForwardAllocator* allocator, ScratchAllocator* scratch)
     {
-        auto report_one = [](BenchMarkReporter* reporter, bool aggregates_only, const RunResults* results)
+        auto report_one = [](BenchMarkReporter* reporter, bool aggregates_only, const RunResults* results, ForwardAllocator* allocator, ScratchAllocator* scratch)
         {
             BM_CHECK(reporter);
             // If there are no aggregates, do output non-aggregates.
             aggregates_only &= !results->aggregates_only.Empty();
             if (!aggregates_only)
-                reporter->ReportRuns(results->non_aggregates);
+                reporter->ReportRuns(results->non_aggregates, allocator, scratch);
             if (!results->aggregates_only.Empty())
-                reporter->ReportRuns(results->aggregates_only);
+                reporter->ReportRuns(results->aggregates_only, allocator, scratch);
         };
 
-        report_one(reporter, run_results->display_report_aggregates_only, run_results);
+        report_one(reporter, run_results->display_report_aggregates_only, run_results, allocator, scratch);
 
-        FlushStreams(reporter);
+        reporter->Flush(allocator, scratch);
     }
 
     template <typename T> T min(T a, T b) { return a < b ? a : b; }
@@ -124,9 +115,9 @@ namespace BenchMark
             reports_for_family = scratch_allocator->Construct<BenchMarkReporter::PerFamilyRunReports>();
         }
 
-        if (reporter->ReportContext(context))
+        if (reporter->ReportContext(context, forward_allocator, scratch_allocator))
         {
-            FlushStreams(reporter);
+            reporter->Flush(forward_allocator, scratch_allocator);
 
             s32 num_repetitions_total = 0;
 
@@ -196,7 +187,7 @@ namespace BenchMark
                 if (HasRepeatsRemaining(runner))
                     continue;
 
-                reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner));
+                reporter->ReportRunsConfig(GetMinTime(runner), HasExplicitIters(runner), GetIters(runner), forward_allocator, scratch_allocator);
 
                 AggregateResults(runner, forward_allocator, scratch_allocator, results->non_aggregates, results->aggregates_only);
 
@@ -215,7 +206,7 @@ namespace BenchMark
                     }
                 }
 
-                Report(reporter, results);
+                Report(reporter, results, forward_allocator, scratch_allocator);
 
                 // Destroy the reports
                 for (int i = 0; i < results->non_aggregates.Size(); ++i)
@@ -246,8 +237,8 @@ namespace BenchMark
             runners.Release();
         }
 
-        reporter->Finalize();
-        FlushStreams(reporter);
+        reporter->Finalize(forward_allocator, scratch_allocator);
+        reporter->Flush(forward_allocator, scratch_allocator);
     }
 
     // Permutations is determined by the number of inputs to repeat a benchmark on.
@@ -270,7 +261,7 @@ namespace BenchMark
 
         // Have BenchMarkUnit create the arguments for the instances
         Array<Array<s32>*> args;
-        const s32         perms = benchmark->BuildArgs(forward_allocator, args);
+        const s32          perms = benchmark->BuildArgs(forward_allocator, args);
         benchmark_instances.Init(forward_allocator, 0, perms * num_thread_counts);
 
         for (s32 i = 0; i < num_thread_counts; ++i)
@@ -319,8 +310,8 @@ namespace BenchMark
 
         ScratchAllocator _scratch_allocator;
         ForwardAllocator _forward_allocator;
-        _scratch_allocator.Init(main_allocator, 1024 * 1024);
-        _forward_allocator.Init(main_allocator, 8 * 1024 * 1024);
+        _scratch_allocator.Initialize(main_allocator, 1024 * 1024);
+        _forward_allocator.Initialize(main_allocator, 8 * 1024 * 1024);
 
         ScratchAllocator* scratch_allocator = &_scratch_allocator;
         ForwardAllocator* forward_allocator = &_forward_allocator;

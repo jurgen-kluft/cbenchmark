@@ -83,6 +83,8 @@ namespace BenchMark
             {
                 // Settings are initialized top to bottom, Suite -> Fixture -> Test.
                 // Override any setting that was set in suite and fixture.
+                
+                BM_MEMORY_REQUIRED(8*1024*1024);
             }
 
             // BM_UNIT_DISABLE(memcpy);

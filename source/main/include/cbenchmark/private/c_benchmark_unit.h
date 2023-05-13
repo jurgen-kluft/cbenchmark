@@ -75,6 +75,7 @@ namespace BenchMark
         int                   repetitions_;
         double                min_time_;
         double                min_warmup_time_;
+        s64                   memory_required_;
         IterationCount        iterations_;
         s32                   counters_size_;
         Counters              counters_;
@@ -121,6 +122,7 @@ namespace BenchMark
         void AddStatisticsComputer(Statistic stat);
         void SetMinTime(double min_time);
         void SetMinWarmupTime(double min_warmup_time);
+        void SetMemoryRequired(s64 required);
         void SetIterations(IterationCount iters);
         void SetRepetitions(int repetitions);
         void SetFuncRun(run_function func);

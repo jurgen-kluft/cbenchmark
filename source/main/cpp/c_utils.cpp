@@ -149,6 +149,13 @@ namespace BenchMark
 
     bool gIsZero(double x) { return x > -1e-9 && x < 1e-9; }
 
+    char* gStringAppendTerminator(char* dst, const char* dstEnd)
+    {
+        if (dst < dstEnd)
+            *dst++ = '\0';
+        return dst;
+    }
+    
     char* gStringAppend(char* dst, const char* dstEnd, const char* src)
     {
         while (dst < dstEnd && *src != '\0')
@@ -163,6 +170,19 @@ namespace BenchMark
         if (dst < dstEnd)
             *dst++ = src;
         return dst;
+    }
+
+    char* gStringAppend2(char* str, char const* strEnd, const char* str1, const char* str2)
+    {
+        if (str1 != nullptr)
+        {
+            str = gStringAppend(str, strEnd, str1);
+        }
+        if (str2 != nullptr)
+        {
+            str = gStringAppend(str, strEnd, str2);
+        }
+        return str;
     }
 
     void gStringCopy(char* dst, const char* src, int max)
@@ -260,7 +280,7 @@ namespace BenchMark
 
     bool gAreStringsEqual(char const* expected, char const* actual) { return gCompareStrings(expected, actual) == 0; }
 
-    char* gStringEnd(char* src)
+    char* gStringToEnd(char* src)
     {
         while (*src != '\0')
             ++src;

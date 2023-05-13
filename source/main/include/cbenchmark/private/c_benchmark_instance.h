@@ -101,6 +101,7 @@ namespace BenchMark
         int                     repetitions() const { return benchmark_->repetitions_; }
         double                  min_time() const { return benchmark_->min_time_; }
         double                  min_warmup_time() const { return benchmark_->min_warmup_time_; }
+        s64                     memory_required() const { return benchmark_->memory_required_; }
         IterationCount          iterations() const { return benchmark_->iterations_; }
         setup_function          setup() const { return benchmark_->setup_; }
         teardown_function       teardown() const { return benchmark_->teardown_; }

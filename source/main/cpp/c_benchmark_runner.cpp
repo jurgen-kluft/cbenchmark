@@ -23,7 +23,7 @@
 namespace BenchMark
 {
     static constexpr IterationCount kMaxIterations  = 1000000000;
-    const double                    kDefaultMinTime = 1.0;
+    static constexpr double         kDefaultMinTime = 1.0;
 
     void CreateRunReport(ForwardAllocator* allocator, BenchMarkRun* report, const BenchMarkInstance* bmi, const BenchMarkRunResult& results, IterationCount memory_iterations, double seconds, s64 repetition_index, s64 repeats)
     {
@@ -257,7 +257,7 @@ namespace BenchMark
             // NOTE: Currently we hard-code the size of memory for each allocator, but we
             //       should make this configurable by the BenchMarkUnit.
             ForwardAllocator* allocator = scratch_allocator_->Construct<ForwardAllocator>();
-            allocator->Init(main_allocator_, 8 * 1024 * 1024);
+            allocator->Initialize(main_allocator_, instance->memory_required());
             forward_allocators.PushBack(allocator);
         }
 

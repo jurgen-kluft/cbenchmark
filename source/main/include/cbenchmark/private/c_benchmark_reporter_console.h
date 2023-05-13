@@ -29,27 +29,24 @@ namespace BenchMark
         {
         }
 
-        void Init(Allocator* allocator, ConsoleOutput* out, s32 max_line_width = 512);
-        void Exit(Allocator* allocator);
+        void Initialize(Allocator* allocator, ConsoleOutput* out);
+        void Shutdown(Allocator* allocator);
 
-        virtual bool ReportContext(const Context& context);
-        virtual void ReportRuns(Array<BenchMarkRun*> const& reports);
-        virtual void ReportRunsConfig(double /*min_time*/, bool /*has_explicit_iters*/, IterationCount /*iters*/);
+        virtual bool ReportContext(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch);
+        virtual void ReportRuns(Array<BenchMarkRun*> const& reports, ForwardAllocator* allocator, ScratchAllocator* scratch);
+        virtual void ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch);
 
     protected:
-        virtual void PrintRunData(const BenchMarkRun& report);
-        virtual void PrintHeader(const BenchMarkRun& report);
+        virtual void PrintRunData(const BenchMarkRun& report, ForwardAllocator* allocator, ScratchAllocator* scratch);
+        virtual void PrintHeader(const BenchMarkRun& report, ForwardAllocator* allocator, ScratchAllocator* scratch);
 
-        virtual void Flush();
-        virtual void Finalize();
+        virtual void Flush(ForwardAllocator* allocator, ScratchAllocator* scratch);
+        virtual void Finalize(ForwardAllocator* allocator, ScratchAllocator* scratch);
 
         TextStream    output_stream_;
         TextStream    error_stream_;
         OutputOptions output_options_;
         Counters      prev_counters_;
-        char*         line1_;
-        char*         line2_;
-        s32           max_line_width_;
         s32           name_field_width_;
         bool          printed_header_;
     };

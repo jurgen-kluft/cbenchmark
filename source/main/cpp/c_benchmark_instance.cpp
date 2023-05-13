@@ -48,7 +48,7 @@ namespace BenchMark
     BenchMarkInstance::BenchMarkInstance()
         : name_()
         , benchmark_(nullptr)
-        , args_()
+        , args_(nullptr)
         , threads_(1)
     {
     }
@@ -59,8 +59,7 @@ namespace BenchMark
     {
         benchmark_ = benchmark;
         threads_   = (thread_count);
-
-        args_ = args;
+        args_      = args;
 
         // 'Reserve' enough memory for the name and parts.
         const s32 nameSize       = 511;
@@ -72,49 +71,52 @@ namespace BenchMark
 
             // Name/{ArgName:}Arg/{ArgName:}Arg/..
             str = gStringAppend(str, strEnd, benchmark->name);
-            for (s32 i = 0; i < args_->Size(); ++i)
+            if (args_ != nullptr)
             {
-                if (str > name_.function_name)
+                for (s32 i = 0; i < args_->Size(); ++i)
                 {
-                    str = gStringAppend(str, strEnd, '/');
-                }
+                    if (str > name_.function_name)
+                    {
+                        str = gStringAppend(str, strEnd, '/');
+                    }
 
-                if (benchmark_->args_count_ > i && benchmark_->args_[i].name_ != nullptr)
-                {
-                    str = gStringFormatAppend(str, strEnd, "%s:", benchmark_->args_[i].name_);
-                }
+                    if (benchmark_->args_count_ > i && benchmark_->args_[i].name_ != nullptr)
+                    {
+                        str = gStringFormatAppend(str, strEnd, "%s:", benchmark_->args_[i].name_);
+                    }
 
-                str = gStringFormatAppend(str, strEnd, "%d", (*args_)[i]);
+                    str = gStringFormatAppend(str, strEnd, "%d", (*args_)[i]);
+                }
             }
-            *str++ = '\0'; // Terminate
+            str = gStringAppendTerminator(str, strEnd);
 
             name_.min_time = str;
             if (!gIsZero(benchmark->min_time_))
             {
                 str = gStringFormatAppend(str, strEnd, "min_time:%0.3f", benchmark->min_time_);
             }
-            *str++ = '\0'; // Terminate
+            str = gStringAppendTerminator(str, strEnd);
 
             name_.min_warmup_time = str;
             if (!gIsZero(benchmark->min_warmup_time_))
             {
                 str = gStringFormatAppend(str, strEnd, "min_warmup_time:%0.3f", benchmark->min_warmup_time_);
             }
-            *str++ = '\0'; // Terminate
+            str = gStringAppendTerminator(str, strEnd);
 
             name_.iterations = str;
             if (benchmark->iterations_ != 0)
             {
                 str = gStringFormatAppend(str, strEnd, "iterations:%lu", static_cast<unsigned long>(benchmark->iterations_));
             }
-            *str++ = '\0'; // Terminate
+            str = gStringAppendTerminator(str, strEnd);
 
             name_.repetitions = str;
             if (benchmark->repetitions_ != 0)
             {
                 str = gStringFormatAppend(str, strEnd, "repeats:%d", benchmark->repetitions_);
             }
-            *str++ = '\0'; // Terminate
+            str = gStringAppendTerminator(str, strEnd);
 
             s32 time_types  = 0;
             name_.time_type = str;
@@ -123,6 +125,7 @@ namespace BenchMark
                 str = gStringAppend(str, strEnd, "process_time");
                 time_types++;
             }
+            str = gStringAppendTerminator(str, strEnd);
 
             if (benchmark->time_settings_.UseManualTime())
             {
@@ -144,8 +147,7 @@ namespace BenchMark
                 str             = gStringAppend(str, strEnd, "real_time");
                 time_types++;
             }
-
-            *str++ = '\0'; // Terminate
+            str = gStringAppendTerminator(str, strEnd);
 
             name_.threads = str;
             if (!benchmark->thread_counts_.Empty())
@@ -153,7 +155,7 @@ namespace BenchMark
                 str = gStringFormatAppend(str, strEnd, "threads:%d", threads_);
             }
 
-            *str++ = '\0'; // Terminate
+            str = gStringAppendTerminator(str, strEnd);
         }
         allocator->Commit(str);
     }

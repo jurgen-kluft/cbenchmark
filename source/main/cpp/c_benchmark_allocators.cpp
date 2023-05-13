@@ -45,7 +45,7 @@ namespace BenchMark
             main_->Deallocate(buffer_begin_);
     }
 
-    void ScratchAllocator::Init(Allocator* alloc, u32 size)
+    void ScratchAllocator::Initialize(Allocator* alloc, u32 size)
     {
         Reset();
 
@@ -119,7 +119,7 @@ namespace BenchMark
             main_->Deallocate(buffer_begin_);
     }
 
-    void ForwardAllocator::Init(Allocator* alloc, u32 size)
+    void ForwardAllocator::Initialize(Allocator* alloc, u32 size)
     {
         main_            = alloc;
         buffer_begin_    = (u8*)alloc->Allocate(size);

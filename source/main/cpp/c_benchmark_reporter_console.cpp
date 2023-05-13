@@ -5,7 +5,7 @@
 namespace BenchMark
 {
 
-    void ConsoleReporter::Init(Allocator* allocator, ConsoleOutput* out, s32 max_line_width)
+    void ConsoleReporter::Initialize(Allocator* allocator, ConsoleOutput* out)
     {
         const unsigned int kOutStreamBufferSize = 1024;
         const unsigned int kErrStreamBufferSize = 256;
@@ -19,23 +19,15 @@ namespace BenchMark
         error_stream_.sos    = (char*)allocator->Allocate(256, 8);
         error_stream_.eos    = error_stream_.sos + 256 - 1;
         error_stream_.stream = error_stream_.sos;
-
-        line1_ = (char*)allocator->Allocate(max_line_width, 8);
-        line2_ = (char*)allocator->Allocate(max_line_width, 8);
     }
 
-    void ConsoleReporter::Exit(Allocator* allocator)
+    void ConsoleReporter::Shutdown(Allocator* allocator)
     {
         output_stream_.flush();
         error_stream_.flush();
 
         allocator->Deallocate(output_stream_.sos);
         allocator->Deallocate(error_stream_.sos);
-        allocator->Deallocate(line1_);
-        allocator->Deallocate(line2_);
-
-        line1_ = nullptr;
-        line2_ = nullptr;
 
         output_stream_.sos    = nullptr;
         output_stream_.eos    = nullptr;
@@ -48,7 +40,7 @@ namespace BenchMark
         error_stream_.out    = nullptr;
     }
 
-    bool ConsoleReporter::ReportContext(const Context& context)
+    bool ConsoleReporter::ReportContext(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch)
     {
         /* TO BE IMPLEMENTED */
         name_field_width_ = context.name_field_width;
@@ -59,7 +51,7 @@ namespace BenchMark
         return false;
     }
 
-    void ConsoleReporter::ReportRuns(Array<BenchMarkRun*> const& reports)
+    void ConsoleReporter::ReportRuns(Array<BenchMarkRun*> const& reports, ForwardAllocator* allocator, ScratchAllocator* scratch)
     {
         for (s32 i = 0; i < reports.Size(); ++i)
         {
@@ -70,25 +62,34 @@ namespace BenchMark
             {
                 printed_header_ = true;
                 prev_counters_.Copy(run->counters);
-                PrintHeader(*run);
+                PrintHeader(*run, allocator, scratch);
             }
+
+            PrintRunData(*run, allocator, scratch);
         }
     }
 
-    void ConsoleReporter::ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters) {}
+    void ConsoleReporter::ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch) {}
 
-    void ConsoleReporter::PrintRunData(const BenchMarkRun& result)
+    void ConsoleReporter::PrintRunData(const BenchMarkRun& result, ForwardAllocator* allocator, ScratchAllocator* scratch)
     {
-        char nameWidthFormat[8];
+        USE_SCRATCH(scratch);
+
+        char* nameWidthFormat = scratch->Alloc<char>(8 + 1);
         gSetWidthFormat(nameWidthFormat, static_cast<int>(name_field_width_));
 
-        char* str = &line2_[0];
-        str       = result.run_name.FullName(str, &line2_[639]);
-        str[0]    = '\0';
+        const s32   max_line_width = 1024;
+        char* const line           = scratch->Alloc<char>(max_line_width + 1);
+        line[max_line_width]       = '\0';
+
+        char*             outStr    = line;
+        const char* const outStrEnd = &line[max_line_width];
+        outStr                      = result.run_name.FullName(outStr, outStrEnd);
+        outStr                      = gStringAppend(outStr, outStrEnd, '\0');
 
         auto name_color = (result.report_big_o || result.report_rms) ? COLOR_BLUE : COLOR_GREEN;
         // name_color
-        char* line = gStringFormatAppend(&line1_[0], &line1_[639], nameWidthFormat, str);
+        outStr = gStringFormatAppend(outStr, outStrEnd, nameWidthFormat, line);
 
         // TODO print 'skipped with error' or 'skipped with message'
 
@@ -99,105 +100,117 @@ namespace BenchMark
         {
             const char* bigo = result.complexity.ToString();
             // COLOR_YELLOW
-            line = gStringFormatAppend(line, &line1_[639], "%10.2f ", real_time);
-            line = gStringFormatAppend(line, &line1_[639], "%-4s ", bigo);
-            line = gStringFormatAppend(line, &line1_[639], "%10.2f ", cpu_time);
-            line = gStringFormatAppend(line, &line1_[639], "%-4s ", bigo);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%10.2f ", real_time);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", bigo);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%10.2f ", cpu_time);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", bigo);
         }
         else if (result.report_rms)
         {
             // COLOR_YELLOW
             // printer(Out, , "%10.0f %-4s %10.0f %-4s ", real_time * 100, "%", cpu_time * 100, "%");
-            line = gStringFormatAppend(line, &line1_[639], "%10.0f ", real_time * 100);
-            line = gStringFormatAppend(line, &line1_[639], "%-4s ", "%");
-            line = gStringFormatAppend(line, &line1_[639], "%10.0f ", cpu_time * 100);
-            line = gStringFormatAppend(line, &line1_[639], "%-4s ", "%");
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%10.0f ", real_time * 100);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", "%");
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%10.0f ", cpu_time * 100);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", "%");
         }
         else if (result.run_type != BenchMarkRun::RT_Aggregate || result.aggregate_unit.unit == StatisticUnit::Time)
         {
             const char* timeLabel = result.time_unit.ToString();
             // printer(Out, COLOR_YELLOW, "%s %-4s %s %-4s ", real_time_str.c_str(), timeLabel, cpu_time_str.c_str(), timeLabel);
-            line = gFormatTime(real_time, line, &line1_[639]);
-            line = gStringFormatAppend(line, &line1_[639], "%s", " ");
-            line = gStringFormatAppend(line, &line1_[639], "%-4s ", timeLabel);
-            line = gFormatTime(cpu_time, line, &line1_[639]);
-            line = gStringFormatAppend(line, &line1_[639], "%s", " ");
-            line = gStringFormatAppend(line, &line1_[639], "%-4s ", timeLabel);
+            outStr = gFormatTime(real_time, outStr, outStrEnd);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%s", " ");
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", timeLabel);
+            outStr = gFormatTime(cpu_time, outStr, outStrEnd);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%s", " ");
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", timeLabel);
         }
         else
         {
             // ASSERT(result.aggregate_unit.unit == StatisticUnit::Percentage);
             // printer(Out, COLOR_YELLOW, "%10.2f %-4s %10.2f %-4s ", (100. * result.real_accumulated_time), "%", (100. * result.cpu_accumulated_time), "%");
-            line = gStringFormatAppend(line, &line1_[639], "%10.2f ", (100. * result.real_accumulated_time));
-            line = gStringFormatAppend(line, &line1_[639], "%-4s ", "%");
-            line = gStringFormatAppend(line, &line1_[639], "%10.2f ", (100. * result.cpu_accumulated_time));
-            line = gStringFormatAppend(line, &line1_[639], "%-4s ", "%");
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%10.2f ", (100. * result.real_accumulated_time));
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", "%");
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%10.2f ", (100. * result.cpu_accumulated_time));
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", "%");
         }
 
         if (!result.report_big_o && !result.report_rms)
         {
             // printer(Out, COLOR_CYAN, "%10lld", result.iterations);
-            line = gStringFormatAppend(line, &line1_[639], "%10lld", result.iterations);
+            outStr = gStringFormatAppend(outStr, outStrEnd, "%10lld", result.iterations);
         }
 
-        for (s32 i = 0; i < result.counters.Size(); ++i)
+        if (result.counters.Size() > 0)
         {
-            const Counter& c = result.counters.counters[i];
+            char* const line2     = scratch->Alloc<char>(max_line_width + 1);
+            line2[max_line_width] = '\0';
+            for (s32 i = 0; i < result.counters.Size(); ++i)
+            {
+                const Counter& c = result.counters.counters[i];
 
-            const char* cname = c.name;
-            const char* unit  = "";
+                const char* cname = c.name;
+                const char* unit  = "";
 
-            char* str = &line2_[0];
-            if (result.run_type == BenchMarkRun::RT_Aggregate && result.aggregate_unit.unit == StatisticUnit::Percentage)
-            {
-                str  = gStringFormatAppend(str, &line2_[639], "%.2f", 100. * c.value);
-                unit = "%";
-            }
-            else
-            {
-                str = gHumanReadableNumber(str, &line2_[639], c.value, c.flags.OneK());
-                if (c.flags.flags & CounterFlags::IsRate)
-                    unit = (c.flags.flags & CounterFlags::Invert) ? "s" : "/s";
-            }
+                char* numberStr = line2;
+                if (result.run_type == BenchMarkRun::RT_Aggregate && result.aggregate_unit.unit == StatisticUnit::Percentage)
+                {
+                    numberStr = gStringFormatAppend(numberStr, &line2[max_line_width], "%.2f", 100. * c.value);
+                    unit      = "%";
+                }
+                else
+                {
+                    numberStr = gHumanReadableNumber(numberStr, &line2[max_line_width], c.value, c.flags.OneK());
+                    if (c.flags.flags & CounterFlags::IsRate)
+                        unit = (c.flags.flags & CounterFlags::Invert) ? "s" : "/s";
+                }
+                numberStr = gStringAppendTerminator(numberStr, &line2[max_line_width]);
 
-            if (output_options_ & OO_Tabular)
-            {
-                // printer(Out, COLOR_DEFAULT, " %*s%s", gStringLength(cname) - gStringLength(unit), str, unit);
-                gSetWidthFormat(nameWidthFormat, gStringLength(cname) - gStringLength(unit));
-                line = gStringAppend(line, &line1_[639], " ");
-                line = gStringFormatAppend(line, &line1_[639], nameWidthFormat, str);
-                line = gStringAppend(line, &line1_[639], unit);
-            }
-            else
-            {
-                // printer(Out, COLOR_DEFAULT, " %s=%s%s", cname, str, unit);
-                line = gStringAppend(line, &line1_[639], " ");
-                line = gStringAppend(line, &line1_[639], cname);
-                line = gStringAppend(line, &line1_[639], "=");
-                line = gStringAppend(line, &line1_[639], str);
-                line = gStringAppend(line, &line1_[639], unit);
+                outStr = gStringAppend(outStr, outStrEnd, ' ');
+                if (output_options_ & OO_Tabular)
+                {
+                    // printer(Out, COLOR_DEFAULT, " %*s%s", gStringLength(cname) - gStringLength(unit), outStr, unit);
+                    gSetWidthFormat(nameWidthFormat, gStringLength(cname) - gStringLength(unit));
+                    outStr = gStringFormatAppend(outStr, outStrEnd, nameWidthFormat, numberStr);
+                }
+                else
+                {
+                    // printer(Out, COLOR_DEFAULT, " %s=%s%s", cname, outStr, unit);
+                    outStr = gStringAppend(outStr, outStrEnd, cname);
+                    outStr = gStringAppend(outStr, outStrEnd, '=');
+                    outStr = gStringAppend(outStr, outStrEnd, numberStr);
+                }
+                outStr = gStringAppend(outStr, outStrEnd, unit);
             }
         }
+        if (result.report_label != nullptr)
+        {
+            // printer(Out, COLOR_DEFAULT, " %s", result.report_label);
+            outStr = gStringAppend(outStr, outStrEnd, ' ');
+            outStr = gStringAppend(outStr, outStrEnd, result.report_label);
+        }
+        outStr = gStringAppendTerminator(outStr, outStrEnd);
 
-        *line = '\0';
-
-        (output_stream_ << line1_).endl();
+        (output_stream_ << line).endl();
         return;
     }
 
-    void ConsoleReporter::PrintHeader(const BenchMarkRun& report)
+    void ConsoleReporter::PrintHeader(const BenchMarkRun& report, ForwardAllocator* allocator, ScratchAllocator* scratch)
     {
-        char nameWidthFormat[8];
+        USE_SCRATCH(scratch);
+
+        char* nameWidthFormat = scratch->Alloc<char>(8 + 1);
         gSetWidthFormat(nameWidthFormat, static_cast<int>(name_field_width_));
 
-        line1_[0] = '\0';
-        line2_[0] = '\0';
+        const s32 max_line_width = 1024;
+        char*     line           = scratch->Alloc<char>(max_line_width + 1);
+        line[0]                  = '\0';
 
-        char* str = &line1_[0];
-        str       = gStringFormatAppend(str, &line1_[639], nameWidthFormat, "Benchmark");
-        str       = gStringFormatAppend(str, &line1_[639], "%13s", "Time");
-        str       = gStringFormatAppend(str, &line1_[639], "%15s", "CPU");
-        str       = gStringFormatAppend(str, &line1_[639], "%12s", "Iterations");
+        char* outStr = line;
+        outStr       = gStringFormatAppend(outStr, &line[max_line_width], nameWidthFormat, "Benchmark");
+        outStr       = gStringFormatAppend(outStr, &line[max_line_width], "%13s", "Time");
+        outStr       = gStringFormatAppend(outStr, &line[max_line_width], "%15s", "CPU");
+        outStr       = gStringFormatAppend(outStr, &line[max_line_width], "%12s", "Iterations");
 
         if (!report.counters.counters.Empty())
         {
@@ -205,30 +218,29 @@ namespace BenchMark
             {
                 for (int i = 0; i < report.counters.counters.Size(); ++i)
                 {
-                    str = gStringFormatAppend(str, &line1_[639], " %10s", report.counters.counters[i].name);
+                    outStr = gStringFormatAppend(outStr, &line[max_line_width], " %10s", report.counters.counters[i].name);
                 }
             }
             else
             {
-                str = gStringFormatAppend(str, &line1_[639], " %s", " UserCounters...");
+                outStr = gStringFormatAppend(outStr, &line[max_line_width], " %s", " UserCounters...");
             }
         }
-        *str = '\0';
+        gStringAppend(outStr, &line[max_line_width], '\0');
 
-        char* str2  = &line2_[0];
-        int   width = (int)(str - &line2_[0]);
+        const int   width = (int)(outStr - line);
+        char* const line2 = outStr;
+        char*       str2  = line2;
         for (int i = 0; i < width; ++i)
-            str2[i] = '-';
-        *str2 = '\0';
+            str2 = gStringAppend(str2, &line2[max_line_width], '-');
+        str2 = gStringAppend(str2, &line[max_line_width], '\0');
 
-        (((output_stream_ << line2_).endl() << line1_).endl() << line2_).endl();
+        (output_stream_ << line2).endl();
+        (output_stream_ << line).endl();
+        (output_stream_ << line2).endl();
     }
 
-    void ConsoleReporter::Flush() 
-    {
-        output_stream_.flush();
-    }
-
-    void ConsoleReporter::Finalize() {}
+    void ConsoleReporter::Flush(ForwardAllocator* allocator, ScratchAllocator* scratch) { output_stream_.flush(); }
+    void ConsoleReporter::Finalize(ForwardAllocator* allocator, ScratchAllocator* scratch) { }
 
 } // namespace BenchMark

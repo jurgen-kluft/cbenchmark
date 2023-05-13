@@ -15,9 +15,6 @@ namespace BenchMark
         template <typename T> T min(T a, T b) { return a < b ? a : b; }
         template <typename T> T max(T a, T b) { return a > b ? a : b; }
 
-        static s32 AddPowers(s64 lo, s64 hi, int mult, Array<s64>* dst);
-        static s32 AddNegatedPowers(s64 lo, s64 hi, int mult, Array<s64>* dst);
-
         // Creates a list of integer values for the given range and multiplier.
         // This can be used together with ArgsProduct() to allow multiple ranges
         // with different multipliers.
@@ -137,9 +134,6 @@ namespace BenchMark
         for (s32 i = 0; i < args_count_; ++i)
             mode |= args_[i].mode_;
 
-        if (mode == 0)
-            return 0;
-
         if (mode == Arg_t::Arg_Value)
         {
             // there is no need to compute a 'product' of values.
@@ -148,12 +142,11 @@ namespace BenchMark
             for (s32 i = 0; i < args_count_; ++i)
                 iters = iters == 0 ? args_[i].count_ : nranges::min(args_[i].count_, iters);
 
-            args.Init(alloc, iters, iters);
+            args.Init(alloc, 0, iters);
 
             for (s32 i = 0; i < iters; ++i)
             {
-                Array<s32>*& arg = args[i];
-                arg              = alloc->Construct<Array<s32>>();
+                Array<s32>* arg = alloc->Construct<Array<s32>>();
                 for (s32 j = 0; j < args_count_; ++j)
                 {
                     if (args_[i].mode_ == 0 || args_[i].count_ == 0)
@@ -163,7 +156,7 @@ namespace BenchMark
                 args.PushBack(arg);
             }
         }
-        else
+        else if (mode != 0)
         {
             // compute the total number of permutations and
             // initialize the permute target and vector.
@@ -191,6 +184,12 @@ namespace BenchMark
 
                 IncreasePermuteVector(permute_vector, permute_target, args_count_);
             }
+        }
+
+        if (args.Size() == 0)
+        {
+            args.Init(alloc, 0, 1);
+            args.PushBack(nullptr);
         }
 
         return args.Size();
@@ -230,7 +229,7 @@ namespace BenchMark
         thread_counts_      = Array<s32>();
         statistics_         = Array<Statistic>();
         counters_size_      = 2;
-        thread_counts_size_ = 0;
+        thread_counts_size_ = 1;
         statistics_count_   = 4;
 
         args_count_ = sizeof(args_) / sizeof(args_[0]);
@@ -267,6 +266,24 @@ namespace BenchMark
 
         AddCounter("items per second", CounterFlags::IsRate);
         AddCounter("bytes per second", CounterFlags::IsRate);
+
+        // ensure everything has defaults if they are unspecified
+        if (time_unit_.IsUnspecified())
+            time_unit_.SetDefault();
+        if (time_settings_.IsUnspecified())
+            time_settings_.SetDefaults();
+        if (aggregation_report_mode_.IsUnspecified())
+            aggregation_report_mode_.SetDefault();
+        if (thread_counts_.Size() == 0)
+            thread_counts_.PushBack(1);
+        if (repetitions_ == 0)
+            repetitions_ = 1;
+        if (min_time_ == 0)
+            min_time_ = 0.5;
+        if (min_warmup_time_ == 0)
+            min_warmup_time_ = 0.5;
+        if (memory_required_ == 0)
+            memory_required_ = 1 << 20; // 1 MB
     }
 
     void BenchMarkUnit::ReleaseSettings() { PrepareSettings(); }
@@ -314,6 +331,7 @@ namespace BenchMark
     void BenchMarkUnit::SetTimeUnit(TimeUnit tu) { time_unit_ = tu; }
     void BenchMarkUnit::SetMinTime(double min_time) { min_time_ = min_time; }
     void BenchMarkUnit::SetMinWarmupTime(double min_warmup_time) { min_warmup_time_ = min_warmup_time; }
+    void BenchMarkUnit::SetMemoryRequired(s64 required) { memory_required_ = required; }
     void BenchMarkUnit::SetIterations(IterationCount iters) { iterations_ = iters; }
     void BenchMarkUnit::SetRepetitions(int repetitions) { repetitions_ = repetitions; }
     void BenchMarkUnit::SetFuncRun(run_function func) { run_ = func; }
