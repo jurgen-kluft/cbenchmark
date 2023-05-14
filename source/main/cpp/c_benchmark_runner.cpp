@@ -31,7 +31,9 @@ namespace BenchMark
         report->run_name.CopyFrom(allocator, bmi->name());
         report->skipped      = results.skipped_;
         report->skip_message = results.skip_message_;
-        report->report_label = results.report_label_;
+
+        report->report_format = results.report_format_;
+        report->report_value  = results.report_value_;
 
         // This is the total iterations across all threads.
         report->iterations       = results.iterations;

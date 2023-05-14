@@ -218,7 +218,8 @@ namespace BenchMark
         big_o->threads               = run0->threads;
         big_o->aggregate_name        = "BigO";
         big_o->aggregate_unit        = {StatisticUnit::Time};
-        big_o->report_label          = run0->report_label;
+        big_o->report_format         = run0->report_format;
+        big_o->report_value          = run0->report_value;
         big_o->iterations            = 0;
         big_o->real_accumulated_time = result_real.coef;
         big_o->cpu_accumulated_time  = result_cpu.coef;
@@ -240,7 +241,8 @@ namespace BenchMark
         rms->run_type              = BenchMarkRun::RT_Aggregate;
         rms->aggregate_name        = "RMS";
         rms->aggregate_unit        = {StatisticUnit::Percentage};
-        rms->report_label          = big_o->report_label;
+        rms->report_format         = run0->report_format;
+        rms->report_value          = run0->report_value;
         rms->iterations            = 0;
         rms->repetition_index      = BenchMarkRun::no_repetition_index;
         rms->repetitions           = run0->repetitions;

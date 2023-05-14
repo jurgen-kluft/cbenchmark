@@ -53,13 +53,6 @@ namespace BenchMark
 
     class ForwardAllocator : public Allocator
     {
-        Allocator* main_;
-        u8*        buffer_;
-        u8*        buffer_begin_;
-        u8*        buffer_end_;
-        s32        checkout_;
-        s32        num_allocations_;
-
     public:
         ForwardAllocator();
         ~ForwardAllocator();
@@ -68,7 +61,7 @@ namespace BenchMark
         void Reset();
         void Release();
 
-        template <typename T> T* Checkout(unsigned int size, unsigned int alignment = sizeof(void*)) { return (T*)v_Checkout(size, alignment); }
+        template <typename T> T* Checkout(unsigned int count, unsigned int alignment = sizeof(void*)) { return (T*)v_Checkout(count * sizeof(T), alignment); }
         void                     Commit(void* ptr) { v_Commit(ptr); }
 
     protected:
@@ -76,16 +69,27 @@ namespace BenchMark
         virtual void  v_Commit(void* ptr);
         virtual void* v_Allocate(unsigned int size, unsigned int alignment);
         virtual void  v_Deallocate(void* ptr);
+
+        Allocator* main_;
+        u8*        buffer_;
+        u8*        buffer_begin_;
+        u8*        buffer_end_;
+        s32        checkout_;
+        s32        num_allocations_;
     };
 
     class ScratchAllocator : public Allocator
     {
-        enum { MAX_MARK = 15 };
+        enum
+        {
+            MAX_MARK = 15
+        };
         Allocator* main_;
         u8*        buffer_[MAX_MARK];
         u8*        buffer_begin_;
         u8*        buffer_end_;
-        s32        num_allocations_[MAX_MARK];
+        s32        allocs_[MAX_MARK];
+        u32        checkout_[MAX_MARK];
         s32        mark_;
 
     public:
@@ -94,15 +98,21 @@ namespace BenchMark
 
         void Initialize(Allocator* alloc, u32 size);
         void Reset();
+        void Release();
 
         void PushScope() { v_PushScope(); }
         void PopScope() { v_PopScope(); }
 
+        template <typename T> T* Checkout(unsigned int count, unsigned int alignment = sizeof(void*)) { return (T*)v_Checkout(count * sizeof(T), alignment); }
+        void                     Commit(void* ptr) { v_Commit(ptr); }
+
     protected:
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*));
+        virtual void* v_Allocate(unsigned int size, unsigned int alignment);
         virtual void  v_Deallocate(void* ptr);
         virtual void  v_PushScope();
         virtual void  v_PopScope();
+        virtual void* v_Checkout(unsigned int size, unsigned int alignment);
+        virtual void  v_Commit(void* ptr);
     };
 
     class ScopedScratchAllocator

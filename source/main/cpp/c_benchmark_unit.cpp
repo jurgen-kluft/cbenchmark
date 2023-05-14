@@ -104,13 +104,8 @@ namespace BenchMark
         {
             permute_vector[i]++;
             if (permute_vector[i] < original[i])
-            {
                 break;
-            }
-            else
-            {
-                permute_vector[i] = 0;
-            }
+            permute_vector[i] = 0;
         }
     }
 
@@ -264,8 +259,8 @@ namespace BenchMark
         AddStatisticsComputer(Statistic("stddev", StatisticsStdDev, {StatisticUnit::Time}));
         AddStatisticsComputer(Statistic("cv", StatisticsCV, {StatisticUnit::Percentage}));
 
-        AddCounter("items per second", CounterFlags::IsRate);
         AddCounter("bytes per second", CounterFlags::IsRate);
+        AddCounter("items per second", CounterFlags::IsRate);
 
         // ensure everything has defaults if they are unspecified
         if (time_unit_.IsUnspecified())
@@ -323,7 +318,7 @@ namespace BenchMark
         // registration box where names are registered. So here we could ask that box
         // what the id is given a name.
 
-        counters_.counters.PushBack({name, 0, flags, value});
+        counters_.counters.PushBack({name, flags, value});
     }
 
     void BenchMarkUnit::SetComplexity(BigO complexity) { complexity_ = complexity; }

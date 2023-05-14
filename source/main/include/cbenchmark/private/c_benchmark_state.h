@@ -36,8 +36,8 @@ namespace BenchMark
         //   }
         bool KeepRunningBatch(IterationCount n);
 
-        // REQUIRES: timer is running and 'SkipWithMessage(...)' or
-        //   'SkipWithError(...)' has not been called by the current thread.
+        // REQUIRES: timer is running and 'SkipWithMessage(msg)' or
+        //   'SkipWithError(msg)' has not been called by the current thread.
         // Stop the benchmark timer.  If not called, the timer will be
         // automatically stopped after the last iteration of the benchmark loop.
         //
@@ -52,8 +52,8 @@ namespace BenchMark
         // within each benchmark iteration, if possible.
         void PauseTiming();
 
-        // REQUIRES: timer is not running and 'SkipWithMessage(...)' or
-        //   'SkipWithError(...)' has not been called by the current thread.
+        // REQUIRES: timer is not running and 'SkipWithMessage(msg)' or
+        //   'SkipWithError(msg)' has not been called by the current thread.
         // Start the benchmark timer.  The timer is NOT running on entrance to the
         // benchmark function. It begins running after control flow enters the
         // benchmark loop.
@@ -63,10 +63,10 @@ namespace BenchMark
         // within each benchmark iteration, if possible.
         void ResumeTiming();
 
-        // REQUIRES: 'SkipWithMessage(...)' or 'SkipWithError(...)' has not been
+        // REQUIRES: 'SkipWithMessage(msg)' or 'SkipWithError(msg)' has not been
         //            called previously by the current thread.
-        // Report the benchmark as resulting in being skipped with the specified
-        // 'msg'.
+        //           'msg' is required to be a C run-time string, not an allocated string.
+        // Report the benchmark as resulting in being skipped with the specified 'msg'.
         // After this call the user may explicitly 'return' from the benchmark.
         //
         // If the ranged-for style of benchmark loop is used, the user must explicitly
@@ -79,14 +79,15 @@ namespace BenchMark
         // the `KeepRunning()` loop. If multiple threads report being skipped only the
         // first skip message is used.
         //
-        // NOTE: Calling 'SkipWithMessage(...)' does not cause the benchmark to exit
+        // NOTE: Calling 'SkipWithMessage(msg)' does not cause the benchmark to exit
         // the current scope immediately. If the function is called from within
         // the 'KeepRunning()' loop the current iteration will finish. It is the users
         // responsibility to exit the scope as needed.
         void SkipWithMessage(const char* msg);
 
-        // REQUIRES: 'SkipWithMessage(...)' or 'SkipWithError(...)' has not been
+        // REQUIRES: 'SkipWithMessage(msg)' or 'SkipWithError(msg)' has not been
         //            called previously by the current thread.
+        //           'msg' is required to be a C run-time string, not an allocated string.
         // Report the benchmark as resulting in an error with the specified 'msg'.
         // After this call the user may explicitly 'return' from the benchmark.
         //
@@ -100,16 +101,16 @@ namespace BenchMark
         // the `KeepRunning()` loop. If multiple threads report an error only the
         // first error message is used.
         //
-        // NOTE: Calling 'SkipWithError(...)' does not cause the benchmark to exit
+        // NOTE: Calling 'SkipWithError(msg)' does not cause the benchmark to exit
         // the current scope immediately. If the function is called from within
         // the 'KeepRunning()' loop the current iteration will finish. It is the users
         // responsibility to exit the scope as needed.
         void SkipWithError(const char* msg);
 
-        // Returns true if 'SkipWithMessage(...)' or 'SkipWithError(...)' was called.
+        // Returns true if 'SkipWithMessage(msg)' or 'SkipWithError(msg)' was called.
         inline bool IsSkipped() const { return skipped_.IsNot(Skipped::NotSkipped); }
 
-        // Returns true if an error has been reported with 'SkipWithError(...)'.
+        // Returns true if an error has been reported with 'SkipWithError(msg)'.
         inline bool ErrorOccurred() const { return skipped_.Is(Skipped::SkippedWithError); }
 
         // REQUIRES: called exactly once per iteration of the benchmarking loop.
@@ -167,7 +168,7 @@ namespace BenchMark
         // Produces output that looks like:
         //  BM_Compress   50         50   14115038  compress:27.3%
         //
-        // REQUIRES: a benchmark has exited its benchmarking loop.
+        // REQUIRES: a benchmark has exited its benchmarking loop and 'format' to be a runtime c string
         void SetLabel(const char* format, double value);
 
         // Range arguments for this run. CHECKs if the argument has been set.

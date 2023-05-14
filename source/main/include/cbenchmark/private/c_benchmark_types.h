@@ -14,7 +14,6 @@ namespace BenchMark
     struct Counter
     {
         const char*  name;
-        u32          id;
         CounterFlags flags;
         double       value;
     };

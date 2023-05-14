@@ -44,7 +44,8 @@ namespace BenchMark
             , complexity_n(0)
             , counters()
             , skipped_(Skipped::NotSkipped)
-            , report_label_(nullptr)
+            , report_format_(nullptr)
+            , report_value_(0.0)
             , skip_message_(nullptr)
         {
         }
@@ -58,9 +59,10 @@ namespace BenchMark
             manual_time_used = 0.0;
             complexity_n     = 0;
             counters.Clear();
-            skipped_      = Skipped::NotSkipped;
-            report_label_ = nullptr;
-            skip_message_ = nullptr;
+            skipped_       = Skipped::NotSkipped;
+            report_format_ = nullptr;
+            report_value_  = 0.0;
+            skip_message_  = nullptr;
         }
 
         Allocator*     allocator;
@@ -71,7 +73,8 @@ namespace BenchMark
         s64            complexity_n;
         Counters       counters;
         Skipped        skipped_;
-        const char*    report_label_;
+        const char*    report_format_;
+        double         report_value_;
         const char*    skip_message_;
 
         void Merge(const BenchMarkRunResult& other);

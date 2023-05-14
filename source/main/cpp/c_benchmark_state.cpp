@@ -57,33 +57,24 @@ namespace BenchMark
 
     static void ResultSkipWithMessage(BenchMarkRunResult* rr, const char* msg, Skipped skipped)
     {
-        if (rr->skip_message_)
-        {
-            rr->allocator->Dealloc((void*)rr->skip_message_);
+        if (rr->skip_message_  != nullptr)
             rr->skip_message_ = nullptr;
-        
-        }
+
         if (rr->skipped_.IsNotSkipped())
         {
-            s32 const msg_len      = (s32)gStringLength(msg);
-            char*     skip_message = rr->allocator->Alloc<char>(msg_len + 1);
-            gStringCopy(skip_message, msg, msg_len);
-            rr->skip_message_ = skip_message;
+            rr->skip_message_ = msg;
             rr->skipped_      = skipped;
         }
     }
     static void ResultSetLabel(BenchMarkRunResult* rr, const char* format, double value)
     {
-        if (rr->report_label_)
+        if (rr->report_format_ != nullptr)
         {
-            rr->allocator->Dealloc((void*)rr->report_label_);
-            rr->report_label_ = nullptr;
+            rr->report_format_ = nullptr;
+            rr->report_value_  = 0.0;
         }
-        s32 const len     = 63;
-        char*     label   = rr->allocator->Alloc<char>(len + 1);
-        const char* labelEnd = label + len;
-        rr->report_label_ = label;
-        gStringFormatAppend(label, labelEnd, format, value);
+        rr->report_format_ = format;
+        rr->report_value_  = value;
     }
 
     void BenchMarkState::PauseTiming()

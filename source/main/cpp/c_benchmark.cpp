@@ -286,6 +286,23 @@ namespace BenchMark
         static BenchMarkSuite* tail = nullptr;
     } // namespace BenchMarkSuiteList
 
+    static s32 gRegisterCounterName(const char** const counters_array, const char**& counters, const char* name)
+    {
+        // In the array find 'name', if found return the index, if not found add it to the array
+        s32 index = 0;
+        const char** iter = counters_array;
+        while (iter != counters)
+        {
+            if (gCompareStrings(*iter, name) == 0)
+                return index;
+            ++iter;
+            ++index;
+        }
+        counters[0] = name;
+        ++counters;
+        return index;
+    }
+
     void RegisterBenchMarkSuite(BenchMarkSuite* suite)
     {
         if (BenchMarkSuiteList::head == nullptr)
@@ -301,20 +318,12 @@ namespace BenchMark
     }
 
     // A benchmark-suite has a list of benchmark-fixtures where every fixture has a list of benchmark-units.
-    static void RunBenchMarkSuite(Allocator* main_allocator, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* reporter)
+    static void RunBenchMarkSuite(Allocator* main_allocator, ForwardAllocator* forward_allocator, ScratchAllocator* scratch_allocator, BenchMarkGlobals* globals, BenchMarkSuite* suite, BenchMarkReporter* reporter)
     {
         // Report the details of this benchmark suite ?
         // - name / filename / line number
         // - list
         //   - fixture name(num units)
-
-        ScratchAllocator _scratch_allocator;
-        ForwardAllocator _forward_allocator;
-        _scratch_allocator.Initialize(main_allocator, 1024 * 1024);
-        _forward_allocator.Initialize(main_allocator, 8 * 1024 * 1024);
-
-        ScratchAllocator* scratch_allocator = &_scratch_allocator;
-        ForwardAllocator* forward_allocator = &_forward_allocator;
 
         BenchMarkFixture* fixture = suite->head;
         while (fixture != nullptr)
@@ -372,14 +381,22 @@ namespace BenchMark
         }
     }
 
-    static bool RunBenchMarks(Allocator* allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
+    static bool RunBenchMarks(Allocator* main_allocator, BenchMarkGlobals* globals, BenchMarkReporter* reporter)
     {
+        ScratchAllocator _scratch_allocator;
+        ForwardAllocator _forward_allocator;
+        _scratch_allocator.Initialize(main_allocator, 1024 * 1024);
+        _forward_allocator.Initialize(main_allocator, 8 * 1024 * 1024);
+
+        ScratchAllocator* scratch_allocator = &_scratch_allocator;
+        ForwardAllocator* forward_allocator = &_forward_allocator;
+
         BenchMarkSuite* suite = BenchMarkSuiteList::head;
         while (suite != nullptr)
         {
             if (!suite->disabled)
             {
-                RunBenchMarkSuite(allocator, globals, suite, reporter);
+                RunBenchMarkSuite(main_allocator, forward_allocator, scratch_allocator, globals, suite, reporter);
             }
             suite = suite->next;
         }

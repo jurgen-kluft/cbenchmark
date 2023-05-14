@@ -100,11 +100,11 @@ namespace BenchMark
     {
         Array<CounterStat> stats;
 
-        s32 FindById(Counter const& c) const
+        s32 FindByName(Counter const& c) const
         {
             for (int i = 0; i < stats.Size(); i++)
             {
-                if (stats[i].c.id == c.id)
+                if (gCompareStrings(stats[i].c.name, c.name) == 0)
                     return i;
             }
             return stats.Size();
@@ -154,7 +154,7 @@ namespace BenchMark
             {
                 auto const& cnt = r->counters.counters[j];
 
-                auto it = counter_stats.FindById(cnt);
+                auto it = counter_stats.FindByName(cnt);
                 if (it == counter_stats.End())
                 {
                     CounterStat& c = counter_stats.stats.Alloc();
@@ -185,7 +185,7 @@ namespace BenchMark
             for (int j = 0; j < run->counters.counters.Size(); j++)
             {
                 Counter const& cnt = run->counters.counters[j];
-                auto           it  = counter_stats.FindById(cnt);
+                auto           it  = counter_stats.FindByName(cnt);
                 BM_CHECK_NE(it, counter_stats.End());
                 CounterStat& stat = counter_stats.stats[it];
                 stat.s.PushBack(cnt.value);
@@ -193,12 +193,14 @@ namespace BenchMark
         }
 
         // Only add label if it is same for all runs
-        const char* report_label = reports[0]->report_label;
+        const char* report_format = reports[0]->report_format;
+        double      report_value = reports[0]->report_value;
         for (int i = 1; i < reports.Size(); i++)
         {
-            if (gCompareStrings(reports[i]->report_label, report_label) != 0)
+            if (gCompareStrings(reports[i]->report_format, report_format) != 0 && reports[i]->report_value != report_value)
             {
-                report_label = "";
+                report_format = "";
+                report_value = 0.0;
                 break;
             }
         }
@@ -222,7 +224,8 @@ namespace BenchMark
             data->repetition_index = BenchMarkRun::no_repetition_index;
             data->aggregate_name   = Stat.name_;
             data->aggregate_unit   = Stat.unit_;
-            data->report_label     = report_label;
+            data->report_format    = report_format;
+            data->report_value     = report_value;
 
             // It is incorrect to say that an aggregate is computed over
             // run's iterations, because those iterations already got averaged.

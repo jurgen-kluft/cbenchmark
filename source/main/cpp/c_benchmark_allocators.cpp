@@ -41,19 +41,19 @@ namespace BenchMark
 
     ScratchAllocator::~ScratchAllocator()
     {
+        ASSERT(mark_ == 0);
+        ASSERT(checkout_[mark_] == 0);
+        ASSERT(allocs_[mark_] == 0);
         if (main_ && buffer_begin_)
             main_->Deallocate(buffer_begin_);
     }
 
     void ScratchAllocator::Initialize(Allocator* alloc, u32 size)
     {
+        main_         = alloc;
+        buffer_begin_ = (u8*)alloc->Allocate(size);
+        buffer_end_   = buffer_begin_ + size;
         Reset();
-
-        main_                   = alloc;
-        buffer_begin_           = (u8*)alloc->Allocate(size);
-        buffer_end_             = buffer_begin_ + size;
-        buffer_[mark_]          = buffer_begin_;
-        num_allocations_[mark_] = 0;
     }
 
     void ScratchAllocator::Reset()
@@ -61,45 +61,76 @@ namespace BenchMark
         mark_ = 0;
         for (int i = 0; i < MAX_MARK; ++i)
         {
-            buffer_[i]          = nullptr;
-            num_allocations_[i] = 0;
+            buffer_[i]   = nullptr;
+            allocs_[i]   = 0;
+            checkout_[i] = 0;
         }
-        buffer_[mark_]          = buffer_begin_;
-        num_allocations_[mark_] = 0;
+        buffer_[mark_]   = buffer_begin_;
+        allocs_[mark_]   = 0;
+        checkout_[mark_] = 0;
     }
 
-    void* ScratchAllocator::v_Allocate(unsigned int size, unsigned int alignment)
+    void ScratchAllocator::Release()
     {
-        u8* p = (u8*)((ncore::ptr_t)(buffer_ + (ncore::ptr_t)alignment - 1) & ~((ncore::ptr_t)alignment - 1));
-        if ((p + size) > buffer_end_)
-        {
-            ASSERT(false);
-            return nullptr;
-        }
-        num_allocations_[mark_]++;
-        buffer_[mark_] = p + size;
-        return p;
-    }
-
-    void ScratchAllocator::v_Deallocate(void* ptr)
-    {
-        ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
-        num_allocations_[mark_]--;
+        main_->Deallocate(buffer_begin_);
+        buffer_begin_ = nullptr;
+        buffer_end_   = nullptr;
+        Reset();
     }
 
     void ScratchAllocator::v_PushScope()
     {
+        // Going into a new scope we should consider an active checkout
         ++mark_;
         ASSERT(mark_ < (sizeof(buffer_) / sizeof(buffer_[0])));
-        buffer_[mark_]          = buffer_[mark_ - 1];
-        num_allocations_[mark_] = 0;
+        buffer_[mark_]   = buffer_[mark_ - 1] + checkout_[mark_ - 1];
+        allocs_[mark_]   = 0;
+        checkout_[mark_] = 0;
     }
 
     void ScratchAllocator::v_PopScope()
     {
-        ASSERT(num_allocations_[mark_] == 0);
+        ASSERT(checkout_[mark_] == 0);
+        ASSERT(allocs_[mark_] == 0);
         ASSERT(mark_ > 0);
         --mark_;
+    }
+
+    void* ScratchAllocator::v_Checkout(unsigned int size, unsigned int alignment)
+    {
+        // Doing a checkout requires that any other checkouts are committed
+        ASSERT(checkout_[mark_] == 0);
+
+        u8* p = (u8*)((ncore::ptr_t)(buffer_[mark_] + (ncore::ptr_t)alignment - 1) & ~((ncore::ptr_t)alignment - 1));
+        if ((p + size) > buffer_end_)
+            return nullptr;
+
+        ASSERT(buffer_[mark_] < buffer_end_);
+        allocs_[mark_]++;
+        checkout_[mark_] = size;
+        return p;
+    }
+
+    void* ScratchAllocator::v_Allocate(unsigned int size, unsigned int alignment)
+    {
+        void* ptr = v_Checkout(size, alignment);
+        if (ptr == nullptr)
+            return nullptr;
+        v_Commit((u8*)ptr + size);
+        return ptr;
+    }
+
+    void ScratchAllocator::v_Deallocate(void* ptr)
+    {
+        ASSERT(ptr >= buffer_[mark_] && ptr < buffer_end_);
+        allocs_[mark_]--;
+    }
+
+    void ScratchAllocator::v_Commit(void* ptr)
+    {
+        checkout_[mark_] = 0;
+        buffer_[mark_]   = (u8*)ptr;
+        ASSERT(buffer_[mark_] < buffer_end_);
     }
 
     ForwardAllocator::ForwardAllocator()

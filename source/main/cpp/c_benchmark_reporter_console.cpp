@@ -183,11 +183,11 @@ namespace BenchMark
                 outStr = gStringAppend(outStr, outStrEnd, unit);
             }
         }
-        if (result.report_label != nullptr)
+        if (result.report_format != nullptr)
         {
             // printer(Out, COLOR_DEFAULT, " %s", result.report_label);
             outStr = gStringAppend(outStr, outStrEnd, ' ');
-            outStr = gStringAppend(outStr, outStrEnd, result.report_label);
+            outStr = gStringFormatAppend(outStr, outStrEnd, result.report_format, result.report_value);
         }
         outStr = gStringAppendTerminator(outStr, outStrEnd);
 

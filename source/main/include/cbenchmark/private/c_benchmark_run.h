@@ -27,7 +27,8 @@ namespace BenchMark
             , run_type(RT_Iteration)
             , aggregate_name(nullptr)
             , aggregate_unit({StatisticUnit::Time})
-            , report_label(nullptr)
+            , report_format(nullptr)
+            , report_value(0.0)
             , skipped(Skipped::NotSkipped)
             , skip_message(nullptr)
             , iterations(1)
@@ -56,7 +57,8 @@ namespace BenchMark
         RunType       run_type;
         const char*   aggregate_name;
         StatisticUnit aggregate_unit;
-        const char*   report_label; // Empty if not set by benchmark.
+        const char*   report_format; // Empty if not set by benchmark.
+        double        report_value;
         Skipped       skipped;
         const char*   skip_message;
 
