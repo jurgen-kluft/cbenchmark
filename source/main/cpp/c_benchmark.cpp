@@ -117,9 +117,9 @@ namespace BenchMark
 
         if (reporter->ReportContext(context, forward_allocator, scratch_allocator))
         {
+            USE_SCRATCH(scratch_allocator);
+            
             reporter->Flush(forward_allocator, scratch_allocator);
-
-            s32 num_repetitions_total = 0;
 
             // Benchmarks to run
             Array<BenchMarkRunner*> runners;
@@ -130,10 +130,11 @@ namespace BenchMark
 
             // Count the number of benchmark_instances with threads to warn the user in case
             // performance counters are used.
-            int benchmarks_with_threads = 0;
+            s32 num_repetitions_total   = 0;
+            s32 benchmarks_with_threads = 0;
 
             // Loop through all benchmark_instances
-            for (int i = 0; i < benchmark_instances.Size(); ++i)
+            for (s32 i = 0; i < benchmark_instances.Size(); ++i)
             {
                 const BenchMarkInstance* benchmark = benchmark_instances[i];
 
@@ -143,7 +144,7 @@ namespace BenchMark
                 InitRunner(runner, main_allocator, forward_allocator, scratch_allocator, globals, benchmark);
                 runners.PushBack(runner);
 
-                const int num_repeats_of_this_instance = GetNumRepeats(runner);
+                const s32 num_repeats_of_this_instance = GetNumRepeats(runner);
                 num_repetitions_total += num_repeats_of_this_instance;
                 if (reports_for_family)
                     reports_for_family->num_runs_total += num_repeats_of_this_instance;
@@ -163,7 +164,7 @@ namespace BenchMark
             for (s32 runner_index = 0, num_runners = runners.Size(); runner_index != num_runners; ++runner_index)
             {
                 const BenchMarkRunner* runner = runners[runner_index];
-                int                    i      = GetNumRepeats(runner);
+                s32                    i      = GetNumRepeats(runner);
                 while (i--)
                     repetition_indices.PushBack(runner_index);
             }
@@ -174,7 +175,7 @@ namespace BenchMark
                 RandomShuffle(repetition_indices);
             }
 
-            for (int i = 0; i < repetition_indices.Size(); ++i)
+            for (s32 i = 0; i < repetition_indices.Size(); ++i)
             {
                 const s32        repetition_index = repetition_indices[i];
                 BenchMarkRunner* runner           = runners[repetition_index];
@@ -196,6 +197,8 @@ namespace BenchMark
                 {
                     if (reports_for_family->num_runs_done == reports_for_family->num_runs_total)
                     {
+                        USE_SCRATCH(scratch_allocator);
+
                         Array<BenchMarkRun*> additional_run_stats;
                         additional_run_stats.Init(scratch_allocator, 0, 2);
                         ComputeBigO(forward_allocator, scratch_allocator, reports_for_family->runs, additional_run_stats);
@@ -289,8 +292,8 @@ namespace BenchMark
     static s32 gRegisterCounterName(const char** const counters_array, const char**& counters, const char* name)
     {
         // In the array find 'name', if found return the index, if not found add it to the array
-        s32 index = 0;
-        const char** iter = counters_array;
+        s32          index = 0;
+        const char** iter  = counters_array;
         while (iter != counters)
         {
             if (gCompareStrings(*iter, name) == 0)

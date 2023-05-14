@@ -162,6 +162,7 @@ namespace BenchMark
 
     void ForwardAllocator::Reset()
     {
+        ASSERT(buffer_ == buffer_begin_);
         buffer_          = buffer_begin_;
         checkout_        = 0;
         num_allocations_ = 0;
