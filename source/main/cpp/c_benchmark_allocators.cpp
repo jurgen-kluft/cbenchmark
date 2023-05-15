@@ -1,5 +1,6 @@
 #include "ccore/c_target.h"
 #include "ccore/c_debug.h"
+#include "ccore/c_allocator.h"
 
 #include "cbenchmark/private/c_config.h"
 #include "cbenchmark/private/c_benchmark_allocators.h"
@@ -8,7 +9,7 @@
 
 namespace BenchMark
 {
-    void* MainAllocator::v_Allocate(unsigned int size, unsigned int alignment)
+    void* MainAllocator::v_Allocate(s64 size, unsigned int alignment)
     {
         ASSERT(num_allocations_ >= 0);
         num_allocations_++;
@@ -18,6 +19,7 @@ namespace BenchMark
         return _aligned_malloc(alignment, size);
 #endif
     }
+
     void MainAllocator::v_Deallocate(void* ptr)
     {
         ASSERT(num_allocations_ > 0);
@@ -48,10 +50,10 @@ namespace BenchMark
             main_->Deallocate(buffer_begin_);
     }
 
-    void ScratchAllocator::Initialize(Allocator* alloc, u32 size)
+    void ScratchAllocator::Initialize(Allocator* alloc, s64 size)
     {
         main_         = alloc;
-        buffer_begin_ = (u8*)alloc->Allocate(size);
+        buffer_begin_ = alloc->Alloc<u8>(size);
         buffer_end_   = buffer_begin_ + size;
         Reset();
     }
@@ -96,12 +98,11 @@ namespace BenchMark
         --mark_;
     }
 
-    void* ScratchAllocator::v_Checkout(unsigned int size, unsigned int alignment)
+    void* ScratchAllocator::v_Checkout(s64 size, unsigned int alignment)
     {
         // Doing a checkout requires that any other checkouts are committed
         ASSERT(checkout_[mark_] == 0);
-
-        u8* p = (u8*)((ncore::ptr_t)(buffer_[mark_] + (ncore::ptr_t)alignment - 1) & ~((ncore::ptr_t)alignment - 1));
+        u8* p = ncore::g_align_ptr(buffer_[mark_], alignment);
         if ((p + size) > buffer_end_)
             return nullptr;
 
@@ -111,7 +112,7 @@ namespace BenchMark
         return p;
     }
 
-    void* ScratchAllocator::v_Allocate(unsigned int size, unsigned int alignment)
+    void* ScratchAllocator::v_Allocate(s64 size, unsigned int alignment)
     {
         void* ptr = v_Checkout(size, alignment);
         if (ptr == nullptr)
@@ -150,10 +151,10 @@ namespace BenchMark
             main_->Deallocate(buffer_begin_);
     }
 
-    void ForwardAllocator::Initialize(Allocator* alloc, u32 size)
+    void ForwardAllocator::Initialize(Allocator* alloc, s64 size)
     {
         main_            = alloc;
-        buffer_begin_    = (u8*)alloc->Allocate(size);
+        buffer_begin_    = alloc->Alloc<u8>(size);
         buffer_end_      = buffer_begin_ + size;
         buffer_          = buffer_begin_;
         checkout_        = 0;
@@ -178,10 +179,10 @@ namespace BenchMark
         num_allocations_ = 0;
     }
 
-    void* ForwardAllocator::v_Checkout(unsigned int size, unsigned int alignment)
+    void* ForwardAllocator::v_Checkout(s64 size, unsigned int alignment)
     {
         ASSERT(checkout_ >= 0);
-        u8* p = (u8*)((ncore::ptr_t)(buffer_ + (ncore::ptr_t)alignment - 1) & ~((ncore::ptr_t)alignment - 1));
+        u8* p = ncore::g_align_ptr(buffer_, alignment);
         if ((p + size) > buffer_end_)
             return nullptr;
 
@@ -191,7 +192,7 @@ namespace BenchMark
         return p;
     }
 
-    void* ForwardAllocator::v_Allocate(unsigned int size, unsigned int alignment)
+    void* ForwardAllocator::v_Allocate(s64 size, unsigned int alignment)
     {
         void* ptr = v_Checkout(size, alignment);
         if (ptr == nullptr)

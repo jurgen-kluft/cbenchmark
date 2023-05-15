@@ -388,8 +388,8 @@ namespace BenchMark
     {
         ScratchAllocator _scratch_allocator;
         ForwardAllocator _forward_allocator;
-        _scratch_allocator.Initialize(main_allocator, 1024 * 1024);
-        _forward_allocator.Initialize(main_allocator, 8 * 1024 * 1024);
+        _scratch_allocator.Initialize(main_allocator, (s64)1024 * 1024);
+        _forward_allocator.Initialize(main_allocator, (s64)8 * 1024 * 1024);
 
         ScratchAllocator* scratch_allocator = &_scratch_allocator;
         ForwardAllocator* forward_allocator = &_forward_allocator;

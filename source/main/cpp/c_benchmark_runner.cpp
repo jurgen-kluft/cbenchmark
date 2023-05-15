@@ -70,11 +70,11 @@ namespace BenchMark
         ThreadTimer timer(ThreadTimer::Create());
 
         BenchMarkState st;
-        st.InitRun(allocator, bmi->name().function_name, iters, bmi->args(), thread_id, bmi->threads(), &timer, manager, results);
+        st.InitRun(allocator, bmi->name().function_name, iters, bmi->args(), bmi->counters(), thread_id, bmi->threads(), &timer, manager, results);
 
         bmi->run(st, allocator);
 
-        // BM_CHECK(st.skipped() || st.iterations() >= st.max_iterations) << "Benchmark returned before State::KeepRunning() returned false!";
+        ASSERTS(st.IsSkipped() || st.Iterations() >= st.max_iterations, "Benchmark returned before BenchMarkState::KeepRunning() returned false!");
         {
             results->iterations += st.Iterations();
             results->cpu_time_used += timer.cpu_time_used();
@@ -105,7 +105,7 @@ namespace BenchMark
 
         // We've already concluded that this flag is currently used to pass
         // iters but do a check here again anyway.
-        // BM_CHECK(iters_or_time.tag == BenchTimeType::ITERS);
+        ASSERT(iters_or_time.type == BenchTimeType::ITERS);
         return iters_or_time.iters;
     }
 
@@ -186,7 +186,6 @@ namespace BenchMark
         {
             results->display_report_aggregates_only = (instance->aggregation_report_mode().mode & AggregationReportMode::DisplayReportAggregatesOnly);
             results->file_report_aggregates_only    = (instance->aggregation_report_mode().mode & AggregationReportMode::FileReportAggregatesOnly);
-            // BM_CHECK(FLAGS_benchmark_perf_counters.empty() || (perf_counters_measurement_ptr->num_counters() == 0)) << "Perf counters were requested but could not be set up.";
         }
     }
 
@@ -232,9 +231,6 @@ namespace BenchMark
         repeats                      = (instance->repetitions() != 0 ? instance->repetitions() : globals->FLAGS_benchmark_repetitions);
         has_explicit_iteration_count = (instance->iterations() != 0 || parsed_benchtime_flag.type == BenchTimeType::ITERS);
 
-        // reserve(instance->threads() - 1);
-        thread_pool.Init(forward, instance->threads() - 1, instance->threads() - 1);
-
         iters = (has_explicit_iteration_count ? ComputeIters(*instance, parsed_benchtime_flag) : 1);
     }
 
@@ -250,6 +246,9 @@ namespace BenchMark
 
         Array<BenchMarkRunResult*> results;
         results.Init(scratch_allocator_, 0, thread_pool.Capacity());
+
+        // Initialize the thread pool
+        thread_pool.Init(scratch_allocator_, instance->threads() - 1, instance->threads() - 1);
 
         // Prepare allocators for each thread
         Array<ForwardAllocator*> forward_allocators;
@@ -268,6 +267,7 @@ namespace BenchMark
         {
             BenchMarkRunResult*& result = results.Alloc();
             result                      = scratch_allocator_->Construct<BenchMarkRunResult>();
+            result->Initialize(scratch_allocator_, instance);
             thread_pool[ti]             = scratch_allocator_->Construct<std::thread>(&RunInThread, forward_allocators[1 + ti], instance, iters, static_cast<int>(ti + 1), manager, result);
         }
 
@@ -302,6 +302,7 @@ namespace BenchMark
         {
             BenchMarkRunResult* rr = results[ti];
             iteration_results.results.Merge(*rr);
+            rr->Shutdown();
             scratch_allocator_->Destruct(rr);
         }
 
@@ -445,6 +446,7 @@ namespace BenchMark
             RunWarmUp();
 
         IterationResults results;
+
 
         // We *may* be gradually increasing the length (iteration count)
         // of the benchmark until we decide the results are significant.

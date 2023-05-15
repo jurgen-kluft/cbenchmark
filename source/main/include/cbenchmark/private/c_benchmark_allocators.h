@@ -11,10 +11,10 @@ namespace BenchMark
     public:
         virtual ~Allocator() {}
 
-        void* Allocate(unsigned int size, unsigned int alignment = sizeof(void*)) { return v_Allocate(size, alignment); }
+        void* Allocate(s64 size, unsigned int alignment = sizeof(void*)) { return v_Allocate(size, alignment); }
         void  Deallocate(void* ptr) { v_Deallocate(ptr); }
 
-        template <typename T> T* Alloc(unsigned int size) { return (T*)v_Allocate(size, sizeof(void*)); }
+        template <typename T> T* Alloc(s64 size) { return (T*)v_Allocate(size, sizeof(void*)); }
         void                     Dealloc(void* ptr) { v_Deallocate(ptr); }
 
         // Construct and Destruct
@@ -32,7 +32,7 @@ namespace BenchMark
         }
 
     protected:
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*)) = 0;
+        virtual void* v_Allocate(s64 size, unsigned int alignment = sizeof(void*)) = 0;
         virtual void  v_Deallocate(void* ptr)                                               = 0;
     };
 
@@ -47,7 +47,7 @@ namespace BenchMark
         }
 
     protected:
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*));
+        virtual void* v_Allocate(s64 size, unsigned int alignment = sizeof(void*));
         virtual void  v_Deallocate(void* ptr);
     };
 
@@ -57,7 +57,7 @@ namespace BenchMark
         ForwardAllocator();
         ~ForwardAllocator();
 
-        void Initialize(Allocator* alloc, u32 size);
+        void Initialize(Allocator* alloc, s64 size);
         void Reset();
         void Release();
 
@@ -65,9 +65,9 @@ namespace BenchMark
         void                     Commit(void* ptr) { v_Commit(ptr); }
 
     protected:
-        virtual void* v_Checkout(unsigned int size, unsigned int alignment);
+        virtual void* v_Checkout(s64 size, unsigned int alignment);
         virtual void  v_Commit(void* ptr);
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment);
+        virtual void* v_Allocate(s64 size, unsigned int alignment);
         virtual void  v_Deallocate(void* ptr);
 
         Allocator* main_;
@@ -89,14 +89,14 @@ namespace BenchMark
         u8*        buffer_begin_;
         u8*        buffer_end_;
         s32        allocs_[MAX_MARK];
-        u32        checkout_[MAX_MARK];
+        s64        checkout_[MAX_MARK];
         s32        mark_;
 
     public:
         ScratchAllocator();
         ~ScratchAllocator();
 
-        void Initialize(Allocator* alloc, u32 size);
+        void Initialize(Allocator* alloc, s64 size);
         void Reset();
         void Release();
 
@@ -107,11 +107,11 @@ namespace BenchMark
         void                     Commit(void* ptr) { v_Commit(ptr); }
 
     protected:
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment);
+        virtual void* v_Allocate(s64 size, unsigned int alignment);
         virtual void  v_Deallocate(void* ptr);
         virtual void  v_PushScope();
         virtual void  v_PopScope();
-        virtual void* v_Checkout(unsigned int size, unsigned int alignment);
+        virtual void* v_Checkout(s64 size, unsigned int alignment);
         virtual void  v_Commit(void* ptr);
     };
 
@@ -135,7 +135,7 @@ namespace BenchMark
     public:
         NullAllocator() {}
 
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment) { return 0; }
+        virtual void* v_Allocate(s64 size, unsigned int alignment) { return 0; }
         virtual void  v_Deallocate(void* ptr) {}
     };
 
@@ -157,7 +157,7 @@ namespace BenchMark
         int  mNumAllocations;
 
     protected:
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment)
+        virtual void* v_Allocate(s64 size, unsigned int alignment)
         {
             IncNumAllocations();
             return mAllocator->Allocate(size, alignment);

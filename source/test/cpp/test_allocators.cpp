@@ -39,12 +39,23 @@ UNITTEST_SUITE_BEGIN(test_allocators)
         UNITTEST_FIXTURE_SETUP() {}
         UNITTEST_FIXTURE_TEARDOWN() {}
 
+        struct TestStruct
+        {
+            float a;
+            float b;
+            int c;
+        };
+
         UNITTEST_TEST(test)
         {
             BenchMark::TestAllocator ta(TestAllocator);
 
             BenchMark::ForwardAllocator a;
             a.Initialize(&ta, 1024);
+
+            // so we want to test all the functions of the forward allocator
+            TestStruct* t = a.Construct<TestStruct>(1.0f, 2.0f, 3);
+
         }
     }
 }

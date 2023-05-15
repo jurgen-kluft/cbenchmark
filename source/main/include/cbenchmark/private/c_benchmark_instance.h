@@ -35,35 +35,11 @@ namespace BenchMark
 
     struct BenchMarkRunResult
     {
-        BenchMarkRunResult()
-            : allocator(nullptr)
-            , iterations(0)
-            , real_time_used(0.0)
-            , cpu_time_used(0.0)
-            , manual_time_used(0.0)
-            , complexity_n(0)
-            , counters()
-            , skipped_(Skipped::NotSkipped)
-            , report_format_(nullptr)
-            , report_value_(0.0)
-            , skip_message_(nullptr)
-        {
-        }
+        BenchMarkRunResult();
 
-        void Reset()
-        {
-            allocator        = nullptr;
-            iterations       = 0;
-            real_time_used   = 0.0;
-            cpu_time_used    = 0.0;
-            manual_time_used = 0.0;
-            complexity_n     = 0;
-            counters.Clear();
-            skipped_       = Skipped::NotSkipped;
-            report_format_ = nullptr;
-            report_value_  = 0.0;
-            skip_message_  = nullptr;
-        }
+        void Reset();
+        void Initialize(Allocator* alloc, BenchMarkInstance const* instance);
+        void Shutdown();
 
         Allocator*     allocator;
         IterationCount iterations;
@@ -98,6 +74,7 @@ namespace BenchMark
         bool                    measure_process_cpu_time() const { return benchmark_->time_settings_.MeasureProcessCpuTime(); }
         bool                    use_real_time() const { return benchmark_->time_settings_.UseRealTime(); }
         bool                    use_manual_time() const { return benchmark_->time_settings_.UseManualTime(); }
+        Counters const*         counters() const { return &benchmark_->counters_; }
         BigO                    complexity() const { return benchmark_->complexity_; }
         BigO::Func*             complexity_lambda() const { return benchmark_->complexity_lambda_; }
         Array<Statistic> const& statistics() const { return benchmark_->statistics_; }

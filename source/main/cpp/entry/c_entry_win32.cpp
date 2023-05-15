@@ -79,7 +79,7 @@ int main(int argc, char** argv)
     BenchMark::MainAllocator    main_allocator;
     BenchMark::ForwardAllocator forward_allocator;
     BenchMark::BenchMarkGlobals globals;
-    forward_allocator.Initialize(&main_allocator, 128 * 1024);
+    forward_allocator.Initialize(&main_allocator, 16 * 1024);
 
     StdOut                     stdoutput;
     BenchMark::ConsoleReporter reporter;

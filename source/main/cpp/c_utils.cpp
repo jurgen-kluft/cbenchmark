@@ -248,6 +248,9 @@ namespace BenchMark
 
     int gStringLength(const char* str)
     {
+        if (str == nullptr)
+            return 0;
+
         int i = 0;
         while (str[i] != 0)
             i++;

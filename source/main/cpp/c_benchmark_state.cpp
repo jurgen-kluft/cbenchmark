@@ -19,12 +19,14 @@ namespace BenchMark
         , name_(nullptr)
         , max_iterations(0)
         , range_(nullptr)
+        , complexity_n_(0)
         , thread_index_(0)
         , threads_(0)
         , timer_(nullptr)
         , manager_(nullptr)
         , results_(nullptr)
         , total_iterations_(0)
+        , batch_leftover_(0)
         , started_(false)
         , finished_(false)
         , skipped_(Skipped::NotSkipped)
@@ -33,31 +35,41 @@ namespace BenchMark
 
     void BenchMarkState::Init(const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads)
     {
-        name_          = name;
-        max_iterations = max_iters;
-        range_         = range;
-        thread_index_  = thread_index;
-        threads_       = threads;
+        name_             = name;
+        max_iterations    = max_iters;
+        range_            = range;
+        thread_index_     = thread_index;
+        threads_          = threads;
+        alloc_            = nullptr;
+        name_             = nullptr;
+        complexity_n_     = 0;
+        timer_            = nullptr;
+        manager_          = nullptr;
+        results_          = nullptr;
+        total_iterations_ = 0;
+        batch_leftover_   = 0;
+        started_          = false;
+        finished_         = false;
+        skipped_          = Skipped::NotSkipped;
     }
 
-    void BenchMarkState::InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results)
+    void BenchMarkState::InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, Counters const* counters, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results)
     {
-        alloc_         = alloc;
-        name_          = name;
-        max_iterations = max_iters;
-        range_         = range;
-        thread_index_  = thread_index;
-        threads_       = threads;
-        timer_         = timer;
-        manager_       = manager;
-        results_       = results;
+        Init(name, max_iters, range, thread_index, threads);
+
+        alloc_            = alloc;
+        timer_            = timer;
+        manager_          = manager;
+        results_          = results;
 
         // counters, we always have
+        if (counters != nullptr)
+            counters_.Copy(alloc, *counters);
     }
 
     static void ResultSkipWithMessage(BenchMarkRunResult* rr, const char* msg, Skipped skipped)
     {
-        if (rr->skip_message_  != nullptr)
+        if (rr->skip_message_ != nullptr)
             rr->skip_message_ = nullptr;
 
         if (rr->skipped_.IsNotSkipped())

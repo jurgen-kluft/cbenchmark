@@ -129,11 +129,19 @@ namespace BenchMark
         // REQUIRES: a benchmark has exited its benchmarking loop.
         inline void SetBytesProcessed(s64 bytes)
         {
-            counters_.counters[CounterId::BytesProcessed].value = static_cast<double>(bytes);
-            counters_.counters[CounterId::BytesProcessed].flags = {CounterFlags::IsRate | CounterFlags::Is1024};
+            if (Counters::FindByName(counters_, "bytes per second") < 0)
+                counters_.counters.PushBack({"bytes per second", {CounterFlags::IsRate | CounterFlags::Is1024}, (double)bytes});
+            //          counters_.counters[CounterId::BytesProcessed].value = static_cast<double>(bytes);
+            //          counters_.counters[CounterId::BytesProcessed].flags = {CounterFlags::IsRate | CounterFlags::Is1024};
         }
 
-        inline s64 GetBytesProcessed() const { return (s64)counters_.counters[CounterId::BytesProcessed].value; }
+        inline s64 GetBytesProcessed() const 
+        { 
+            s32 const index = Counters::FindByName(counters_, "bytes per second");
+            if (index >= 0)
+                return (s64)counters_.counters[index].value;
+            return 0;
+        }
 
         // If this routine is called with complexity_n > 0 and complexity report is
         // requested for the
@@ -151,11 +159,19 @@ namespace BenchMark
         // REQUIRES: a benchmark has exited its benchmarking loop.
         inline void SetItemsProcessed(s64 items)
         {
-            counters_.counters[CounterId::ItemsProcessed].value = static_cast<double>(items);
-            counters_.counters[CounterId::ItemsProcessed].flags = CounterFlags::IsRate;
+            if (Counters::FindByName(counters_, "items per second") < 0)
+                counters_.counters.PushBack({"items per second", {CounterFlags::IsRate | CounterFlags::Is1024}, (double)items});
+            //          counters_.counters[CounterId::ItemsProcessed].value = static_cast<double>(items);
+            //          counters_.counters[CounterId::ItemsProcessed].flags = CounterFlags::IsRate;
         }
 
-        inline s64 GetItemsProcessed() const { return (s64)counters_.counters[CounterId::ItemsProcessed].value; }
+        inline s64 GetItemsProcessed() const 
+        { 
+            s32 const index = Counters::FindByName(counters_, "items per second");
+            if (index >= 0)
+                return (s64)counters_.counters[index].value; 
+            return 0;
+        }
 
         // If this routine is called, the specified label is printed at the
         // end of the benchmark report line for the currently executing
@@ -218,8 +234,9 @@ namespace BenchMark
 
     public:
         BenchMarkState();
+
         void Init(const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads);
-        void InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
+        void InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, Counters const* counters, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
 
         struct Iterator
         {

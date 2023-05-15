@@ -16,8 +16,8 @@ namespace BenchMark
         output_stream_.stream = output_stream_.sos;
 
         error_stream_.out    = out;
-        error_stream_.sos    = (char*)allocator->Allocate(256, 8);
-        error_stream_.eos    = error_stream_.sos + 256 - 1;
+        error_stream_.sos    = (char*)allocator->Allocate(kErrStreamBufferSize, 8);
+        error_stream_.eos    = error_stream_.sos + kErrStreamBufferSize - 1;
         error_stream_.stream = error_stream_.sos;
     }
 
@@ -48,7 +48,7 @@ namespace BenchMark
         printed_header_ = false;
 
         // PrintBasicContext(*error_stream_, context);
-        return false;
+        return true;
     }
 
     void ConsoleReporter::ReportRuns(Array<BenchMarkRun*> const& reports, ForwardAllocator* allocator, ScratchAllocator* scratch)
@@ -61,7 +61,7 @@ namespace BenchMark
             if (print_header)
             {
                 printed_header_ = true;
-                prev_counters_.Copy(run->counters);
+                prev_counters_.Copy(allocator, run->counters);
                 PrintHeader(*run, allocator, scratch);
             }
 

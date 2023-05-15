@@ -24,6 +24,48 @@ namespace BenchMark
         FLAGS_benchmark_enable_random_interleaving = false;
     }
 
+    BenchMarkRunResult::BenchMarkRunResult()
+        : allocator(nullptr)
+        , iterations(0)
+        , real_time_used(0.0)
+        , cpu_time_used(0.0)
+        , manual_time_used(0.0)
+        , complexity_n(0)
+        , counters()
+        , skipped_(Skipped::NotSkipped)
+        , report_format_(nullptr)
+        , report_value_(0.0)
+        , skip_message_(nullptr)
+    {
+    }
+
+    void BenchMarkRunResult::Reset()
+    {
+        allocator        = nullptr;
+        iterations       = 0;
+        real_time_used   = 0.0;
+        cpu_time_used    = 0.0;
+        manual_time_used = 0.0;
+        complexity_n     = 0;
+        counters.Clear();
+        skipped_       = Skipped::NotSkipped;
+        report_format_ = nullptr;
+        report_value_  = 0.0;
+        skip_message_  = nullptr;
+    }
+
+    void BenchMarkRunResult::Initialize(Allocator* alloc, BenchMarkInstance const* instance)
+    { 
+        Reset();
+        if (instance->counters() != nullptr)
+            counters.Initialize(alloc, instance->counters()->Size());
+    }
+
+    void BenchMarkRunResult::Shutdown()
+    { 
+        counters.Release();
+    }
+
     void BenchMarkRunResult::Merge(const BenchMarkRunResult& other)
     {
         iterations += other.iterations;
@@ -71,11 +113,14 @@ namespace BenchMark
 
             // Name/{ArgName:}Arg/{ArgName:}Arg/..
             str = gStringAppend(str, strEnd, benchmark->name);
+            str = gStringAppendTerminator(str, strEnd);
+
+            name_.args = str;
             if (args_ != nullptr)
             {
                 for (s32 i = 0; i < args_->Size(); ++i)
                 {
-                    if (str > name_.function_name)
+                    if (str > name_.args)
                     {
                         str = gStringAppend(str, strEnd, '/');
                     }

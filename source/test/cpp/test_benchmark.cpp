@@ -5,6 +5,7 @@
 #include "cbenchmark/private/c_benchmark_unit.h"
 #include "cbenchmark/private/c_benchmark_reporter.h"
 #include "cbenchmark/private/c_benchmark_allocators.h"
+#include "cbenchmark/private/c_time_helpers.h"
 
 #include "cunittest/cunittest.h"
 
@@ -121,6 +122,31 @@ namespace BenchMark
     }
 } // namespace BenchMark
 
+class StdTest : public BenchMark::ConsoleOutput
+{
+
+public:
+    StdTest()
+    {
+    }
+
+    virtual void setColor(BenchMark::TextColor color)
+    {
+
+    }
+
+    virtual void resetColor()
+    {
+
+    }
+
+    virtual void print(const char* text)
+    {
+        // std::out / console writer
+        fprintf(stdout, "%s", text);
+    }
+};
+
 UNITTEST_SUITE_BEGIN(test_benchmark)
 {
     UNITTEST_FIXTURE(main)
@@ -130,13 +156,20 @@ UNITTEST_SUITE_BEGIN(test_benchmark)
 
         UNITTEST_TEST(test)
         {
-            BenchMark::MainAllocator main_allocator;
+            BenchMark::g_InitTimer();
+
+            BenchMark::MainAllocator    main_allocator;
+            BenchMark::ForwardAllocator forward_allocator;
             BenchMark::BenchMarkGlobals globals;
+            forward_allocator.Initialize(&main_allocator, 128 * 1024);
+
+            StdTest                    stdoutput;
             BenchMark::ConsoleReporter reporter;
-            
+            reporter.Initialize(&forward_allocator, &stdoutput);
+
             BenchMark::gRunBenchMark(&main_allocator, &globals, reporter);
 
-
+            forward_allocator.Release();
         }
     }
 }

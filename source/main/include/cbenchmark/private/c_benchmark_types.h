@@ -40,10 +40,18 @@ namespace BenchMark
         Counters() {}
         Counters(Counters const& other) { counters.Copy(other.counters); }
         
+        inline void Initialize(Allocator* allocator, s32 reserve) { counters.Init(allocator, 0, reserve); }
         inline s32  Size() const { return counters.Size(); }
         inline void Clear() { counters.Clear(); }
         inline void ClearReserve(s32 reserve) { counters.ClearReserve(reserve); }
-        inline void Copy(Counters const& other) { counters.Copy(other.counters); }
+        inline void Copy(Allocator* alloc, Counters const& other) 
+        {
+            counters.Init(alloc, 0, other.counters.Size());
+            for (s32 i = 0; i < other.counters.Size(); ++i)
+                counters.PushBack(other.counters[i]);
+        }
+
+        inline void Release() { counters.Release(); }
 
         static bool SameNames(Counters const& left, Counters const& right)
         {
