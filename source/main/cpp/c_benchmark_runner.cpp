@@ -70,7 +70,7 @@ namespace BenchMark
         ThreadTimer timer(ThreadTimer::Create());
 
         BenchMarkState st;
-        st.InitRun(allocator, bmi->name().function_name, iters, bmi->args(), bmi->counters(), thread_id, bmi->threads(), &timer, manager, results);
+        st.InitRun(allocator, bmi->name().function_name, iters, bmi->args(), bmi->counters()->Size(), thread_id, bmi->threads(), &timer, manager, results);
 
         bmi->run(st, allocator);
 
@@ -83,6 +83,8 @@ namespace BenchMark
             results->complexity_n += st.GetComplexityLengthN();
             Counters::Increment(results->counters, st.counters_);
         }
+        st.Shutdown();
+
         manager->NotifyThreadComplete();
     }
 
@@ -117,7 +119,7 @@ namespace BenchMark
         void           Init(Allocator* allocator, ForwardAllocator* forward, ScratchAllocator* scratch, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
         int            GetNumRepeats() const { return repeats; }
         bool           HasRepeatsRemaining() const { return GetNumRepeats() != num_repetitions_done; }
-        void           DoOneRepetition(ForwardAllocator* allocator, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
+        void           DoOneRepetition(ForwardAllocator* allocator, ScratchAllocator* scratch, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
         void           AggregateResults(ForwardAllocator* alloc, ScratchAllocator* scratch, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only) const;
         double         GetMinTime() const { return min_time; }
         bool           HasExplicitIters() const { return has_explicit_iteration_count; }
@@ -153,12 +155,17 @@ namespace BenchMark
                 , seconds(0)
             {
             }
+
             void Reset()
             {
                 results.Reset();
                 iters   = 0;
                 seconds = 0;
             }
+
+            void Initialize(Allocator* alloc, BenchMarkInstance const* instance) { results.Initialize(alloc, instance); }
+            void Shutdown() { results.Shutdown(); }
+
             BenchMarkRunResult results;
             IterationCount     iters;
             double             seconds;
@@ -191,7 +198,7 @@ namespace BenchMark
 
     int    GetNumRepeats(const BenchMarkRunner* r) { return r->GetNumRepeats(); }
     bool   HasRepeatsRemaining(const BenchMarkRunner* r) { return r->HasRepeatsRemaining(); }
-    void   DoOneRepetition(BenchMarkRunner* r, ForwardAllocator* allocator, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family) { r->DoOneRepetition(allocator, report, reports_for_family); }
+    void   DoOneRepetition(BenchMarkRunner* r, ForwardAllocator* allocator, ScratchAllocator* scratch, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family) { r->DoOneRepetition(allocator, scratch, report, reports_for_family); }
     void   AggregateResults(BenchMarkRunner* r, ForwardAllocator* alloc, ScratchAllocator* scratch, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only) { r->AggregateResults(alloc, scratch, non_aggregates, aggregates_only); }
     double GetMinTime(const BenchMarkRunner* r) { return r->GetMinTime(); }
     bool   HasExplicitIters(const BenchMarkRunner* r) { return r->HasExplicitIters(); }
@@ -268,7 +275,7 @@ namespace BenchMark
             BenchMarkRunResult*& result = results.Alloc();
             result                      = scratch_allocator_->Construct<BenchMarkRunResult>();
             result->Initialize(scratch_allocator_, instance);
-            thread_pool[ti]             = scratch_allocator_->Construct<std::thread>(&RunInThread, forward_allocators[1 + ti], instance, iters, static_cast<int>(ti + 1), manager, result);
+            thread_pool[ti] = scratch_allocator_->Construct<std::thread>(&RunInThread, forward_allocators[1 + ti], instance, iters, static_cast<int>(ti + 1), manager, result);
         }
 
         // And run one thread here directly and use the results from iteration_results.
@@ -289,7 +296,7 @@ namespace BenchMark
         thread_pool.Release();
 
         // Destroy the allocators.
-        for (s32 ti = 0; ti < thread_pool.Capacity(); ++ti)
+        for (s32 ti = 0; ti < forward_allocators.Size(); ++ti)
         {
             ForwardAllocator*& allocator = forward_allocators[ti];
             allocator->Release();
@@ -405,6 +412,7 @@ namespace BenchMark
 
         BenchMarkState state;
         state.Init(instance->name().function_name, /*iters*/ 1, instance->args(), /*thread_id*/ 0, instance->threads());
+
         for (;;)
         {
             instance->setup()(state);
@@ -429,11 +437,15 @@ namespace BenchMark
             iters = PredictNumItersNeeded(i_warmup);
             ASSERTS(iters > i_warmup.iters, "if we did more iterations than we want to do the next time, then we should have accepted the current iteration run.");
         }
+
+        state.Shutdown();
     }
 
-    void BenchMarkRunner::DoOneRepetition(ForwardAllocator* allocator, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family)
+    void BenchMarkRunner::DoOneRepetition(ForwardAllocator* allocator, ScratchAllocator* scratch, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family)
     {
         ASSERTS(HasRepeatsRemaining(), "Already done all repetitions?");
+        
+        USE_SCRATCH(scratch);
 
         const bool is_the_first_repetition = num_repetitions_done == 0;
 
@@ -446,7 +458,7 @@ namespace BenchMark
             RunWarmUp();
 
         IterationResults results;
-
+        results.Initialize(scratch, instance);
 
         // We *may* be gradually increasing the length (iteration count)
         // of the benchmark until we decide the results are significant.
@@ -483,6 +495,8 @@ namespace BenchMark
             ASSERTS(iters > results.iters, "if we did more iterations than we want to do the next time, then we should have accepted the current iteration run.");
         }
 
+        state.Shutdown();
+
         // Ok, now actually report
         IterationCount memory_iterations = 0;
 
@@ -495,6 +509,7 @@ namespace BenchMark
                 reports_for_family->runs.PushBack(report);
         }
 
+        results.Shutdown();
         ++num_repetitions_done;
     }
 

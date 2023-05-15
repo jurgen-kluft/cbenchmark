@@ -35,7 +35,7 @@ namespace BenchMark
     void             DestroyRunner(BenchMarkRunner*& r, Allocator* a);
     int              GetNumRepeats(const BenchMarkRunner* r);
     bool             HasRepeatsRemaining(const BenchMarkRunner* r);
-    void             DoOneRepetition(BenchMarkRunner* r, ForwardAllocator* allocator, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
+    void             DoOneRepetition(BenchMarkRunner* r, ForwardAllocator* allocator, ScratchAllocator* scratch, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
     void             AggregateResults(BenchMarkRunner* r, ForwardAllocator* allocator, ScratchAllocator* scratch, const Array<BenchMarkRun*>& non_aggregates, Array<BenchMarkRun*>& aggregates_only);
     double           GetMinTime(const BenchMarkRunner* r);
     bool             HasExplicitIters(const BenchMarkRunner* r);

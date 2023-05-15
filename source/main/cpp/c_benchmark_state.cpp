@@ -53,7 +53,7 @@ namespace BenchMark
         skipped_          = Skipped::NotSkipped;
     }
 
-    void BenchMarkState::InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, Counters const* counters, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results)
+    void BenchMarkState::InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, s32 counters, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results)
     {
         Init(name, max_iters, range, thread_index, threads);
 
@@ -62,9 +62,13 @@ namespace BenchMark
         manager_          = manager;
         results_          = results;
 
-        // counters, we always have
-        if (counters != nullptr)
-            counters_.Copy(alloc, *counters);
+        if (counters > 0)
+            counters_.Initialize(alloc, counters);
+    }
+
+    void BenchMarkState::Shutdown() 
+    { 
+        counters_.Release();
     }
 
     static void ResultSkipWithMessage(BenchMarkRunResult* rr, const char* msg, Skipped skipped)

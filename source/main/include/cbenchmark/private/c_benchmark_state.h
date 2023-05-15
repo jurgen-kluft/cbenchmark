@@ -236,7 +236,8 @@ namespace BenchMark
         BenchMarkState();
 
         void Init(const char* name, IterationCount max_iters, Array<s32> const* range, s32 thread_index, s32 threads);
-        void InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, Counters const* counters, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
+        void InitRun(Allocator* alloc, const char* name, IterationCount max_iters, Array<s32> const* range, s32 counters, s32 thread_index, s32 threads, ThreadTimer* timer, ThreadManager* manager, BenchMarkRunResult* results);
+        void Shutdown();
 
         struct Iterator
         {

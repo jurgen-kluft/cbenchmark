@@ -123,7 +123,7 @@ namespace BenchMark
 
     void ScratchAllocator::v_Deallocate(void* ptr)
     {
-        ASSERT(ptr >= buffer_[mark_] && ptr < buffer_end_);
+        ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
         allocs_[mark_]--;
     }
 

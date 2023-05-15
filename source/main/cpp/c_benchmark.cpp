@@ -184,7 +184,7 @@ namespace BenchMark
                 BenchMarkRun*& report = results->non_aggregates.Alloc();
                 report                = forward_allocator->Construct<BenchMarkRun>();
 
-                DoOneRepetition(runner, forward_allocator, report, reports_for_family);
+                DoOneRepetition(runner, forward_allocator, scratch_allocator, report, reports_for_family);
                 if (HasRepeatsRemaining(runner))
                     continue;
 
