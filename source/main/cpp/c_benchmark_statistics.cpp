@@ -128,7 +128,6 @@ namespace BenchMark
         if (reports.Size() - error_count < 2)
         {
             // We don't report aggregated data if there was a single run.
-            results.Copy(reports);
             return;
         }
 
@@ -143,7 +142,15 @@ namespace BenchMark
         // can take this information from the first benchmark.
         const IterationCount run_iterations = reports.Front()->iterations;
 
+        s32 num_counters = 0;
+        for (int i = 0; i < reports.Size(); i++)
+        {
+            BenchMarkRun const* r = reports[i];
+            num_counters += r->counters.counters.Size();
+        }
+
         CounterStats counter_stats;
+        counter_stats.stats.Init(scratch, 0, num_counters);
 
         for (int i = 0; i < reports.Size(); i++)
         {

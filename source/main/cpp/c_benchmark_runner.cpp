@@ -57,7 +57,7 @@ namespace BenchMark
             report->complexity           = bmi->complexity();
             report->complexity_lambda    = bmi->complexity_lambda();
             report->statistics           = bmi->statistics();
-            report->counters             = results.counters;
+            report->counters.Copy(allocator,  results.counters);
 
             Counters::Finish(report->counters, results.iterations, seconds, bmi->threads());
         }
@@ -116,7 +116,7 @@ namespace BenchMark
     public:
         BenchMarkRunner();
 
-        void           Init(Allocator* allocator, ForwardAllocator* forward, ScratchAllocator* scratch, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
+        void           Init(Allocator* allocator, ScratchAllocator* scratch, BenchMarkGlobals* globals, const BenchMarkInstance* b_);
         int            GetNumRepeats() const { return repeats; }
         bool           HasRepeatsRemaining() const { return GetNumRepeats() != num_repetitions_done; }
         void           DoOneRepetition(ForwardAllocator* allocator, ScratchAllocator* scratch, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family);
@@ -181,14 +181,14 @@ namespace BenchMark
 
     // Public Interface
     BenchMarkRunner* CreateRunner(Allocator* a) { return a->Construct<BenchMarkRunner>(); }
-    void             InitRunner(BenchMarkRunner* r, Allocator* a, ForwardAllocator* f, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_) { r->Init(a, f, t, globals, b_); }
+    void             InitRunner(BenchMarkRunner* r, Allocator* a, ScratchAllocator* t, BenchMarkGlobals* globals, const BenchMarkInstance* b_) { r->Init(a, t, globals, b_); }
     void             DestroyRunner(BenchMarkRunner*& r, Allocator* a) { a->Destruct(r); }
 
     void InitRunResults(BenchMarkRunner* r, BenchMarkGlobals* globals, RunResults* results)
     {
         BenchMarkInstance const* instance       = r->instance;
-        results->display_report_aggregates_only = (globals->FLAGS_benchmark_report_aggregates_only || globals->FLAGS_benchmark_display_aggregates_only);
-        results->file_report_aggregates_only    = globals->FLAGS_benchmark_report_aggregates_only;
+        results->display_report_aggregates_only = (globals->benchmark_report_aggregates_only || globals->benchmark_display_aggregates_only);
+        results->file_report_aggregates_only    = globals->benchmark_report_aggregates_only;
         if (instance->aggregation_report_mode().mode != AggregationReportMode::Unspecified)
         {
             results->display_report_aggregates_only = (instance->aggregation_report_mode().mode & AggregationReportMode::DisplayReportAggregatesOnly);
@@ -212,7 +212,6 @@ namespace BenchMark
     BenchMarkRunner::BenchMarkRunner()
         : main_allocator_(nullptr)
         , scratch_allocator_(nullptr)
-        , forward_allocator_(nullptr)
         , instance(nullptr)
         , parsed_benchtime_flag(BenchTimeType())
         , min_time(0.0)
@@ -225,17 +224,16 @@ namespace BenchMark
     {
     }
 
-    void BenchMarkRunner::Init(Allocator* allocator, ForwardAllocator* forward, ScratchAllocator* scratch, BenchMarkGlobals* globals, const BenchMarkInstance* b_)
+    void BenchMarkRunner::Init(Allocator* allocator, ScratchAllocator* scratch, BenchMarkGlobals* globals, const BenchMarkInstance* b_)
     {
         main_allocator_              = (allocator);
         scratch_allocator_           = (scratch);
-        forward_allocator_           = (forward);
         instance                     = (b_);
-        parsed_benchtime_flag        = (BenchTimeType(globals->FLAGS_benchmark_min_time));
+        parsed_benchtime_flag        = (BenchTimeType(globals->benchmark_min_time));
         min_time                     = (ComputeMinTime(b_, parsed_benchtime_flag));
-        min_warmup_time              = ((!gIsZero(instance->min_time()) && instance->min_warmup_time() > 0.0) ? instance->min_warmup_time() : globals->FLAGS_benchmark_min_warmup_time);
+        min_warmup_time              = ((!gIsZero(instance->min_time()) && instance->min_warmup_time() > 0.0) ? instance->min_warmup_time() : globals->benchmark_min_warmup_time);
         warmup_done                  = (!(min_warmup_time > 0.0));
-        repeats                      = (instance->repetitions() != 0 ? instance->repetitions() : globals->FLAGS_benchmark_repetitions);
+        repeats                      = (instance->repetitions() != 0 ? instance->repetitions() : globals->benchmark_repetitions);
         has_explicit_iteration_count = (instance->iterations() != 0 || parsed_benchtime_flag.type == BenchTimeType::ITERS);
 
         iters = (has_explicit_iteration_count ? ComputeIters(*instance, parsed_benchtime_flag) : 1);
@@ -251,19 +249,18 @@ namespace BenchMark
 
         ThreadManager* manager = scratch_allocator_->Construct<ThreadManager>(instance->threads());
 
-        Array<BenchMarkRunResult*> results;
-        results.Init(scratch_allocator_, 0, thread_pool.Capacity());
-
         // Initialize the thread pool
         thread_pool.Init(scratch_allocator_, instance->threads() - 1, instance->threads() - 1);
+
+        // Initialize the results array
+        Array<BenchMarkRunResult*> results;
+        results.Init(scratch_allocator_, 0, thread_pool.Capacity());
 
         // Prepare allocators for each thread
         Array<ForwardAllocator*> forward_allocators;
         forward_allocators.Init(scratch_allocator_, 0, thread_pool.Capacity() + 1);
         for (s32 ti = 0; ti < thread_pool.Capacity() + 1; ++ti)
         {
-            // NOTE: Currently we hard-code the size of memory for each allocator, but we
-            //       should make this configurable by the BenchMarkUnit.
             ForwardAllocator* allocator = scratch_allocator_->Construct<ForwardAllocator>();
             allocator->Initialize(main_allocator_, instance->memory_required());
             forward_allocators.PushBack(allocator);
@@ -312,6 +309,7 @@ namespace BenchMark
             rr->Shutdown();
             scratch_allocator_->Destruct(rr);
         }
+        results.Release();
 
         // And get rid of the manager.
         scratch_allocator_->Destruct(manager);

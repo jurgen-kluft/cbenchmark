@@ -7,86 +7,92 @@
 namespace BenchMark
 {
     // TODO Windows EOL, what about other platforms ?
-    TextStream& TextStream::endl() { *this << "\r\n"; return *this; }
+    TextStream& TextStream::endl() 
+    { 
+        flush();
+        out->print("\n");
+        return *this;
+    }
 
     TextStream& TextStream::operator<<(const char* txt)
     {
-        while (*txt && !isEof())
-        {
-            *stream++ = *txt++;
-        }
+        flush();
+        out->print(txt);
         return *this;
     }
     TextStream& TextStream::operator<<(const void* p)
     {
         stream = gStringFormatAppend(stream, eos, "%0X", (u64)p);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(char const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(short const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(int const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(long long const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(long const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(unsigned char const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(unsigned short const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(unsigned int const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(unsigned long long const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(unsigned long const n)
     {
         stream = gStringFormatAppend(stream, eos, "%i", n);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(float const f)
     {
         stream = gStringFormatAppend(stream, eos, "%f", f);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::operator<<(double const d)
     {
         stream = gStringFormatAppend(stream, eos, "%f", d);
-        return *this;
+        return flush();
     }
     TextStream& TextStream::flush()
     {
         *stream++ = '\0';
-        out->print(sos);
-        stream = sos;
+        if (stream >= eos)
+        {
+            out->print(sos);
+            stream = sos;
+        }
         return *this;
     }
 

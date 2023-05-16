@@ -102,7 +102,7 @@ namespace BenchMark
     {
         // Doing a checkout requires that any other checkouts are committed
         ASSERT(checkout_[mark_] == 0);
-        u8* p = ncore::g_align_ptr(buffer_[mark_], alignment);
+        u8* p = ncore::g_align_ptr<u8>(buffer_[mark_], alignment);
         if ((p + size) > buffer_end_)
             return nullptr;
 
@@ -212,6 +212,11 @@ namespace BenchMark
     void ForwardAllocator::v_Deallocate(void* ptr)
     {
         ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
+        if (num_allocations_ == 0)
+        {
+            return;
+        }
+        ASSERT(num_allocations_> 0);
         --num_allocations_;
     }
 

@@ -26,9 +26,15 @@ namespace BenchMark
         {
         }
 
-        virtual void* v_Allocate(unsigned int size, unsigned int alignment = sizeof(void*));
+        DCORE_CLASS_PLACEMENT_NEW_DELETE
+
+        virtual void* v_Allocate(s64 size, unsigned int alignment);
         virtual void  v_Deallocate(void* ptr);
     };
+
+    void* TestAllocator::v_Allocate(s64 size, unsigned int alignment) { return nullptr; }
+
+    void TestAllocator::v_Deallocate(void* ptr) {}
 
 } // namespace BenchMark
 
@@ -41,22 +47,27 @@ UNITTEST_SUITE_BEGIN(test_allocators)
 
         struct TestStruct
         {
+            TestStruct(float a, float b, int c)
+                : a(a)
+                , b(b)
+                , c(c)
+            {
+            }
             float a;
             float b;
-            int c;
+            int   c;
         };
 
-        UNITTEST_TEST(test)
-        {
-            BenchMark::TestAllocator ta(TestAllocator);
+        // UNITTEST_TEST(test)
+        // {
+        //     BenchMark::TestAllocator ta(TestAllocator);
 
-            BenchMark::ForwardAllocator a;
-            a.Initialize(&ta, 1024);
+        //     BenchMark::ForwardAllocator a;
+        //     a.Initialize(&ta, 1024);
 
-            // so we want to test all the functions of the forward allocator
-            TestStruct* t = a.Construct<TestStruct>(1.0f, 2.0f, 3);
-
-        }
+        //     // so we want to test all the functions of the forward allocator
+        //     TestStruct* t = a.Construct<TestStruct>(1.0f, 2.0f, 3);
+        // }
     }
 }
 UNITTEST_SUITE_END

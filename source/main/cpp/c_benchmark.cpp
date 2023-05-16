@@ -23,21 +23,16 @@
 
 namespace BenchMark
 {
-    // Reports in both display and file reporters.
     static void Report(BenchMarkReporter* reporter, const RunResults* run_results, ForwardAllocator* allocator, ScratchAllocator* scratch)
     {
-        auto report_one = [](BenchMarkReporter* reporter, bool aggregates_only, const RunResults* results, ForwardAllocator* allocator, ScratchAllocator* scratch)
+        if (reporter != nullptr)
         {
-            BM_CHECK(reporter);
             // If there are no aggregates, do output non-aggregates.
-            aggregates_only &= !results->aggregates_only.Empty();
-            if (!aggregates_only)
-                reporter->ReportRuns(results->non_aggregates, allocator, scratch);
-            if (!results->aggregates_only.Empty())
-                reporter->ReportRuns(results->aggregates_only, allocator, scratch);
+            if (!run_results->display_report_aggregates_only || !run_results->aggregates_only.Empty())
+                reporter->ReportRuns(run_results->non_aggregates, allocator, scratch);
+            if (!run_results->aggregates_only.Empty())
+                reporter->ReportRuns(run_results->aggregates_only, allocator, scratch);
         };
-
-        report_one(reporter, run_results->display_report_aggregates_only, run_results, allocator, scratch);
 
         reporter->Flush(allocator, scratch);
     }
@@ -68,9 +63,9 @@ namespace BenchMark
         }
     };
 
-    static void RandomShuffle(Array<s32>& indices)
+    static void RandomShuffle(Array<s32>& indices, u64 seed)
     {
-        XorRandom rng(0xdeadbeef);
+        XorRandom rng(seed);
         for (int i = 0; i < indices.Size(); ++i)
         {
             s32 j = i + ((s32)rng.next() % (indices.Size() - i));
@@ -86,7 +81,7 @@ namespace BenchMark
         BM_CHECK(reporter != nullptr);
 
         // Determine the width of the name field using a minimum width of 10.
-        bool might_have_aggregates = globals->FLAGS_benchmark_repetitions > 1;
+        bool might_have_aggregates = globals->benchmark_repetitions > 1;
         s32  name_field_width      = 10;
         s32  stat_field_width      = 0;
         for (int i = 0; i < benchmark_instances.Size(); ++i)
@@ -117,9 +112,9 @@ namespace BenchMark
 
         if (reporter->ReportContext(context, forward_allocator, scratch_allocator))
         {
-            USE_SCRATCH(scratch_allocator);
-            
             reporter->Flush(forward_allocator, scratch_allocator);
+
+            USE_SCRATCH(scratch_allocator);
 
             // Benchmarks to run
             Array<BenchMarkRunner*> runners;
@@ -141,7 +136,7 @@ namespace BenchMark
                 benchmarks_with_threads += (benchmark->threads() > 0);
 
                 BenchMarkRunner* runner = CreateRunner(forward_allocator);
-                InitRunner(runner, main_allocator, forward_allocator, scratch_allocator, globals, benchmark);
+                InitRunner(runner, main_allocator, scratch_allocator, globals, benchmark);
                 runners.PushBack(runner);
 
                 const s32 num_repeats_of_this_instance = GetNumRepeats(runner);
@@ -156,7 +151,7 @@ namespace BenchMark
 
                 run_results.PushBack(results);
             }
-            BM_CHECK(runners.Size() == benchmark_instances.Size() && "Unexpected runner count.");
+            ASSERTS(runners.Size() == benchmark_instances.Size(), "Unexpected runner count.");
 
             Array<s32> repetition_indices;
             repetition_indices.Init(scratch_allocator, 0, num_repetitions_total);
@@ -168,11 +163,11 @@ namespace BenchMark
                 while (i--)
                     repetition_indices.PushBack(runner_index);
             }
-            BM_CHECK(repetition_indices.Size() == num_repetitions_total && "Unexpected number of repetition indexes.");
+            ASSERTS(repetition_indices.Size() == num_repetitions_total, "Unexpected number of repetition indexes.");
 
-            if (globals->FLAGS_benchmark_enable_random_interleaving)
+            if (globals->benchmark_enable_random_interleaving)
             {
-                RandomShuffle(repetition_indices);
+                RandomShuffle(repetition_indices, (u64)globals->benchmark_random_interleaving_seed);
             }
 
             for (s32 i = 0; i < repetition_indices.Size(); ++i)
@@ -214,10 +209,12 @@ namespace BenchMark
                 // Destroy the reports
                 for (int i = 0; i < results->non_aggregates.Size(); ++i)
                 {
+                    results->non_aggregates[i]->Reset();
                     forward_allocator->Destruct(results->non_aggregates[i]);
                 }
                 for (int i = 0; i < results->aggregates_only.Size(); ++i)
                 {
+                    results->aggregates_only[i]->Reset();
                     forward_allocator->Destruct(results->aggregates_only[i]);
                 }
                 forward_allocator->Destruct(results);
@@ -252,6 +249,7 @@ namespace BenchMark
     {
         for (s32 i = 0; i < benchmark_instances.Size(); ++i)
         {
+            benchmark_instances[i]->release(forward_allocator);
             forward_allocator->Destruct(benchmark_instances[i]);
         }
         benchmark_instances.Release();
@@ -279,6 +277,10 @@ namespace BenchMark
                 benchmark_instances.PushBack(instance);
             }
         }
+
+        // Each arg has been given to the instances, so we can destroy the args array.
+        // The indivual args are owned by the instances and will be destroyed when the instances are released.
+        args.Release();
 
         return true;
     }

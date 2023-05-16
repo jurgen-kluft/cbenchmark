@@ -23,12 +23,13 @@ namespace BenchMark
     public:
         BenchMarkGlobals();
 
-        double FLAGS_benchmark_min_time;
-        double FLAGS_benchmark_min_warmup_time;
-        bool   FLAGS_benchmark_report_aggregates_only;
-        bool   FLAGS_benchmark_display_aggregates_only;
-        s32    FLAGS_benchmark_repetitions;
-        bool   FLAGS_benchmark_enable_random_interleaving;
+        double benchmark_min_time;
+        double benchmark_min_warmup_time;
+        bool   benchmark_report_aggregates_only;
+        bool   benchmark_display_aggregates_only;
+        s32    benchmark_repetitions;
+        bool   benchmark_enable_random_interleaving;
+        u64    benchmark_random_interleaving_seed;
     };
 
     static BenchMarkGlobals g_benchmark_globals;
@@ -62,7 +63,9 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const* args, int thread_count);
+        void initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32>* args, int thread_count);
+        void release(ForwardAllocator* allocator);
+
         void run(BenchMarkState& state, Allocator* allocator) const;
 
         const BenchmarkName& name() const { return name_; }
@@ -87,10 +90,10 @@ namespace BenchMark
         teardown_function       teardown() const { return benchmark_->teardown_; }
 
     private:
-        BenchMarkUnit*    benchmark_;
-        BenchmarkName     name_;
-        Array<s32> const* args_;
-        int               threads_; // Number of concurrent threads to us
+        BenchMarkUnit* benchmark_;
+        BenchmarkName  name_;
+        Array<s32>*    args_;
+        int            threads_; // Number of concurrent threads to us
     };
 
 } // namespace BenchMark

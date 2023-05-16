@@ -25,6 +25,12 @@ namespace BenchMark
         CopyFrom(other.allocator, other);
     }
 
+    BenchmarkName& BenchmarkName::operator = (const BenchmarkName& other)
+    {
+        CopyFrom(other.allocator, other);
+        return *this;
+    }
+
     s32 BenchmarkName::FullNameLen() const
     {
         s32 len = gStringLength(function_name) + 1;
@@ -41,13 +47,20 @@ namespace BenchMark
     char* BenchmarkName::FullName(char* dst, const char* dstEnd) const
     {
         dst = gStringAppend(dst, dstEnd, function_name);
-        dst = gStringAppend2(dst, dstEnd, "/", args);
-        dst = gStringAppend2(dst, dstEnd, "/", min_time);
-        dst = gStringAppend2(dst, dstEnd, "/", min_warmup_time);
-        dst = gStringAppend2(dst, dstEnd, "/", iterations);
-        dst = gStringAppend2(dst, dstEnd, "/", repetitions);
-        dst = gStringAppend2(dst, dstEnd, "/", time_type);
-        dst = gStringAppend2(dst, dstEnd, "/", threads);
+        if (args != nullptr && *args != '\0')
+            dst = gStringAppend2(dst, dstEnd, "/", args);
+        if (min_time != nullptr && *min_time != '\0')
+            dst = gStringAppend2(dst, dstEnd, "/", min_time);
+        if (min_warmup_time != nullptr && *min_warmup_time != '\0')
+            dst = gStringAppend2(dst, dstEnd, "/", min_warmup_time);
+        if (iterations != nullptr && *iterations != '\0')
+            dst = gStringAppend2(dst, dstEnd, "/", iterations);
+        if (repetitions != nullptr && *repetitions != '\0')
+            dst = gStringAppend2(dst, dstEnd, "/", repetitions);
+        if (time_type != nullptr && *time_type != '\0')
+            dst = gStringAppend2(dst, dstEnd, "/", time_type);
+        if (threads != nullptr && *threads != '\0')
+            dst = gStringAppend2(dst, dstEnd, "/", threads);
         return dst;
     }
 
@@ -97,13 +110,6 @@ namespace BenchMark
         if (allocator != nullptr)
         {
             allocator->Deallocate(function_name);
-            allocator->Deallocate(args);
-            allocator->Deallocate(min_time);
-            allocator->Deallocate(min_warmup_time);
-            allocator->Deallocate(iterations);
-            allocator->Deallocate(repetitions);
-            allocator->Deallocate(time_type);
-            allocator->Deallocate(threads);
 
             function_name   = nullptr;
             args            = nullptr;

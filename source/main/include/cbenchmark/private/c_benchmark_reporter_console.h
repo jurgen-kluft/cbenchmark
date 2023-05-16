@@ -37,7 +37,7 @@ namespace BenchMark
         virtual void ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch);
 
     protected:
-        virtual void PrintRunData(const BenchMarkRun& report, ForwardAllocator* allocator, ScratchAllocator* scratch);
+        virtual void PrintRunData(const BenchMarkRun& report, ScratchAllocator* scratch);
         virtual void PrintHeader(const BenchMarkRun& report, ForwardAllocator* allocator, ScratchAllocator* scratch);
 
         virtual void Flush(ForwardAllocator* allocator, ScratchAllocator* scratch);

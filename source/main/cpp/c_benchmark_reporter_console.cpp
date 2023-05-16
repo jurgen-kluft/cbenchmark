@@ -65,13 +65,13 @@ namespace BenchMark
                 PrintHeader(*run, allocator, scratch);
             }
 
-            PrintRunData(*run, allocator, scratch);
+            PrintRunData(*run, scratch);
         }
     }
 
     void ConsoleReporter::ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch) {}
 
-    void ConsoleReporter::PrintRunData(const BenchMarkRun& result, ForwardAllocator* allocator, ScratchAllocator* scratch)
+    void ConsoleReporter::PrintRunData(const BenchMarkRun& result, ScratchAllocator* scratch)
     {
         USE_SCRATCH(scratch);
 
@@ -79,17 +79,18 @@ namespace BenchMark
         gSetWidthFormat(nameWidthFormat, static_cast<int>(name_field_width_));
 
         const s32   max_line_width = 1024;
-        char* const line           = scratch->Alloc<char>(max_line_width + 1);
-        line[max_line_width]       = '\0';
+        char* const name           = scratch->Alloc<char>(max_line_width + 1);
+        name[max_line_width]       = '\0';
 
-        char*             outStr    = line;
-        const char* const outStrEnd = &line[max_line_width];
+        char*             outStr    = name;
+        const char* const outStrEnd = &name[max_line_width];
         outStr                      = result.run_name.FullName(outStr, outStrEnd);
-        outStr                      = gStringAppend(outStr, outStrEnd, '\0');
+        outStr                      = gStringAppendTerminator(outStr, outStrEnd);
 
-        auto name_color = (result.report_big_o || result.report_rms) ? COLOR_BLUE : COLOR_GREEN;
+        const char* const line       = outStr;
+        auto              name_color = (result.report_big_o || result.report_rms) ? COLOR_BLUE : COLOR_GREEN;
         // name_color
-        outStr = gStringFormatAppend(outStr, outStrEnd, nameWidthFormat, line);
+        outStr = gStringFormatAppend(outStr, outStrEnd, nameWidthFormat, name);
 
         // TODO print 'skipped with error' or 'skipped with message'
 
@@ -119,10 +120,10 @@ namespace BenchMark
             const char* timeLabel = result.time_unit.ToString();
             // printer(Out, COLOR_YELLOW, "%s %-4s %s %-4s ", real_time_str.c_str(), timeLabel, cpu_time_str.c_str(), timeLabel);
             outStr = gFormatTime(real_time, outStr, outStrEnd);
-            outStr = gStringFormatAppend(outStr, outStrEnd, "%s", " ");
+            outStr = gStringAppend(outStr, outStrEnd, ' ');
             outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", timeLabel);
             outStr = gFormatTime(cpu_time, outStr, outStrEnd);
-            outStr = gStringFormatAppend(outStr, outStrEnd, "%s", " ");
+            outStr = gStringAppend(outStr, outStrEnd, ' ');
             outStr = gStringFormatAppend(outStr, outStrEnd, "%-4s ", timeLabel);
         }
         else
@@ -143,8 +144,10 @@ namespace BenchMark
 
         if (result.counters.Size() > 0)
         {
-            char* const line2     = scratch->Alloc<char>(max_line_width + 1);
-            line2[max_line_width] = '\0';
+            char* const numberStr        = scratch->Alloc<char>(128 + 1);
+            numberStr[128]               = '\0';
+            const char* const outStr2End = &numberStr[128];
+
             for (s32 i = 0; i < result.counters.Size(); ++i)
             {
                 const Counter& c = result.counters.counters[i];
@@ -152,19 +155,19 @@ namespace BenchMark
                 const char* cname = c.name;
                 const char* unit  = "";
 
-                char* numberStr = line2;
+                char* outStr2 = numberStr;
                 if (result.run_type == BenchMarkRun::RT_Aggregate && result.aggregate_unit.unit == StatisticUnit::Percentage)
                 {
-                    numberStr = gStringFormatAppend(numberStr, &line2[max_line_width], "%.2f", 100. * c.value);
-                    unit      = "%";
+                    outStr2 = gStringFormatAppend(outStr2, outStr2End, "%.2f", 100. * c.value);
+                    unit    = "%";
                 }
                 else
                 {
-                    numberStr = gHumanReadableNumber(numberStr, &line2[max_line_width], c.value, c.flags.OneK());
+                    outStr2 = gHumanReadableNumber(outStr2, outStr2End, c.value, c.flags.OneK());
                     if (c.flags.flags & CounterFlags::IsRate)
                         unit = (c.flags.flags & CounterFlags::Invert) ? "s" : "/s";
                 }
-                numberStr = gStringAppendTerminator(numberStr, &line2[max_line_width]);
+                outStr2 = gStringAppendTerminator(outStr2, outStr2End);
 
                 outStr = gStringAppend(outStr, outStrEnd, ' ');
                 if (output_options_ & OO_Tabular)
@@ -182,6 +185,7 @@ namespace BenchMark
                 }
                 outStr = gStringAppend(outStr, outStrEnd, unit);
             }
+            scratch->Deallocate(numberStr);
         }
         if (result.report_format != nullptr)
         {
@@ -192,7 +196,9 @@ namespace BenchMark
         outStr = gStringAppendTerminator(outStr, outStrEnd);
 
         (output_stream_ << line).endl();
-        return;
+
+        scratch->Deallocate(nameWidthFormat);
+        scratch->Deallocate(name);
     }
 
     void ConsoleReporter::PrintHeader(const BenchMarkRun& report, ForwardAllocator* allocator, ScratchAllocator* scratch)
@@ -202,15 +208,16 @@ namespace BenchMark
         char* nameWidthFormat = scratch->Alloc<char>(8 + 1);
         gSetWidthFormat(nameWidthFormat, static_cast<int>(name_field_width_));
 
-        const s32 max_line_width = 1024;
-        char*     line           = scratch->Alloc<char>(max_line_width + 1);
-        line[0]                  = '\0';
+        const s32   max_line_width = 1024;
+        char* const line           = scratch->Alloc<char>(max_line_width + 1);
+        line[0]                    = '\0';
 
-        char* outStr = line;
-        outStr       = gStringFormatAppend(outStr, &line[max_line_width], nameWidthFormat, "Benchmark");
-        outStr       = gStringFormatAppend(outStr, &line[max_line_width], "%13s", "Time");
-        outStr       = gStringFormatAppend(outStr, &line[max_line_width], "%15s", "CPU");
-        outStr       = gStringFormatAppend(outStr, &line[max_line_width], "%12s", "Iterations");
+        char*             outStr    = line;
+        char const* const outStrEnd = &line[max_line_width];
+        outStr                      = gStringFormatAppend(outStr, outStrEnd, nameWidthFormat, "Benchmark");
+        outStr                      = gStringFormatAppend(outStr, outStrEnd, "%13s", "Time");
+        outStr                      = gStringFormatAppend(outStr, outStrEnd, "%15s", "CPU");
+        outStr                      = gStringFormatAppend(outStr, outStrEnd, "%12s", "Iterations");
 
         if (!report.counters.counters.Empty())
         {
@@ -218,29 +225,32 @@ namespace BenchMark
             {
                 for (int i = 0; i < report.counters.counters.Size(); ++i)
                 {
-                    outStr = gStringFormatAppend(outStr, &line[max_line_width], " %10s", report.counters.counters[i].name);
+                    outStr = gStringFormatAppend(outStr, outStrEnd, " %10s", report.counters.counters[i].name);
                 }
             }
             else
             {
-                outStr = gStringFormatAppend(outStr, &line[max_line_width], " %s", " UserCounters...");
+                outStr = gStringFormatAppend(outStr, outStrEnd, " %s", " UserCounters...");
             }
         }
-        gStringAppend(outStr, &line[max_line_width], '\0');
+        outStr = gStringAppendTerminator(outStr, outStrEnd);
 
         const int   width = (int)(outStr - line);
         char* const line2 = outStr;
         char*       str2  = line2;
         for (int i = 0; i < width; ++i)
-            str2 = gStringAppend(str2, &line2[max_line_width], '-');
-        str2 = gStringAppend(str2, &line[max_line_width], '\0');
+            str2 = gStringAppend(str2, outStrEnd, '-');
+        str2 = gStringAppend(str2, outStrEnd, '\0');
 
         (output_stream_ << line2).endl();
         (output_stream_ << line).endl();
         (output_stream_ << line2).endl();
+
+        scratch->Deallocate(nameWidthFormat);
+        scratch->Deallocate(line);
     }
 
     void ConsoleReporter::Flush(ForwardAllocator* allocator, ScratchAllocator* scratch) { output_stream_.flush(); }
-    void ConsoleReporter::Finalize(ForwardAllocator* allocator, ScratchAllocator* scratch) { }
+    void ConsoleReporter::Finalize(ForwardAllocator* allocator, ScratchAllocator* scratch) {}
 
 } // namespace BenchMark

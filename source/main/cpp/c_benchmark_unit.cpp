@@ -184,7 +184,8 @@ namespace BenchMark
         if (args.Size() == 0)
         {
             args.Init(alloc, 0, 1);
-            args.PushBack(nullptr);
+            Array<s32>* arg = alloc->Construct<Array<s32>>();
+            args.PushBack(arg);
         }
 
         return args.Size();
@@ -278,7 +279,7 @@ namespace BenchMark
         if (min_warmup_time_ == 0)
             min_warmup_time_ = 0.5;
         if (memory_required_ == 0)
-            memory_required_ = 1 << 20; // 1 MB
+            memory_required_ = 1 << 20; // 1 MB is the minimum
     }
 
     void BenchMarkUnit::ReleaseSettings() { PrepareSettings(); }

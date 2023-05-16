@@ -16,12 +16,13 @@ namespace BenchMark
 {
     BenchMarkGlobals::BenchMarkGlobals()
     {
-        FLAGS_benchmark_min_time                   = 0.5;
-        FLAGS_benchmark_min_warmup_time            = 0.5;
-        FLAGS_benchmark_report_aggregates_only     = true;
-        FLAGS_benchmark_display_aggregates_only    = false;
-        FLAGS_benchmark_repetitions                = 1;
-        FLAGS_benchmark_enable_random_interleaving = false;
+        benchmark_min_time                   = 0.5;
+        benchmark_min_warmup_time            = 0.5;
+        benchmark_report_aggregates_only     = true;
+        benchmark_display_aggregates_only    = false;
+        benchmark_repetitions                = 1;
+        benchmark_enable_random_interleaving = false;
+        benchmark_random_interleaving_seed   = 0x533DFE9E9A0A2F8BULL;
     }
 
     BenchMarkRunResult::BenchMarkRunResult()
@@ -97,7 +98,7 @@ namespace BenchMark
 
     void BenchMarkInstance::run(BenchMarkState& state, Allocator* allocator) const { benchmark_->run_(state, allocator); }
 
-    void BenchMarkInstance::initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const* args, int thread_count)
+    void BenchMarkInstance::initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32>* args, int thread_count)
     {
         benchmark_ = benchmark;
         threads_   = (thread_count);
@@ -109,6 +110,7 @@ namespace BenchMark
         str[nameSize]            = '\0';
         const char* const strEnd = str + nameSize;
         {
+            name_.allocator = allocator;
             name_.function_name = str;
 
             // Name/{ArgName:}Arg/{ArgName:}Arg/..
@@ -203,6 +205,14 @@ namespace BenchMark
             str = gStringAppendTerminator(str, strEnd);
         }
         allocator->Commit(str);
+    }
+
+    void BenchMarkInstance::release(ForwardAllocator* allocator)
+    {
+        name_.Release();
+        args_->Release();
+        allocator->Deallocate(args_);
+        args_ = nullptr;
     }
 
 } // namespace BenchMark

@@ -85,6 +85,8 @@ int main(int argc, char** argv)
     BenchMark::ConsoleReporter reporter;
     reporter.Initialize(&forward_allocator, &stdoutput);
 
+    globals.FLAGS_benchmark_random_interleaving_seed = (BenchMark::u64)&globals;
+
     bool result = BenchMark::gRunBenchMark(&main_allocator, &globals, reporter);
 
     reporter.Shutdown(&forward_allocator);

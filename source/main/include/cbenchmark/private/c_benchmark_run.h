@@ -40,15 +40,42 @@ namespace BenchMark
             , cpu_accumulated_time(0)
             , max_heapbytes_used(0)
             , complexity(BigO::O_None)
-            , complexity_lambda()
+            , complexity_lambda(nullptr)
             , complexity_n(0)
             , statistics()
             , report_big_o(false)
             , report_rms(false)
             , counters()
-            //, memory_result(NULL)
             , allocs_per_iter(0.0)
         {
+        }
+
+        void Reset()
+        {
+            run_name.Release();
+            run_type = RT_Iteration;
+            aggregate_name = nullptr;
+            aggregate_unit = {StatisticUnit::Time};
+            report_format = nullptr;
+            report_value = 0.0;
+            skipped = Skipped::NotSkipped;
+            skip_message = nullptr;
+            iterations = 1;
+            threads = 1;
+            repetition_index = 0;
+            repetitions = 0;
+            time_unit = TimeUnit::Nanosecond;
+            real_accumulated_time = 0;
+            cpu_accumulated_time = 0;
+            max_heapbytes_used = 0;
+            complexity = BigO::O_None;
+            complexity_lambda = nullptr;
+            complexity_n = 0;
+            statistics.Release();
+            report_big_o = false;
+            report_rms = false;
+            counters.Release();
+            allocs_per_iter = 0.0;
         }
 
         const char* BenchMarkName(Allocator* alloc);
