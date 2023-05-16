@@ -63,13 +63,13 @@ namespace BenchMark
     public:
         BenchMarkInstance();
 
-        void initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32>* args, int thread_count);
+        void initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int thread_count);
         void release(ForwardAllocator* allocator);
 
         void run(BenchMarkState& state, Allocator* allocator) const;
 
         const BenchmarkName& name() const { return name_; }
-        Array<s32> const*    args() const { return args_; }
+        Array<s32> const*    args() const { return &args_; }
         int                  threads() const { return threads_; }
 
         AggregationReportMode   aggregation_report_mode() const { return benchmark_->aggregation_report_mode_; }
@@ -92,7 +92,7 @@ namespace BenchMark
     private:
         BenchMarkUnit* benchmark_;
         BenchmarkName  name_;
-        Array<s32>*    args_;
+        Array<s32>     args_;
         int            threads_; // Number of concurrent threads to us
     };
 

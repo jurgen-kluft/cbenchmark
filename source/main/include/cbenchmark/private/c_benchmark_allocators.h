@@ -33,7 +33,7 @@ namespace BenchMark
 
     protected:
         virtual void* v_Allocate(s64 size, unsigned int alignment = sizeof(void*)) = 0;
-        virtual void  v_Deallocate(void* ptr)                                               = 0;
+        virtual void  v_Deallocate(void* ptr)                                      = 0;
     };
 
     class MainAllocator : public Allocator
@@ -51,6 +51,7 @@ namespace BenchMark
         virtual void  v_Deallocate(void* ptr);
     };
 
+    struct ForwardAllocationHeader;
     class ForwardAllocator : public Allocator
     {
     public:
@@ -70,12 +71,13 @@ namespace BenchMark
         virtual void* v_Allocate(s64 size, unsigned int alignment);
         virtual void  v_Deallocate(void* ptr);
 
-        Allocator* main_;
-        u8*        buffer_;
-        u8*        buffer_begin_;
-        u8*        buffer_end_;
-        s32        checkout_;
-        s32        num_allocations_;
+        Allocator*               main_;
+        ForwardAllocationHeader* header_;
+        u8*                      buffer_;
+        u8*                      buffer_begin_;
+        u8*                      buffer_end_;
+        s32                      checkout_;
+        s32                      num_allocations_;
     };
 
     class ScratchAllocator : public Allocator

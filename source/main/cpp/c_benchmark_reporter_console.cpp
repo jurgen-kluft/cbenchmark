@@ -44,7 +44,6 @@ namespace BenchMark
     {
         /* TO BE IMPLEMENTED */
         name_field_width_ = context.name_field_width;
-        prev_counters_.ClearReserve(16);
         printed_header_ = false;
 
         // PrintBasicContext(*error_stream_, context);
@@ -67,6 +66,11 @@ namespace BenchMark
 
             PrintRunData(*run, scratch);
         }
+    }
+
+    void ConsoleReporter::ReportEnd(ForwardAllocator* allocator) 
+    {
+        prev_counters_.Release();
     }
 
     void ConsoleReporter::ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch) {}

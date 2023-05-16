@@ -56,8 +56,8 @@ namespace BenchMark
             report->complexity_n         = results.complexity_n;
             report->complexity           = bmi->complexity();
             report->complexity_lambda    = bmi->complexity_lambda();
-            report->statistics           = bmi->statistics();
-            report->counters.Copy(allocator,  results.counters);
+            report->statistics.Copy(allocator, bmi->statistics());
+            report->counters.Copy(allocator, results.counters);
 
             Counters::Finish(report->counters, results.iterations, seconds, bmi->threads());
         }
@@ -442,7 +442,7 @@ namespace BenchMark
     void BenchMarkRunner::DoOneRepetition(ForwardAllocator* allocator, ScratchAllocator* scratch, BenchMarkRun* report, BenchMarkReporter::PerFamilyRunReports* reports_for_family)
     {
         ASSERTS(HasRepeatsRemaining(), "Already done all repetitions?");
-        
+
         USE_SCRATCH(scratch);
 
         const bool is_the_first_repetition = num_repetitions_done == 0;

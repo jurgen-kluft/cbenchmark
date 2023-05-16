@@ -38,7 +38,7 @@ namespace BenchMark
         Array<Counter> counters;
 
         Counters() {}
-        Counters(Counters const& other) { counters.Copy(other.counters); }
+        Counters(Counters const& other) = delete;
         
         inline void Initialize(Allocator* allocator, s32 reserve) { counters.Init(allocator, 0, reserve); }
         inline s32  Size() const { return counters.Size(); }

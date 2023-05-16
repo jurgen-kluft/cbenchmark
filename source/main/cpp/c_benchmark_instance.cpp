@@ -56,16 +56,13 @@ namespace BenchMark
     }
 
     void BenchMarkRunResult::Initialize(Allocator* alloc, BenchMarkInstance const* instance)
-    { 
+    {
         Reset();
         if (instance->counters() != nullptr)
             counters.Initialize(alloc, instance->counters()->Size());
     }
 
-    void BenchMarkRunResult::Shutdown()
-    { 
-        counters.Release();
-    }
+    void BenchMarkRunResult::Shutdown() { counters.Release(); }
 
     void BenchMarkRunResult::Merge(const BenchMarkRunResult& other)
     {
@@ -98,11 +95,11 @@ namespace BenchMark
 
     void BenchMarkInstance::run(BenchMarkState& state, Allocator* allocator) const { benchmark_->run_(state, allocator); }
 
-    void BenchMarkInstance::initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32>* args, int thread_count)
+    void BenchMarkInstance::initialize(ForwardAllocator* allocator, BenchMarkUnit* benchmark, Array<s32> const& args, int thread_count)
     {
         benchmark_ = benchmark;
         threads_   = (thread_count);
-        args_      = args;
+        args_.Copy(allocator, args);
 
         // 'Reserve' enough memory for the name and parts.
         const s32 nameSize       = 511;
@@ -110,7 +107,7 @@ namespace BenchMark
         str[nameSize]            = '\0';
         const char* const strEnd = str + nameSize;
         {
-            name_.allocator = allocator;
+            name_.allocator     = allocator;
             name_.function_name = str;
 
             // Name/{ArgName:}Arg/{ArgName:}Arg/..
@@ -118,22 +115,19 @@ namespace BenchMark
             str = gStringAppendTerminator(str, strEnd);
 
             name_.args = str;
-            if (args_ != nullptr)
+            for (s32 i = 0; i < args_.Size(); ++i)
             {
-                for (s32 i = 0; i < args_->Size(); ++i)
+                if (str > name_.args)
                 {
-                    if (str > name_.args)
-                    {
-                        str = gStringAppend(str, strEnd, '/');
-                    }
-
-                    if (benchmark_->args_count_ > i && benchmark_->args_[i].name_ != nullptr)
-                    {
-                        str = gStringFormatAppend(str, strEnd, "%s:", benchmark_->args_[i].name_);
-                    }
-
-                    str = gStringFormatAppend(str, strEnd, "%d", (*args_)[i]);
+                    str = gStringAppend(str, strEnd, '/');
                 }
+
+                if (benchmark_->args_count_ > i && benchmark_->args_[i].name_ != nullptr)
+                {
+                    str = gStringFormatAppend(str, strEnd, "%s:", benchmark_->args_[i].name_);
+                }
+
+                str = gStringFormatAppend(str, strEnd, "%d", args_[i]);
             }
             str = gStringAppendTerminator(str, strEnd);
 
@@ -210,9 +204,7 @@ namespace BenchMark
     void BenchMarkInstance::release(ForwardAllocator* allocator)
     {
         name_.Release();
-        args_->Release();
-        allocator->Deallocate(args_);
-        args_ = nullptr;
+        args_.Release();
     }
 
 } // namespace BenchMark

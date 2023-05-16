@@ -34,6 +34,7 @@ namespace BenchMark
                 reporter->ReportRuns(run_results->aggregates_only, allocator, scratch);
         };
 
+        reporter->ReportEnd(allocator);
         reporter->Flush(allocator, scratch);
     }
 
@@ -261,8 +262,8 @@ namespace BenchMark
         const s32         num_thread_counts = thread_counts.Empty() ? 1 : thread_counts.Size();
 
         // Have BenchMarkUnit create the arguments for the instances
-        Array<Array<s32>*> args;
-        const s32          perms = benchmark->BuildArgs(forward_allocator, args);
+        Array<Array<s32>> args;
+        const s32          perms = benchmark->BuildArgs(scratch_allocator, args);
         benchmark_instances.Init(forward_allocator, 0, perms * num_thread_counts);
 
         for (s32 i = 0; i < num_thread_counts; ++i)

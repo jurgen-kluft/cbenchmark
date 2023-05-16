@@ -179,12 +179,25 @@ namespace BenchMark
         num_allocations_ = 0;
     }
 
+    struct ForwardAllocationHeader
+    {
+        u64 magic;
+        void* ptr;
+        s64 size;
+    };
+
     void* ForwardAllocator::v_Checkout(s64 size, unsigned int alignment)
     {
         ASSERT(checkout_ >= 0);
         u8* p = ncore::g_align_ptr(buffer_, alignment);
         if ((p + size) > buffer_end_)
             return nullptr;
+
+        header_       = (ForwardAllocationHeader*)p;
+        p             = (u8*)(header_ + 1);
+        header_->magic = 0XDEADBEEFDEADBEEFULL;
+        header_->ptr  = (void*)(p);
+        header_->size = size;
 
         ASSERT(buffer_ < buffer_end_);
         num_allocations_++;
@@ -203,7 +216,8 @@ namespace BenchMark
 
     void ForwardAllocator::v_Commit(void* ptr)
     {
-        buffer_ = (u8*)ptr;
+        header_->size = (u8*)ptr - (u8*)(header_->ptr);
+        buffer_       = (u8*)ptr;
         --checkout_;
         ASSERT(buffer_ < buffer_end_);
         ASSERT(checkout_ == 0);
@@ -211,12 +225,38 @@ namespace BenchMark
 
     void ForwardAllocator::v_Deallocate(void* ptr)
     {
+        // Check the header for double free's and validate the pointer
+        ForwardAllocationHeader* header = (ForwardAllocationHeader*)ptr - 1;
+        if (header->magic == 0XDEADBEEFDEADBEEFULL)
+        {
+            if (header->ptr != ptr)
+            {
+                return;
+            }
+            if (header->size <= 0)
+            {
+                return;
+            }
+        }
+        else 
+        {
+            // corrupted ?
+            return;
+        }
+
+        ASSERT(header->magic == 0XDEADBEEFDEADBEEFULL);
+        ASSERT(header->ptr == ptr);
+        ASSERT(header->size > 0);
+
+        // Empty this header by just setting size to 0
+        header->size  = 0;
+
         ASSERT(ptr >= buffer_begin_ && ptr < buffer_end_);
         if (num_allocations_ == 0)
         {
             return;
         }
-        ASSERT(num_allocations_> 0);
+        ASSERT(num_allocations_ > 0);
         --num_allocations_;
     }
 

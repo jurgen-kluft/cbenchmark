@@ -94,7 +94,7 @@ namespace BenchMark
         int            disabled;   // 0 = enabled, 1 = disabled, should this benchmark be run?
         int            lineNumber; // the line number in the source file
 
-        s32    BuildArgs(Allocator* alloc, Array<Array<s32>*>& args);
+        s32    BuildArgs(Allocator* alloc, Array<Array<s32>>& args);
         Arg_t* Arg(s32 index);
         Arg_t* Arg(s32 index, const char* name);
 

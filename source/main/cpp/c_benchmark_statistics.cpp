@@ -11,7 +11,7 @@
 
 namespace BenchMark
 {
-    auto StatisticsSum = [](const Array<double>& v)
+    static double StatisticsSum(const Array<double>& v)
     {
         double sum = 0.0;
         for (auto i = 0; i < v.Size(); ++i)
@@ -21,20 +21,22 @@ namespace BenchMark
         return sum;
     };
 
-    double StatisticsMean(const Array<double>& v)
+    double StatisticsMean(ScratchAllocator* scratch, const Array<double>& v)
     {
         if (v.Empty())
             return 0.0;
         return StatisticsSum(v) * (1.0 / v.Size());
     }
 
-    double StatisticsMedian(const Array<double>& v)
+    double StatisticsMedian(ScratchAllocator* scratch, const Array<double>& v)
     {
         if (v.Size() < 3)
-            return StatisticsMean(v);
+            return StatisticsMean(scratch, v);
+
+        USE_SCRATCH(scratch);
 
         Array<double> copy;
-        copy.Copy(v);
+        copy.Copy(scratch, v);
 
         double* center = copy.Begin() + (v.Size() / 2);
         std::nth_element(copy.Begin(), center, copy.End());
@@ -44,28 +46,31 @@ namespace BenchMark
         // it no, then we are looking for the average between center and the value
         // before
         if (v.Size() % 2 == 1)
+        {
+            copy.Release();
             return *center;
+        }
         double* center2 = copy.Begin() + v.Size() / 2 - 1;
         std::nth_element(copy.Begin(), center2, copy.End());
 
+        copy.Release();
         return (*center + *center2) / 2.0;
     }
 
     // Return the sum of the squares of this sample set
-    auto SumSquares = [](const Array<double>& v) { return std::inner_product(v.Begin(), v.End(), v.Begin(), 0.0); };
-
-    auto Sqr  = [](const double dat) { return dat * dat; };
-    auto Sqrt = [](const double dat)
+    inline static double SumSquares(const Array<double>& v) { return std::inner_product(v.Begin(), v.End(), v.Begin(), 0.0); }
+    inline static double Sqr(const double dat) { return dat * dat; }
+    inline static double Sqrt(const double dat)
     {
         // Avoid NaN due to imprecision in the calculations
         if (dat < 0.0)
             return 0.0;
         return std::sqrt(dat);
-    };
+    }
 
-    double StatisticsStdDev(const Array<double>& v)
+    double StatisticsStdDev(ScratchAllocator* scratch, const Array<double>& v)
     {
-        const auto mean = StatisticsMean(v);
+        const auto mean = StatisticsMean(scratch, v);
         if (v.Empty())
             return mean;
 
@@ -77,13 +82,13 @@ namespace BenchMark
         return Sqrt(v.Size() / (v.Size() - 1.0) * (avg_squares - Sqr(mean)));
     }
 
-    double StatisticsCV(const Array<double>& v)
+    double StatisticsCV(ScratchAllocator* scratch, const Array<double>& v)
     {
         if (v.Size() < 2)
             return 0.0;
 
-        const auto stddev = StatisticsStdDev(v);
-        const auto mean   = StatisticsMean(v);
+        const auto stddev = StatisticsStdDev(scratch, v);
+        const auto mean   = StatisticsMean(scratch, v);
 
         return stddev / mean;
     }
@@ -201,13 +206,13 @@ namespace BenchMark
 
         // Only add label if it is same for all runs
         const char* report_format = reports[0]->report_format;
-        double      report_value = reports[0]->report_value;
+        double      report_value  = reports[0]->report_value;
         for (int i = 1; i < reports.Size(); i++)
         {
             if (gCompareStrings(reports[i]->report_format, report_format) != 0 && reports[i]->report_value != report_value)
             {
                 report_format = "";
-                report_value = 0.0;
+                report_value  = 0.0;
                 break;
             }
         }
@@ -241,8 +246,8 @@ namespace BenchMark
             // Thus it is best to simply use the count of separate reports.
             data->iterations = reports.Size();
 
-            data->real_accumulated_time = Stat.compute_(real_accumulated_time_stat);
-            data->cpu_accumulated_time  = Stat.compute_(cpu_accumulated_time_stat);
+            data->real_accumulated_time = Stat.compute_(scratch, real_accumulated_time_stat);
+            data->cpu_accumulated_time  = Stat.compute_(scratch, cpu_accumulated_time_stat);
 
             if (data->aggregate_unit.IsTime())
             {
@@ -263,7 +268,7 @@ namespace BenchMark
             {
                 CounterStat const& kv = counter_stats.stats[j];
                 // Do NOT rescale the custom counters since they are already properly scaled!
-                const auto uc_stat = Stat.compute_(kv.s);
+                const auto uc_stat = Stat.compute_(scratch, kv.s);
                 Counter&   c       = data->counters.counters.Alloc();
                 c.value            = uc_stat;
                 c.flags            = kv.c.flags;

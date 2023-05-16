@@ -10,14 +10,14 @@ namespace BenchMark
 {
     class BenchMarkRun;
 
-    double StatisticsMean(const Array<double>& data);
-    double StatisticsMedian(const Array<double>& data);
-    double StatisticsStdDev(const Array<double>& data);
-    double StatisticsCV(const Array<double>& data);
+    double StatisticsMean(ScratchAllocator* scratch, const Array<double>& data);
+    double StatisticsMedian(ScratchAllocator* scratch, const Array<double>& data);
+    double StatisticsStdDev(ScratchAllocator* scratch, const Array<double>& data);
+    double StatisticsCV(ScratchAllocator* scratch, const Array<double>& data);
 
     struct Statistic
     {
-        typedef double (*Func)(const Array<double>& values);
+        typedef double (*Func)(ScratchAllocator* scratch, const Array<double>& values);
 
         Statistic()
             : name_(nullptr)

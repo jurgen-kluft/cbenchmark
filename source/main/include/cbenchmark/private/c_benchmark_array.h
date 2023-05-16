@@ -68,12 +68,33 @@ namespace BenchMark
             m_capacity = 0;
         }
 
+        void Copy(Allocator* allocator, const Array<T>& other)
+        {
+            if (other.Size() > m_capacity)
+            {
+                if (m_alloc == nullptr)
+                {
+                    m_alloc = allocator;
+                    if (allocator == nullptr)
+                        m_alloc = other.m_alloc;
+                }
+
+                ClearReserve(other.Size());
+            }
+
+            for (s32 i = 0; i < other.Size(); ++i)
+                m_data[i] = other.m_data[i];
+            m_size = other.Size();
+        }
+
         void Copy(const Array<T>& other)
         {
             if (other.Size() > m_capacity)
             {
                 if (m_alloc == nullptr)
+                {
                     m_alloc = other.m_alloc;
+                }
 
                 ClearReserve(other.Size());
             }
@@ -133,6 +154,8 @@ namespace BenchMark
         inline const T& At(s32 i) const { return m_data[i]; }
         inline T&       operator[](s32 i) { return m_data[i]; }
         inline const T& operator[](s32 i) const { return m_data[i]; }
+
+        inline Array<T>& operator = (const Array<T>& other) = delete;
 
     private:
         Allocator* m_alloc;

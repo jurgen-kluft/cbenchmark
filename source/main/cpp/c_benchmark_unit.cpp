@@ -109,7 +109,7 @@ namespace BenchMark
         }
     }
 
-    s32 BenchMarkUnit::BuildArgs(Allocator* alloc, Array<Array<s32>*>& args)
+    s32 BenchMarkUnit::BuildArgs(Allocator* alloc, Array<Array<s32>>& args)
     {
         // check what we have:
         // - arg values, []{ x:{a,b,c,...}, y:{a,b,c,...}, ...}
@@ -141,14 +141,13 @@ namespace BenchMark
 
             for (s32 i = 0; i < iters; ++i)
             {
-                Array<s32>* arg = alloc->Construct<Array<s32>>();
+                Array<s32>& arg = args.Alloc();
                 for (s32 j = 0; j < args_count_; ++j)
                 {
                     if (args_[i].mode_ == 0 || args_[i].count_ == 0)
                         continue;
-                    arg->PushBack(static_cast<s32>(args_[j].args_[i]));
+                    arg.PushBack(static_cast<s32>(args_[j].args_[i]));
                 }
-                args.PushBack(arg);
             }
         }
         else if (mode != 0)
@@ -169,13 +168,12 @@ namespace BenchMark
             args.Init(alloc, 0, iters);
             for (s32 i = 0; i < iters; ++i)
             {
-                Array<s32>* arg = alloc->Construct<Array<s32>>();
-                arg->Init(alloc, 0, args_count_);
+                Array<s32>& arg = args.Alloc();
+                arg.Init(alloc, 0, args_count_);
                 for (s32 j = 0; j < args_count_; ++j)
                 {
-                    arg->PushBack(static_cast<s32>(args_[j].args_[permute_vector[j]]));
+                    arg.PushBack(static_cast<s32>(args_[j].args_[permute_vector[j]]));
                 }
-                args.PushBack(arg);
 
                 IncreasePermuteVector(permute_vector, permute_target, args_count_);
             }
@@ -184,8 +182,7 @@ namespace BenchMark
         if (args.Size() == 0)
         {
             args.Init(alloc, 0, 1);
-            Array<s32>* arg = alloc->Construct<Array<s32>>();
-            args.PushBack(arg);
+            Array<s32>& arg = args.Alloc();
         }
 
         return args.Size();
@@ -222,8 +219,9 @@ namespace BenchMark
 
     void BenchMarkUnit::PrepareSettings()
     {
-        thread_counts_      = Array<s32>();
-        statistics_         = Array<Statistic>();
+        thread_counts_.Release();
+        statistics_.Release();
+        counters_.Release();
         counters_size_      = 2;
         thread_counts_size_ = 1;
         statistics_count_   = 4;
@@ -234,8 +232,8 @@ namespace BenchMark
             args_[i].count_      = 0;
             args_[i].mode_       = Arg_t::Arg_Uninitialized;
             args_[i].count_only_ = true;
-            args_[i].args_       = Array<s64>();
-            args_[i].name_       = nullptr;
+            args_[i].args_.Release();
+            args_[i].name_ = nullptr;
         }
         count_only_ = true;
     }
