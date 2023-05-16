@@ -35,7 +35,6 @@ namespace BenchMark
         };
 
         reporter->ReportEnd(allocator);
-        reporter->Flush(allocator, scratch);
     }
 
     template <typename T> T min(T a, T b) { return a < b ? a : b; }
@@ -258,6 +257,8 @@ namespace BenchMark
 
     static bool CreateBenchMarkInstances(ForwardAllocator* forward_allocator, ScratchAllocator* scratch_allocator, BenchMarkUnit* benchmark, Array<BenchMarkInstance*>& benchmark_instances)
     {
+        USE_SCRATCH(scratch_allocator);
+
         const Array<s32>& thread_counts     = benchmark->thread_counts_;
         const s32         num_thread_counts = thread_counts.Empty() ? 1 : thread_counts.Size();
 
@@ -281,6 +282,8 @@ namespace BenchMark
 
         // Each arg has been given to the instances, so we can destroy the args array.
         // The indivual args are owned by the instances and will be destroyed when the instances are released.
+        for (s32 i = 0; i < args.Size(); ++i)
+            args[i].Release();
         args.Release();
 
         return true;

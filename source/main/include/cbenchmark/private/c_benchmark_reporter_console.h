@@ -41,9 +41,6 @@ namespace BenchMark
         virtual void PrintRunData(const BenchMarkRun& report, ScratchAllocator* scratch);
         virtual void PrintHeader(const BenchMarkRun& report, ForwardAllocator* allocator, ScratchAllocator* scratch);
 
-        virtual void Flush(ForwardAllocator* allocator, ScratchAllocator* scratch);
-        virtual void Finalize(ForwardAllocator* allocator, ScratchAllocator* scratch);
-
         TextStream    output_stream_;
         TextStream    error_stream_;
         OutputOptions output_options_;

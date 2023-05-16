@@ -61,10 +61,6 @@ namespace BenchMark
         virtual void ReportRuns(Array<BenchMarkRun*> const& reports, ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
     
         virtual void ReportEnd(ForwardAllocator* allocator) = 0;
-
-        // Called once and only once after ever group of benchmarks is run and reported.
-        virtual void Flush(ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
-        virtual void Finalize(ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
     };
 
 } // namespace BenchMark

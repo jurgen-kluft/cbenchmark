@@ -254,7 +254,4 @@ namespace BenchMark
         scratch->Deallocate(line);
     }
 
-    void ConsoleReporter::Flush(ForwardAllocator* allocator, ScratchAllocator* scratch) { output_stream_.flush(); }
-    void ConsoleReporter::Finalize(ForwardAllocator* allocator, ScratchAllocator* scratch) {}
-
 } // namespace BenchMark

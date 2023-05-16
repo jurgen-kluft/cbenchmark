@@ -253,6 +253,10 @@ namespace BenchMark
         rms->complexity            = result_cpu.complexity;
         // don't forget to keep the time unit, or we won't be able to recover the correct value.
         rms->time_unit = run0->time_unit;
+
+        n.Release();
+        real_time.Release();
+        cpu_time.Release();
     }
 
 } // namespace BenchMark
