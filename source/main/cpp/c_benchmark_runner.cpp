@@ -130,7 +130,7 @@ namespace BenchMark
         ScratchAllocator*        scratch_allocator_;
         BenchMarkInstance const* instance;
 
-        BenchTimeType parsed_benchtime_flag;
+        BenchTimeType benchtime_flag;
         double        min_time;
         double        min_warmup_time;
         bool          warmup_done;
@@ -213,7 +213,7 @@ namespace BenchMark
         : main_allocator_(nullptr)
         , scratch_allocator_(nullptr)
         , instance(nullptr)
-        , parsed_benchtime_flag(BenchTimeType())
+        , benchtime_flag(BenchTimeType())
         , min_time(0.0)
         , min_warmup_time(0.0)
         , warmup_done(false)
@@ -229,17 +229,15 @@ namespace BenchMark
         main_allocator_              = (allocator);
         scratch_allocator_           = (scratch);
         instance                     = (b_);
-        parsed_benchtime_flag        = (BenchTimeType(globals->benchmark_min_time));
-        min_time                     = (ComputeMinTime(b_, parsed_benchtime_flag));
+        benchtime_flag               = (BenchTimeType(globals->benchmark_min_time));
+        min_time                     = (ComputeMinTime(b_, benchtime_flag));
         min_warmup_time              = ((!gIsZero(instance->min_time()) && instance->min_warmup_time() > 0.0) ? instance->min_warmup_time() : globals->benchmark_min_warmup_time);
         warmup_done                  = (!(min_warmup_time > 0.0));
         repeats                      = (instance->repetitions() != 0 ? instance->repetitions() : globals->benchmark_repetitions);
-        has_explicit_iteration_count = (instance->iterations() != 0 || parsed_benchtime_flag.type == BenchTimeType::ITERS);
+        has_explicit_iteration_count = (instance->iterations() != 0 || benchtime_flag.type == BenchTimeType::ITERS);
 
-        iters = (has_explicit_iteration_count ? ComputeIters(*instance, parsed_benchtime_flag) : 1);
+        iters = (has_explicit_iteration_count ? ComputeIters(*instance, benchtime_flag) : 1);
     }
-
-    // TODO could really benefit from a temporary allocator
 
     void BenchMarkRunner::DoNIterations(BenchMarkRunner::IterationResults& iteration_results)
     {
@@ -370,7 +368,7 @@ namespace BenchMark
         // Determine if this run should be reported;
         // Either it has run for a sufficient amount of time
         // or because an error was reported.
-        return i.results.skipped_.IsNotSkipped() || i.iters >= kMaxIterations || // Too many iterations already.
+        return i.results.skipped_.IsSkipped() || i.iters >= kMaxIterations || // Too many iterations already.
                i.seconds >= GetMinTimeToApply() ||                               // The elapsed time is large enough.
                // CPU time is specified but the elapsed real time greatly exceeds
                // the minimum time.

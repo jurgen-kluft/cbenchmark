@@ -33,8 +33,6 @@ namespace BenchMark
             if (!run_results->aggregates_only.Empty())
                 reporter->ReportRuns(run_results->aggregates_only, allocator, scratch);
         };
-
-        reporter->ReportEnd(allocator);
     }
 
     template <typename T> T min(T a, T b) { return a < b ? a : b; }
@@ -110,10 +108,8 @@ namespace BenchMark
             reports_for_family = scratch_allocator->Construct<BenchMarkReporter::PerFamilyRunReports>();
         }
 
-        if (reporter->ReportContext(context, forward_allocator, scratch_allocator))
+        if (reporter->ReportBegin(context, forward_allocator, scratch_allocator))
         {
-            reporter->Flush(forward_allocator, scratch_allocator);
-
             USE_SCRATCH(scratch_allocator);
 
             // Benchmarks to run
@@ -125,8 +121,8 @@ namespace BenchMark
 
             // Count the number of benchmark_instances with threads to warn the user in case
             // performance counters are used.
-            s32 num_repetitions_total   = 0;
-            s32 benchmarks_with_threads = 0;
+            s64 num_repetitions_total   = 0;
+            s64 benchmarks_with_threads = 0;
 
             // Loop through all benchmark_instances
             for (s32 i = 0; i < benchmark_instances.Size(); ++i)
@@ -139,7 +135,7 @@ namespace BenchMark
                 InitRunner(runner, main_allocator, scratch_allocator, globals, benchmark);
                 runners.PushBack(runner);
 
-                const s32 num_repeats_of_this_instance = GetNumRepeats(runner);
+                const s64 num_repeats_of_this_instance = GetNumRepeats(runner);
                 num_repetitions_total += num_repeats_of_this_instance;
                 if (reports_for_family)
                     reports_for_family->num_runs_total += num_repeats_of_this_instance;
@@ -220,6 +216,8 @@ namespace BenchMark
                 forward_allocator->Destruct(results);
             }
 
+            reporter->ReportEnd(forward_allocator);
+
             // Destroy the run results array
             run_results.Release();
 
@@ -236,9 +234,6 @@ namespace BenchMark
             }
             runners.Release();
         }
-
-        reporter->Finalize(forward_allocator, scratch_allocator);
-        reporter->Flush(forward_allocator, scratch_allocator);
     }
 
     // Permutations is determined by the number of inputs to repeat a benchmark on.

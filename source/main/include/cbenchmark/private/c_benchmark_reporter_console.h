@@ -32,7 +32,7 @@ namespace BenchMark
         void Initialize(Allocator* allocator, ConsoleOutput* out);
         void Shutdown(Allocator* allocator);
 
-        virtual bool ReportContext(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch);
+        virtual bool ReportBegin(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch);
         virtual void ReportRuns(Array<BenchMarkRun*> const& reports, ForwardAllocator* allocator, ScratchAllocator* scratch);
         virtual void ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch);
         virtual void ReportEnd(ForwardAllocator* allocator);

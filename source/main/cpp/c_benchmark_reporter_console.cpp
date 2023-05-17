@@ -40,11 +40,11 @@ namespace BenchMark
         error_stream_.out    = nullptr;
     }
 
-    bool ConsoleReporter::ReportContext(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch)
+    bool ConsoleReporter::ReportBegin(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch)
     {
         /* TO BE IMPLEMENTED */
         name_field_width_ = context.name_field_width;
-        printed_header_ = false;
+        printed_header_   = false;
 
         // PrintBasicContext(*error_stream_, context);
         return true;
@@ -55,8 +55,7 @@ namespace BenchMark
         for (s32 i = 0; i < reports.Size(); ++i)
         {
             BenchMarkRun* run          = reports[i];
-            bool          print_header = !printed_header_;
-            print_header               = print_header || ((output_options_ & OO_Tabular) && (!Counters::SameNames(run->counters, prev_counters_)));
+            const bool    print_header = !printed_header_ || ((output_options_ & OO_Tabular) && (!Counters::SameNames(run->counters, prev_counters_)));
             if (print_header)
             {
                 printed_header_ = true;
@@ -68,10 +67,7 @@ namespace BenchMark
         }
     }
 
-    void ConsoleReporter::ReportEnd(ForwardAllocator* allocator) 
-    {
-        prev_counters_.Release();
-    }
+    void ConsoleReporter::ReportEnd(ForwardAllocator* allocator) { prev_counters_.Release(); }
 
     void ConsoleReporter::ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch) {}
 

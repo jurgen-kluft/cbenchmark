@@ -17,8 +17,8 @@ namespace BenchMark
     BenchMarkGlobals::BenchMarkGlobals()
     {
         benchmark_min_time                   = 0.5;
-        benchmark_min_warmup_time            = 0.5;
-        benchmark_report_aggregates_only     = true;
+        benchmark_min_warmup_time            = 0.0;
+        benchmark_report_aggregates_only     = false;
         benchmark_display_aggregates_only    = false;
         benchmark_repetitions                = 1;
         benchmark_enable_random_interleaving = false;

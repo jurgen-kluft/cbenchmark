@@ -17,22 +17,7 @@ namespace BenchMark
         CounterFlags flags;
         double       value;
     };
-
-    struct CounterId
-    {
-        enum
-        {
-            BytesProcessed = 0,
-            ItemsProcessed = 1,
-            User1          = 2,
-            User2          = 3,
-            User3          = 4,
-            User4          = 5,
-            User5          = 6,
-            User6          = 7,
-        };
-    };
-
+    
     struct Counters
     {
         Array<Counter> counters;
@@ -116,7 +101,7 @@ namespace BenchMark
 
         static void Increment(Counters& l, Counters const& r)
         {
-            // add counters present in both or just in *l
+            // add counters present in both or just in l
             for (s32 i = 0; i < l.counters.Size(); ++i)
             {
                 Counter& lc = l.counters[i];
@@ -127,7 +112,7 @@ namespace BenchMark
                     lc.value += r.counters[it].value;
                 }
             }
-            // add counters present in r, but not in *l
+            // add counters present in r, but not in l
             for (s32 i = 0; i < r.counters.Size(); ++i)
             {
                 Counter const& rc = r.counters[i];
@@ -138,26 +123,6 @@ namespace BenchMark
                 }
             }
         }
-    };
-
-    struct MinTime
-    {
-        double value;
-    };
-
-    struct MinWarmupTime
-    {
-        double value;
-    };
-
-    struct Iterations
-    {
-        IterationCount value;
-    };
-
-    struct Repetitions
-    {
-        s64 value;
     };
 
 } // namespace BenchMark

@@ -46,7 +46,7 @@ namespace BenchMark
         // platform under which the benchmarks are running. The benchmark run is
         // never started if this function returns false, allowing the reporter
         // to skip runs based on the context information.
-        virtual bool ReportContext(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
+        virtual bool ReportBegin(const Context& context, ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
 
         // Called once for each group of benchmark runs, gives information about the configurations of the runs.
         virtual void ReportRunsConfig(double min_time, bool has_explicit_iters, IterationCount iters, ForwardAllocator* allocator, ScratchAllocator* scratch) = 0;
