@@ -9,7 +9,9 @@ Cross platform benchmark library
 
 To extend for an additional platform, e.g. Linux, add:
 
-- TODO
+- `c_stdout_linux.cpp`
+- `c_timehelpers_linux.cpp`
+- `c_utils_linux.cpp`
 
 ## How to use 
 
