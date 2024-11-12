@@ -38,8 +38,8 @@
 #        define COMPILER_CLANG
 #    endif
 #elif defined(_MSC_VER)
-#    if !defined(COMPILER_MSVC)
-#        define COMPILER_MSVC
+#    if !defined(CC_COMPILER_MSVC)
+#        define CC_COMPILER_MSVC
 #    endif
 #elif defined(__GNUC__)
 #    if !defined(COMPILER_GCC)
@@ -83,7 +83,7 @@
 // declarations of some other intrinsics, breaking compilation.
 // Therefore, we simply declare __rdtsc ourselves. See also
 // http://connect.microsoft.com/VisualStudio/feedback/details/262047
-#if defined(COMPILER_MSVC) && !defined(_M_IX86) && !defined(_M_ARM64) && !defined(_M_ARM64EC)
+#if defined(CC_COMPILER_MSVC) && !defined(_M_IX86) && !defined(_M_ARM64) && !defined(_M_ARM64EC)
 extern "C" uint64_t __rdtsc();
 #    pragma intrinsic(__rdtsc)
 #endif
@@ -133,13 +133,13 @@ namespace BenchMark
             uint64_t low, high;
             __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
             return (high << 32) | low;
-#elif defined(COMPILER_MSVC) && defined(_M_IX86)
+#elif defined(CC_COMPILER_MSVC) && defined(_M_IX86)
             // Older MSVC compilers (like 7.x) don't seem to support the
             // __rdtsc intrinsic properly, so I prefer to use _asm instead
             // when I know it will work.  Otherwise, I'll use __rdtsc and hope
             // the code is being compiled with a non-ancient compiler.
             _asm rdtsc
-#elif defined(COMPILER_MSVC)
+#elif defined(CC_COMPILER_MSVC)
             return __rdtsc();
 #else
             // The soft failover to a generic implementation is automatic only for ARM.
