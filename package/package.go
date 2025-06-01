@@ -13,19 +13,19 @@ func GetPackage() *denv.Package {
 	ccorepkg := ccore.GetPackage()
 
 	// The main (cbenchmark) package
-	mainpkg := denv.NewPackage("cbenchmark")
+	mainpkg := denv.NewPackage("github.com\\jurgen-kluft", "cbenchmark")
 	mainpkg.AddPackage(cunittestpkg)
 	mainpkg.AddPackage(ccorepkg)
 
 	// 'cbenchmark' library
-	mainlib := denv.SetupCppLibProject("cbenchmark", "github.com\\jurgen-kluft\\cbenchmark")
+	mainlib := denv.SetupCppLibProject(mainpkg, "cbenchmark")
 	mainlib.AddDependencies(ccorepkg.GetMainLib()...)
 
 	// 'cbenchmark' unittest project
-	maintest := denv.SetupDefaultCppTestProject("cbenchmark_test", "github.com\\jurgen-kluft\\cbenchmark")
+	maintest := denv.SetupCppTestProject(mainpkg, "cbenchmark_test")
 	maintest.AddDependencies(cunittestpkg.GetMainLib()...)
 	maintest.AddDependencies(ccorepkg.GetMainLib()...)
-	maintest.Dependencies = append(maintest.Dependencies, mainlib)
+	maintest.AddDependency(mainlib)
 
 	mainpkg.AddMainLib(mainlib)
 	mainpkg.AddUnittest(maintest)
